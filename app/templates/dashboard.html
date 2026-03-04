@@ -14,27 +14,35 @@
     </div>
 </div>
 
-<!-- Tarjetas KPI -->
-<div class="kpi-grid">
-    <div class="kpi-card kpi-ingresos">
-        <div class="kpi-label">Ingresos</div>
-        <div class="kpi-value" id="kpi-ingresos">${{ "%.0f"|format(analisis.resumen.ingresos) }}</div>
-        <div class="kpi-detail">Facturado y cobrado</div>
+<!-- Vision General -->
+<div class="vision-general">
+    <div class="vision-header">
+        <h3>Visi&oacute;n General</h3>
+        <span class="vision-periodo">
+            {{ analisis.resumen.total_facturas }} facturas &middot; {{ analisis.resumen.total_clientes if analisis.resumen.total_clientes is defined else '' }} clientes
+        </span>
     </div>
-    <div class="kpi-card kpi-gastos">
-        <div class="kpi-label">Gastos</div>
-        <div class="kpi-value" id="kpi-gastos">${{ "%.0f"|format(analisis.resumen.gastos) }}</div>
-        <div class="kpi-detail">Total de egresos</div>
-    </div>
-    <div class="kpi-card {% if analisis.resumen.ganancia_neta >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
-        <div class="kpi-label">Ganancia Neta</div>
-        <div class="kpi-value" id="kpi-ganancia">${{ "%.0f"|format(analisis.resumen.ganancia_neta) }}</div>
-        <div class="kpi-detail">Margen: {{ analisis.resumen.margen_porcentaje }}%</div>
-    </div>
-    <div class="kpi-card kpi-pendiente">
-        <div class="kpi-label">Por Cobrar</div>
-        <div class="kpi-value" id="kpi-pendiente">${{ "%.0f"|format(analisis.resumen.monto_pendiente) }}</div>
-        <div class="kpi-detail">{{ analisis.resumen.facturas_pendientes }} factura(s) pendiente(s)</div>
+    <div class="kpi-grid" style="margin-bottom:0">
+        <div class="kpi-card kpi-ingresos">
+            <div class="kpi-label">Ingresos</div>
+            <div class="kpi-value" id="kpi-ingresos">${{ "%.0f"|format(analisis.resumen.ingresos) }}</div>
+            <div class="kpi-detail">Facturado y cobrado</div>
+        </div>
+        <div class="kpi-card kpi-gastos">
+            <div class="kpi-label">Gastos</div>
+            <div class="kpi-value" id="kpi-gastos">${{ "%.0f"|format(analisis.resumen.gastos) }}</div>
+            <div class="kpi-detail">Total de egresos</div>
+        </div>
+        <div class="kpi-card {% if analisis.resumen.ganancia_neta >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
+            <div class="kpi-label">Ganancia Neta</div>
+            <div class="kpi-value" id="kpi-ganancia">${{ "%.0f"|format(analisis.resumen.ganancia_neta) }}</div>
+            <div class="kpi-detail">Margen: {{ analisis.resumen.margen_porcentaje }}%</div>
+        </div>
+        <div class="kpi-card kpi-pendiente">
+            <div class="kpi-label">Por Cobrar</div>
+            <div class="kpi-value" id="kpi-pendiente">${{ "%.0f"|format(analisis.resumen.monto_pendiente) }}</div>
+            <div class="kpi-detail">{{ analisis.resumen.facturas_pendientes }} factura(s) pendiente(s)</div>
+        </div>
     </div>
 </div>
 

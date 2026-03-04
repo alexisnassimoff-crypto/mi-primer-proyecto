@@ -8,10 +8,10 @@
 </head>
 <body>
     <nav class="sidebar">
-        <div class="sidebar-header">
+        <a href="/" class="sidebar-header">
             <h1>FactuApp</h1>
             <p>Sistema de Facturaci&oacute;n</p>
-        </div>
+        </a>
         <ul class="nav-links">
             <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Dashboard</a></li>
             <li><a href="/facturas" class="{% if request.url.path == '/facturas' %}active{% endif %}">Facturas</a></li>

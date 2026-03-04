@@ -40,12 +40,17 @@ body {
 }
 
 .sidebar-header {
+    display: block;
     padding: 24px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-decoration: none;
+    transition: background 0.2s;
+    cursor: pointer;
 }
 
+.sidebar-header:hover { background: rgba(255,255,255,0.05); }
 .sidebar-header h1 { color: #fff; font-size: 1.5rem; }
-.sidebar-header p { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
+.sidebar-header p { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; color: var(--sidebar-text); }
 
 .nav-links {
     list-style: none;
@@ -84,6 +89,31 @@ body {
 }
 
 .page-header h2 { font-size: 1.5rem; }
+
+/* === Vision General === */
+.vision-general {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-top: 4px solid var(--primary);
+}
+
+.vision-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.vision-header h3 { font-size: 1.15rem; margin: 0; }
+.vision-periodo { font-size: 0.85rem; color: var(--text-light); }
+
+.vision-general .kpi-card {
+    box-shadow: none;
+    border: 1px solid var(--border);
+}
 
 /* === KPI Cards === */
 .kpi-grid {
