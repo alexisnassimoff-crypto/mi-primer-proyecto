@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - FactuApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <div class="periodo-selector">
+        <select id="periodo" onchange="cambiarPeriodo(this.value)">
+            <option value="7">7 d&iacute;as</option>
+            <option value="30" selected>30 d&iacute;as</option>
+            <option value="90">90 d&iacute;as</option>
+            <option value="365">1 a&ntilde;o</option>
+        </select>
+    </div>
+</div>
+
+<!-- Tarjetas KPI -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-ingresos">
+        <div class="kpi-label">Ingresos</div>
+        <div class="kpi-value" id="kpi-ingresos">${{ "%.0f"|format(analisis.resumen.ingresos) }}</div>
+        <div class="kpi-detail">Facturado y cobrado</div>
+    </div>
+    <div class="kpi-card kpi-gastos">
+        <div class="kpi-label">Gastos</div>
+        <div class="kpi-value" id="kpi-gastos">${{ "%.0f"|format(analisis.resumen.gastos) }}</div>
+        <div class="kpi-detail">Total de egresos</div>
+    </div>
+    <div class="kpi-card {% if analisis.resumen.ganancia_neta >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
+        <div class="kpi-label">Ganancia Neta</div>
+        <div class="kpi-value" id="kpi-ganancia">${{ "%.0f"|format(analisis.resumen.ganancia_neta) }}</div>
+        <div class="kpi-detail">Margen: {{ analisis.resumen.margen_porcentaje }}%</div>
+    </div>
+    <div class="kpi-card kpi-pendiente">
+        <div class="kpi-label">Por Cobrar</div>
+        <div class="kpi-value" id="kpi-pendiente">${{ "%.0f"|format(analisis.resumen.monto_pendiente) }}</div>
+        <div class="kpi-detail">{{ analisis.resumen.facturas_pendientes }} factura(s) pendiente(s)</div>
+    </div>
+</div>
+
+<!-- Sugerencias -->
+{% if analisis.sugerencias %}
+<section class="section">
+    <h3>Sugerencias para tu negocio</h3>
+    <div class="sugerencias-grid">
+        {% for sug in analisis.sugerencias %}
+        <div class="sugerencia-card sugerencia-{{ sug.tipo }}">
+            <div class="sugerencia-header">
+                <span class="sugerencia-badge badge-{{ sug.prioridad }}">{{ sug.prioridad }}</span>
+                <span class="sugerencia-kpi">{{ sug.kpi }}</span>
+            </div>
+            <h4>{{ sug.titulo }}</h4>
+            <p>{{ sug.mensaje }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Rankings -->
+<div class="grid-2">
+    <section class="section">
+        <h3>Top Clientes</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Cliente</th><th>Facturado</th><th>Facturas</th></tr>
+            </thead>
+            <tbody>
+                {% for c in analisis.top_clientes %}
+                <tr>
+                    <td>{{ c.cliente }}</td>
+                    <td>${{ "%.0f"|format(c.total_facturado) }}</td>
+                    <td>{{ c.facturas }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">Sin datos a&uacute;n</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section">
+        <h3>Top Productos</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Producto</th><th>Vendidos</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for p in analisis.top_productos %}
+                <tr>
+                    <td>{{ p.producto }}</td>
+                    <td>{{ p.unidades_vendidas }}</td>
+                    <td>${{ "%.0f"|format(p.total) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">Sin datos a&uacute;n</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<!-- Gastos por categoría -->
+<section class="section">
+    <h3>Gastos por Categor&iacute;a</h3>
+    <div class="gastos-barras">
+        {% for g in analisis.gastos_por_categoria %}
+        <div class="gasto-barra">
+            <div class="gasto-barra-label">
+                <span>{{ g.categoria }}</span>
+                <span>${{ "%.0f"|format(g.total) }} ({{ g.porcentaje }}%)</span>
+            </div>
+            <div class="barra-container">
+                <div class="barra-fill" style="width: {{ g.porcentaje }}%"></div>
+            </div>
+        </div>
+        {% else %}
+        <p class="empty">Sin gastos registrados</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cambiarPeriodo(dias) {
+    window.location.href = '/?dias=' + dias;
+}
+</script>
+{% endblock %}

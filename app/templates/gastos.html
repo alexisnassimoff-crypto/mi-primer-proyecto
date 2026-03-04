@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Gastos - FactuApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gastos</h2>
+    <button class="btn btn-primary" onclick="mostrarForm()">Nuevo Gasto</button>
+</div>
+
+<div id="modal-gasto" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="form-titulo">Nuevo Gasto</h3>
+            <button class="btn-close" onclick="cerrarModal('modal-gasto')">&times;</button>
+        </div>
+        <form id="form-gasto" onsubmit="guardarGasto(event)">
+            <input type="hidden" id="gasto-id">
+            <div class="form-group">
+                <label>Descripci&oacute;n *</label>
+                <input type="text" id="gasto-descripcion" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Monto *</label>
+                    <input type="number" id="gasto-monto" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Categor&iacute;a *</label>
+                    <select id="gasto-categoria" required>
+                        <option value="alquiler">Alquiler</option>
+                        <option value="servicios">Servicios</option>
+                        <option value="sueldos">Sueldos</option>
+                        <option value="mercaderia">Mercader&iacute;a</option>
+                        <option value="impuestos">Impuestos</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="mantenimiento">Mantenimiento</option>
+                        <option value="transporte">Transporte</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Proveedor</label>
+                    <input type="text" id="gasto-proveedor">
+                </div>
+                <div class="form-group">
+                    <label>N&ordm; Comprobante</label>
+                    <input type="text" id="gasto-comprobante">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" id="gasto-recurrente"> Gasto recurrente</label>
+            </div>
+            <div class="form-group">
+                <label>Notas</label>
+                <textarea id="gasto-notas" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="filtros">
+    <select id="filtro-categoria" onchange="cargarGastos()">
+        <option value="">Todas las categor&iacute;as</option>
+        <option value="alquiler">Alquiler</option>
+        <option value="servicios">Servicios</option>
+        <option value="sueldos">Sueldos</option>
+        <option value="mercaderia">Mercader&iacute;a</option>
+        <option value="impuestos">Impuestos</option>
+        <option value="marketing">Marketing</option>
+        <option value="mantenimiento">Mantenimiento</option>
+        <option value="transporte">Transporte</option>
+        <option value="otros">Otros</option>
+    </select>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr><th>Descripci&oacute;n</th><th>Monto</th><th>Categor&iacute;a</th><th>Proveedor</th><th>Fecha</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="gastos-body">
+        <tr><td colspan="6" class="empty">Cargando...</td></tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', cargarGastos);
+
+async function cargarGastos() {
+    const cat = document.getElementById('filtro-categoria').value;
+    const url = cat ? `/api/gastos/?categoria=${cat}` : '/api/gastos/';
+    const res = await fetch(url);
+    const gastos = await res.json();
+    const tbody = document.getElementById('gastos-body');
+
+    if (!gastos.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay gastos</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = gastos.map(g => `
+        <tr>
+            <td>${g.descripcion}</td>
+            <td>$${g.monto.toFixed(2)}</td>
+            <td><span class="badge">${g.categoria}</span></td>
+            <td>${g.proveedor || '-'}</td>
+            <td>${new Date(g.fecha).toLocaleDateString('es-AR')}</td>
+            <td class="acciones">
+                <button class="btn btn-sm" onclick='editarGasto(${JSON.stringify(g)})'>Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarGasto(${g.id})">X</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function mostrarForm() {
+    document.getElementById('form-titulo').textContent = 'Nuevo Gasto';
+    document.getElementById('form-gasto').reset();
+    document.getElementById('gasto-id').value = '';
+    document.getElementById('modal-gasto').style.display = 'flex';
+}
+
+function editarGasto(g) {
+    document.getElementById('form-titulo').textContent = 'Editar Gasto';
+    document.getElementById('gasto-id').value = g.id;
+    document.getElementById('gasto-descripcion').value = g.descripcion;
+    document.getElementById('gasto-monto').value = g.monto;
+    document.getElementById('gasto-categoria').value = g.categoria;
+    document.getElementById('gasto-proveedor').value = g.proveedor || '';
+    document.getElementById('gasto-comprobante').value = g.comprobante_nro || '';
+    document.getElementById('gasto-recurrente').checked = g.recurrente;
+    document.getElementById('gasto-notas').value = g.notas || '';
+    document.getElementById('modal-gasto').style.display = 'flex';
+}
+
+async function guardarGasto(e) {
+    e.preventDefault();
+    const id = document.getElementById('gasto-id').value;
+    const body = {
+        descripcion: document.getElementById('gasto-descripcion').value,
+        monto: parseFloat(document.getElementById('gasto-monto').value),
+        categoria: document.getElementById('gasto-categoria').value,
+        proveedor: document.getElementById('gasto-proveedor').value || null,
+        comprobante_nro: document.getElementById('gasto-comprobante').value || null,
+        recurrente: document.getElementById('gasto-recurrente').checked,
+        notas: document.getElementById('gasto-notas').value || null,
+    };
+
+    const url = id ? `/api/gastos/${id}` : '/api/gastos/';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+
+    if (res.ok) { cerrarModal('modal-gasto'); cargarGastos(); }
+    else { const err = await res.json(); alert(err.detail || 'Error'); }
+}
+
+async function eliminarGasto(id) {
+    if (!confirm('Eliminar este gasto?')) return;
+    await fetch(`/api/gastos/${id}`, {method: 'DELETE'});
+    cargarGastos();
+}
+
+function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+{% endblock %}

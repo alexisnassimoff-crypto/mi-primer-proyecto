@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FactuApp{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>FactuApp</h1>
+            <p>Sistema de Facturaci&oacute;n</p>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="/facturas" class="{% if request.url.path == '/facturas' %}active{% endif %}">Facturas</a></li>
+            <li><a href="/clientes" class="{% if request.url.path == '/clientes' %}active{% endif %}">Clientes</a></li>
+            <li><a href="/productos" class="{% if request.url.path == '/productos' %}active{% endif %}">Productos</a></li>
+            <li><a href="/gastos" class="{% if request.url.path == '/gastos' %}active{% endif %}">Gastos</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

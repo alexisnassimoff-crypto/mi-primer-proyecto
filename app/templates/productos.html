@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Productos - FactuApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Productos</h2>
+    <button class="btn btn-primary" onclick="mostrarForm()">Nuevo Producto</button>
+</div>
+
+<div id="modal-producto" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="form-titulo">Nuevo Producto</h3>
+            <button class="btn-close" onclick="cerrarModal('modal-producto')">&times;</button>
+        </div>
+        <form id="form-producto" onsubmit="guardarProducto(event)">
+            <input type="hidden" id="producto-id">
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="producto-nombre" required>
+            </div>
+            <div class="form-group">
+                <label>Descripci&oacute;n</label>
+                <textarea id="producto-descripcion" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Precio Venta *</label>
+                    <input type="number" id="producto-precio" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Costo</label>
+                    <input type="number" id="producto-costo" step="0.01" min="0" value="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" id="producto-stock" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Categor&iacute;a</label>
+                    <input type="text" id="producto-categoria">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr><th>Nombre</th><th>Precio</th><th>Costo</th><th>Margen</th><th>Stock</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="productos-body">
+        <tr><td colspan="6" class="empty">Cargando...</td></tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', cargarProductos);
+
+async function cargarProductos() {
+    const res = await fetch('/api/productos/');
+    const productos = await res.json();
+    const tbody = document.getElementById('productos-body');
+
+    if (!productos.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay productos</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = productos.map(p => `
+        <tr>
+            <td>${p.nombre}</td>
+            <td>$${p.precio_unitario.toFixed(2)}</td>
+            <td>$${p.costo.toFixed(2)}</td>
+            <td>${p.margen.toFixed(1)}%</td>
+            <td>${p.stock}</td>
+            <td class="acciones">
+                <button class="btn btn-sm" onclick='editarProducto(${JSON.stringify(p)})'>Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id})">X</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function mostrarForm() {
+    document.getElementById('form-titulo').textContent = 'Nuevo Producto';
+    document.getElementById('form-producto').reset();
+    document.getElementById('producto-id').value = '';
+    document.getElementById('modal-producto').style.display = 'flex';
+}
+
+function editarProducto(p) {
+    document.getElementById('form-titulo').textContent = 'Editar Producto';
+    document.getElementById('producto-id').value = p.id;
+    document.getElementById('producto-nombre').value = p.nombre;
+    document.getElementById('producto-descripcion').value = p.descripcion || '';
+    document.getElementById('producto-precio').value = p.precio_unitario;
+    document.getElementById('producto-costo').value = p.costo;
+    document.getElementById('producto-stock').value = p.stock;
+    document.getElementById('producto-categoria').value = p.categoria || '';
+    document.getElementById('modal-producto').style.display = 'flex';
+}
+
+async function guardarProducto(e) {
+    e.preventDefault();
+    const id = document.getElementById('producto-id').value;
+    const body = {
+        nombre: document.getElementById('producto-nombre').value,
+        descripcion: document.getElementById('producto-descripcion').value || null,
+        precio_unitario: parseFloat(document.getElementById('producto-precio').value),
+        costo: parseFloat(document.getElementById('producto-costo').value) || 0,
+        stock: parseInt(document.getElementById('producto-stock').value) || 0,
+        categoria: document.getElementById('producto-categoria').value || null,
+    };
+
+    const url = id ? `/api/productos/${id}` : '/api/productos/';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+
+    if (res.ok) { cerrarModal('modal-producto'); cargarProductos(); }
+    else { const err = await res.json(); alert(err.detail || 'Error'); }
+}
+
+async function eliminarProducto(id) {
+    if (!confirm('Eliminar este producto?')) return;
+    await fetch(`/api/productos/${id}`, {method: 'DELETE'});
+    cargarProductos();
+}
+
+function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+{% endblock %}

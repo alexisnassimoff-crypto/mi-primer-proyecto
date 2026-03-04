@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Pago - FactuApp{% endblock %}
+
+{% block content %}
+<div class="pago-resultado">
+    {% if resultado == "exito" %}
+    <div class="resultado-card resultado-exito">
+        <h2>Pago aprobado</h2>
+        <p>El pago se proces&oacute; correctamente a trav&eacute;s de Mercado Pago.</p>
+        <a href="/facturas" class="btn btn-primary">Volver a Facturas</a>
+    </div>
+    {% elif resultado == "error" %}
+    <div class="resultado-card resultado-error">
+        <h2>Pago rechazado</h2>
+        <p>El pago no pudo procesarse. Intentá nuevamente o usá otro medio de pago.</p>
+        <a href="/facturas" class="btn btn-primary">Volver a Facturas</a>
+    </div>
+    {% else %}
+    <div class="resultado-card resultado-pendiente">
+        <h2>Pago pendiente</h2>
+        <p>El pago est&aacute; siendo procesado. Te notificaremos cuando se confirme.</p>
+        <a href="/facturas" class="btn btn-primary">Volver a Facturas</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

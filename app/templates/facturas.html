@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Facturas - FactuApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Facturas</h2>
+    <button class="btn btn-primary" onclick="mostrarFormFactura()">Nueva Factura</button>
+</div>
+
+<!-- Modal crear factura -->
+<div id="modal-factura" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Nueva Factura</h3>
+            <button class="btn-close" onclick="cerrarModal('modal-factura')">&times;</button>
+        </div>
+        <form id="form-factura" onsubmit="crearFactura(event)">
+            <div class="form-group">
+                <label>Cliente</label>
+                <select id="factura-cliente" required></select>
+            </div>
+            <div class="form-group">
+                <label>IVA (%)</label>
+                <input type="number" id="factura-iva" value="21" step="0.1" min="0">
+            </div>
+            <div class="form-group">
+                <label>Notas</label>
+                <textarea id="factura-notas" rows="2"></textarea>
+            </div>
+            <h4>Items</h4>
+            <div id="items-container"></div>
+            <button type="button" class="btn btn-secondary" onclick="agregarItem()">+ Agregar Item</button>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Crear Factura</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Filtro -->
+<div class="filtros">
+    <select id="filtro-estado" onchange="cargarFacturas()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagada">Pagada</option>
+        <option value="vencida">Vencida</option>
+        <option value="cancelada">Cancelada</option>
+    </select>
+</div>
+
+<table class="data-table" id="tabla-facturas">
+    <thead>
+        <tr>
+            <th>N&uacute;mero</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="facturas-body">
+        <tr><td colspan="6" class="empty">Cargando...</td></tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => { cargarFacturas(); });
+
+async function cargarFacturas() {
+    const estado = document.getElementById('filtro-estado').value;
+    const url = estado ? `/api/facturas/?estado=${estado}` : '/api/facturas/';
+    const res = await fetch(url);
+    const facturas = await res.json();
+    const tbody = document.getElementById('facturas-body');
+
+    if (!facturas.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay facturas</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = facturas.map(f => `
+        <tr>
+            <td>${f.numero}</td>
+            <td>${f.cliente_id}</td>
+            <td>$${f.total.toFixed(0)}</td>
+            <td><span class="badge badge-${f.estado}">${f.estado}</span></td>
+            <td>${new Date(f.fecha_emision).toLocaleDateString('es-AR')}</td>
+            <td class="acciones">
+                <button class="btn btn-sm" onclick="generarPagoMP(${f.id})" title="Cobrar con MP">MP</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarFactura(${f.id})" title="Eliminar">X</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function mostrarFormFactura() {
+    const res = await fetch('/api/clientes/');
+    const clientes = await res.json();
+    const select = document.getElementById('factura-cliente');
+    select.innerHTML = clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    document.getElementById('items-container').innerHTML = '';
+    agregarItem();
+    document.getElementById('modal-factura').style.display = 'flex';
+}
+
+function agregarItem() {
+    const container = document.getElementById('items-container');
+    const idx = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.innerHTML = `
+        <input type="text" placeholder="Descripci\u00f3n" class="item-desc" required>
+        <input type="number" placeholder="Cant." class="item-cant" value="1" min="1" required>
+        <input type="number" placeholder="Precio" class="item-precio" step="0.01" min="0" required>
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">X</button>
+    `;
+    container.appendChild(div);
+}
+
+async function crearFactura(e) {
+    e.preventDefault();
+    const items = [...document.querySelectorAll('.item-row')].map(row => ({
+        descripcion: row.querySelector('.item-desc').value,
+        cantidad: parseInt(row.querySelector('.item-cant').value),
+        precio_unitario: parseFloat(row.querySelector('.item-precio').value),
+    }));
+
+    const body = {
+        cliente_id: parseInt(document.getElementById('factura-cliente').value),
+        impuesto_porcentaje: parseFloat(document.getElementById('factura-iva').value),
+        notas: document.getElementById('factura-notas').value || null,
+        items,
+    };
+
+    const res = await fetch('/api/facturas/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+        cerrarModal('modal-factura');
+        cargarFacturas();
+    } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al crear factura');
+    }
+}
+
+async function generarPagoMP(facturaId) {
+    const res = await fetch(`/api/mercadopago/crear-pago/${facturaId}`, {method: 'POST'});
+    const data = await res.json();
+    if (res.ok) {
+        window.open(data.link_pago || data.link_sandbox, '_blank');
+    } else {
+        alert(data.detail || 'Error al generar link de pago');
+    }
+}
+
+async function eliminarFactura(id) {
+    if (!confirm('Eliminar esta factura?')) return;
+    await fetch(`/api/facturas/${id}`, {method: 'DELETE'});
+    cargarFacturas();
+}
+
+function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+{% endblock %}
