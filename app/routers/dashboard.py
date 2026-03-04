@@ -11,12 +11,12 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/")
-def dashboard(request: Request, db: Session = Depends(get_db)):
-    analisis = obtener_analisis_completo(db, dias=30)
+def dashboard(request: Request, dias: int = 30, db: Session = Depends(get_db)):
+    analisis = obtener_analisis_completo(db, dias=dias)
     meta = obtener_estrategia_meta(db)
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "analisis": analisis, "meta": meta},
+        {"request": request, "analisis": analisis, "meta": meta, "dias": dias},
     )
 
 
