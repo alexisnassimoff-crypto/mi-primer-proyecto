@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Meta Ads &amp; Leads - FactuApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Meta Ads &amp; Leads</h2>
+    <div>
+        <button class="btn btn-secondary" onclick="sincronizarMeta()">Sincronizar con Meta</button>
+        <button class="btn btn-primary" onclick="mostrarFormLead()">+ Nuevo Lead</button>
+    </div>
+</div>
+
+<!-- KPIs de Meta -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-ingresos">
+        <div class="kpi-label">Invertido en Ads</div>
+        <div class="kpi-value">${{ "%.0f"|format(estrategia.resumen.total_gastado) }}</div>
+        <div class="kpi-detail">CPL: ${{ "%.0f"|format(estrategia.resumen.costo_por_lead) }}</div>
+    </div>
+    <div class="kpi-card kpi-pendiente">
+        <div class="kpi-label">Total Leads</div>
+        <div class="kpi-value">{{ estrategia.resumen.total_leads }}</div>
+        <div class="kpi-detail">FB: {{ estrategia.por_plataforma.facebook }} / IG: {{ estrategia.por_plataforma.instagram }}</div>
+    </div>
+    <div class="kpi-card {% if estrategia.resumen.tasa_conversion >= 10 %}kpi-ganancia{% else %}kpi-gastos{% endif %}">
+        <div class="kpi-label">Tasa Conversi&oacute;n</div>
+        <div class="kpi-value">{{ estrategia.resumen.tasa_conversion }}%</div>
+        <div class="kpi-detail">{{ estrategia.resumen.total_convertidos }} convertidos</div>
+    </div>
+    <div class="kpi-card {% if estrategia.resumen.roi >= 0 %}kpi-ganancia{% else %}kpi-gastos{% endif %}">
+        <div class="kpi-label">ROI Publicidad</div>
+        <div class="kpi-value">{{ estrategia.resumen.roi }}%</div>
+        <div class="kpi-detail">Ingresos: ${{ "%.0f"|format(estrategia.resumen.ingresos_por_leads) }}</div>
+    </div>
+</div>
+
+<!-- Pipeline de Leads -->
+<section class="section">
+    <h3>Pipeline de Leads</h3>
+    <div class="pipeline">
+        <div class="pipeline-stage stage-nuevo">
+            <div class="stage-count">{{ estrategia.pipeline.nuevos }}</div>
+            <div class="stage-label">Nuevos</div>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-stage stage-contactado">
+            <div class="stage-count">{{ estrategia.pipeline.contactados }}</div>
+            <div class="stage-label">Contactados</div>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-stage stage-negociando">
+            <div class="stage-count">{{ estrategia.pipeline.negociando }}</div>
+            <div class="stage-label">Negociando</div>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-stage stage-convertido">
+            <div class="stage-count">{{ estrategia.pipeline.convertidos }}</div>
+            <div class="stage-label">Convertidos</div>
+        </div>
+        <div class="pipeline-stage stage-perdido">
+            <div class="stage-count">{{ estrategia.pipeline.perdidos }}</div>
+            <div class="stage-label">Perdidos</div>
+        </div>
+    </div>
+</section>
+
+<!-- Sugerencias de Estrategia -->
+{% if estrategia.sugerencias %}
+<section class="section">
+    <h3>Estrategia &amp; Sugerencias</h3>
+    <div class="sugerencias-grid">
+        {% for sug in estrategia.sugerencias %}
+        <div class="sugerencia-card sugerencia-{{ sug.tipo }}">
+            <div class="sugerencia-header">
+                <span class="sugerencia-badge badge-{{ sug.prioridad }}">{{ sug.prioridad }}</span>
+                <span class="sugerencia-kpi">{{ sug.kpi }}</span>
+            </div>
+            <h4>{{ sug.titulo }}</h4>
+            <p>{{ sug.mensaje }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Campanas -->
+<section class="section">
+    <h3>Campa&ntilde;as</h3>
+    <table class="data-table" id="tabla-campanas">
+        <thead>
+            <tr>
+                <th>Campa&ntilde;a</th>
+                <th>Estado</th>
+                <th>Gastado</th>
+                <th>Leads</th>
+                <th>CPL</th>
+                <th>CTR</th>
+                <th>Conversiones</th>
+            </tr>
+        </thead>
+        <tbody id="campanas-body">
+            {% for c in estrategia.campanas %}
+            <tr>
+                <td>{{ c.nombre }}</td>
+                <td><span class="badge">{{ c.estado or 'local' }}</span></td>
+                <td>${{ "%.0f"|format(c.gastado) }}</td>
+                <td>{{ c.leads }}</td>
+                <td>${{ "%.0f"|format(c.cpl) }}</td>
+                <td>{{ "%.2f"|format(c.ctr) }}%</td>
+                <td>{{ c.conversiones }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="empty">Sin campa&ntilde;as. Sincroniz&aacute; con Meta o carg&aacute; leads manualmente.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<!-- Leads -->
+<section class="section">
+    <h3>Leads</h3>
+    <div class="filtros">
+        <select id="filtro-estado-lead" onchange="cargarLeads()">
+            <option value="">Todos los estados</option>
+            <option value="nuevo">Nuevos</option>
+            <option value="contactado">Contactados</option>
+            <option value="interesado">Interesados</option>
+            <option value="negociando">Negociando</option>
+            <option value="convertido">Convertidos</option>
+            <option value="perdido">Perdidos</option>
+        </select>
+        <select id="filtro-origen" onchange="cargarLeads()">
+            <option value="">Todos los or&iacute;genes</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="manual">Manual</option>
+        </select>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Origen</th>
+                <th>Estado</th>
+                <th>Valor Est.</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="leads-body">
+            <tr><td colspan="7" class="empty">Cargando...</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Modal nuevo lead -->
+<div id="modal-lead" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Nuevo Lead</h3>
+            <button class="btn-close" onclick="cerrarModal('modal-lead')">&times;</button>
+        </div>
+        <form id="form-lead" onsubmit="crearLead(event)">
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="lead-nombre" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="lead-email">
+                </div>
+                <div class="form-group">
+                    <label>Tel&eacute;fono</label>
+                    <input type="text" id="lead-telefono">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Origen</label>
+                    <select id="lead-origen">
+                        <option value="manual">Manual</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="whatsapp">WhatsApp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor Estimado ($)</label>
+                    <input type="number" id="lead-valor" step="0.01" min="0" value="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notas</label>
+                <textarea id="lead-notas" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar Lead</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', cargarLeads);
+
+async function cargarLeads() {
+    const estado = document.getElementById('filtro-estado-lead').value;
+    const origen = document.getElementById('filtro-origen').value;
+    let url = '/api/leads/?';
+    if (estado) url += `estado=${estado}&`;
+    if (origen) url += `origen=${origen}&`;
+
+    const res = await fetch(url);
+    const leads = await res.json();
+    const tbody = document.getElementById('leads-body');
+
+    if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">No hay leads</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = leads.map(l => `
+        <tr>
+            <td><strong>${l.nombre}</strong></td>
+            <td>${l.email || ''} ${l.telefono ? '<br>' + l.telefono : ''}</td>
+            <td><span class="badge badge-origen-${l.origen}">${l.origen}</span></td>
+            <td>
+                <select class="select-estado" onchange="cambiarEstadoLead(${l.id}, this.value)">
+                    ${['nuevo','contactado','interesado','negociando','convertido','perdido'].map(e =>
+                        `<option value="${e}" ${l.estado === e ? 'selected' : ''}>${e}</option>`
+                    ).join('')}
+                </select>
+            </td>
+            <td>$${l.valor_estimado.toFixed(0)}</td>
+            <td>${new Date(l.creado_en).toLocaleDateString('es-AR')}</td>
+            <td class="acciones">
+                ${l.estado !== 'convertido' ? `<button class="btn btn-sm btn-primary" onclick="convertirLead(${l.id})" title="Convertir a cliente">Cliente</button>` : '<span class="badge badge-pagada">Convertido</span>'}
+                <button class="btn btn-sm btn-danger" onclick="eliminarLead(${l.id})">X</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function mostrarFormLead() {
+    document.getElementById('form-lead').reset();
+    document.getElementById('modal-lead').style.display = 'flex';
+}
+
+async function crearLead(e) {
+    e.preventDefault();
+    const params = new URLSearchParams({
+        nombre: document.getElementById('lead-nombre').value,
+        origen: document.getElementById('lead-origen').value,
+        valor_estimado: document.getElementById('lead-valor').value || '0',
+    });
+    const email = document.getElementById('lead-email').value;
+    const telefono = document.getElementById('lead-telefono').value;
+    const notas = document.getElementById('lead-notas').value;
+    if (email) params.append('email', email);
+    if (telefono) params.append('telefono', telefono);
+    if (notas) params.append('notas', notas);
+
+    const res = await fetch(`/api/leads/?${params}`, { method: 'POST' });
+    if (res.ok) {
+        cerrarModal('modal-lead');
+        cargarLeads();
+        // Recargar para actualizar KPIs
+        setTimeout(() => location.reload(), 300);
+    } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al crear lead');
+    }
+}
+
+async function cambiarEstadoLead(id, estado) {
+    await fetch(`/api/leads/${id}/estado?estado=${estado}`, { method: 'PATCH' });
+}
+
+async function convertirLead(id) {
+    if (!confirm('Convertir este lead en cliente del sistema?')) return;
+    const res = await fetch(`/api/leads/${id}/convertir`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+        alert(data.mensaje);
+        cargarLeads();
+        setTimeout(() => location.reload(), 300);
+    } else {
+        alert(data.detail || 'Error');
+    }
+}
+
+async function eliminarLead(id) {
+    if (!confirm('Eliminar este lead?')) return;
+    await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+    cargarLeads();
+    setTimeout(() => location.reload(), 300);
+}
+
+async function sincronizarMeta() {
+    const btn = event.target;
+    btn.textContent = 'Sincronizando...';
+    btn.disabled = true;
+    try {
+        const res = await fetch('/api/meta/sincronizar', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            alert(`Sincronizado: ${data.campanas.total} campanas, ${data.leads.nuevos_leads} leads nuevos`);
+            location.reload();
+        } else {
+            alert(data.detail || 'Error al sincronizar');
+        }
+    } catch (err) {
+        alert('Error de conexion. Verifica las credenciales de Meta en .env');
+    }
+    btn.textContent = 'Sincronizar con Meta';
+    btn.disabled = false;
+}
+
+function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+{% endblock %}

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.analytics_service import obtener_analisis_completo
+from app.services.meta_service import obtener_estrategia_meta
 
 router = APIRouter(tags=["dashboard"])
 templates = Jinja2Templates(directory="app/templates")
@@ -12,9 +13,10 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/")
 def dashboard(request: Request, db: Session = Depends(get_db)):
     analisis = obtener_analisis_completo(db, dias=30)
+    meta = obtener_estrategia_meta(db)
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "analisis": analisis},
+        {"request": request, "analisis": analisis, "meta": meta},
     )
 
 

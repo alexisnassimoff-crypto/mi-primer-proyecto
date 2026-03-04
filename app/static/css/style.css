@@ -344,6 +344,48 @@ body {
 .resultado-error { border-top: 4px solid var(--danger); }
 .resultado-pendiente { border-top: 4px solid var(--warning); }
 
+/* === Pipeline Leads === */
+.pipeline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 16px 0;
+}
+
+.pipeline-stage {
+    text-align: center;
+    padding: 16px 24px;
+    border-radius: var(--radius);
+    min-width: 100px;
+}
+
+.pipeline-arrow { font-size: 1.5rem; color: var(--text-light); }
+.stage-count { font-size: 2rem; font-weight: 700; }
+.stage-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.stage-nuevo { background: #eff6ff; color: #1d4ed8; }
+.stage-contactado { background: #fefce8; color: #a16207; }
+.stage-negociando { background: #fdf4ff; color: #9333ea; }
+.stage-convertido { background: #f0fdf4; color: #15803d; }
+.stage-perdido { background: #fef2f2; color: #dc2626; margin-left: auto; }
+
+.select-estado {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    background: var(--surface);
+}
+
+.badge-origen-facebook { background: #eff6ff; color: #1d4ed8; }
+.badge-origen-instagram { background: #fdf4ff; color: #9333ea; }
+.badge-origen-whatsapp { background: #f0fdf4; color: #15803d; }
+.badge-origen-manual { background: #f1f5f9; color: var(--text-light); }
+
+.sugerencia-card.sugerencia-accion { border-left-color: var(--primary); }
+.sugerencia-card.sugerencia-estrategia { border-left-color: #9333ea; }
+
 /* === Responsive === */
 @media (max-width: 768px) {
     .sidebar { width: 100%; position: relative; }

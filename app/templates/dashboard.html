@@ -100,6 +100,35 @@
     </section>
 </div>
 
+<!-- Meta Ads Resumen -->
+{% if meta.resumen.total_leads > 0 or meta.resumen.total_gastado > 0 %}
+<section class="section">
+    <h3>Meta Ads - Resumen <a href="/meta" style="font-size:0.8rem; margin-left:8px">Ver todo &rarr;</a></h3>
+    <div class="kpi-grid" style="margin-bottom:0">
+        <div class="kpi-card kpi-pendiente">
+            <div class="kpi-label">Leads</div>
+            <div class="kpi-value">{{ meta.resumen.total_leads }}</div>
+            <div class="kpi-detail">{{ meta.pipeline.nuevos }} sin contactar</div>
+        </div>
+        <div class="kpi-card kpi-ingresos">
+            <div class="kpi-label">Convertidos</div>
+            <div class="kpi-value">{{ meta.resumen.total_convertidos }}</div>
+            <div class="kpi-detail">Tasa: {{ meta.resumen.tasa_conversion }}%</div>
+        </div>
+        <div class="kpi-card kpi-gastos">
+            <div class="kpi-label">Invertido</div>
+            <div class="kpi-value">${{ "%.0f"|format(meta.resumen.total_gastado) }}</div>
+            <div class="kpi-detail">CPL: ${{ "%.0f"|format(meta.resumen.costo_por_lead) }}</div>
+        </div>
+        <div class="kpi-card {% if meta.resumen.roi >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
+            <div class="kpi-label">ROI Ads</div>
+            <div class="kpi-value">{{ meta.resumen.roi }}%</div>
+            <div class="kpi-detail">Retorno publicidad</div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
 <!-- Gastos por categoría -->
 <section class="section">
     <h3>Gastos por Categor&iacute;a</h3>

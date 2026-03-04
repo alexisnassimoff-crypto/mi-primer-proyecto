@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import Base, engine
 from app.routers import clientes, productos, facturas, gastos, pagos
-from app.routers import mercadopago, analytics, dashboard
+from app.routers import mercadopago, analytics, dashboard, meta
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
@@ -29,3 +29,4 @@ app.include_router(analytics.router)
 
 # Pages
 app.include_router(dashboard.router)
+app.include_router(meta.router)
