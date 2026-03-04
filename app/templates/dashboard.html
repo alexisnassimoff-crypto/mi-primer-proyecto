@@ -14,81 +14,87 @@
     </div>
 </div>
 
-<!-- Vision General -->
+<!-- Vision General: Grafico 50% + KPIs 50% -->
 <div class="vision-general">
     <div class="vision-header">
-        <h3>Visi&oacute;n General</h3>
+        <h3>Visi&oacute;n General {{ analisis.facturacion_anual.anio }}</h3>
         <span class="vision-periodo">
-            {{ analisis.resumen.total_facturas }} facturas &middot; {{ analisis.resumen.total_clientes if analisis.resumen.total_clientes is defined else '' }} clientes
+            {{ analisis.resumen.total_facturas }} facturas &middot; {{ analisis.resumen.total_clientes }} clientes
         </span>
     </div>
-    <div class="kpi-grid" style="margin-bottom:0">
-        <div class="kpi-card kpi-ingresos">
-            <div class="kpi-label">Ingresos</div>
-            <div class="kpi-value" id="kpi-ingresos">${{ "%.0f"|format(analisis.resumen.ingresos) }}</div>
-            <div class="kpi-detail">Facturado y cobrado</div>
+    <div class="vision-contenido">
+        <div class="vision-grafico">
+            <canvas id="chartAnual"></canvas>
+            <div class="grafico-footer">
+                <span>Total anual: <strong>${{ "%.0f"|format(analisis.facturacion_anual.total_anual) }}</strong></span>
+                <span>Promedio mensual: <strong>${{ "%.0f"|format(analisis.facturacion_anual.promedio_mensual) }}</strong></span>
+                {% if analisis.facturacion_anual.variacion_mensual != 0 %}
+                <span class="{% if analisis.facturacion_anual.variacion_mensual > 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if analisis.facturacion_anual.variacion_mensual > 0 %}+{% endif %}{{ analisis.facturacion_anual.variacion_mensual }}% vs mes anterior
+                </span>
+                {% endif %}
+            </div>
         </div>
-        <div class="kpi-card kpi-gastos">
-            <div class="kpi-label">Gastos</div>
-            <div class="kpi-value" id="kpi-gastos">${{ "%.0f"|format(analisis.resumen.gastos) }}</div>
-            <div class="kpi-detail">Total de egresos</div>
-        </div>
-        <div class="kpi-card {% if analisis.resumen.ganancia_neta >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
-            <div class="kpi-label">Ganancia Neta</div>
-            <div class="kpi-value" id="kpi-ganancia">${{ "%.0f"|format(analisis.resumen.ganancia_neta) }}</div>
-            <div class="kpi-detail">Margen: {{ analisis.resumen.margen_porcentaje }}%</div>
-        </div>
-        <div class="kpi-card kpi-pendiente">
-            <div class="kpi-label">Por Cobrar</div>
-            <div class="kpi-value" id="kpi-pendiente">${{ "%.0f"|format(analisis.resumen.monto_pendiente) }}</div>
-            <div class="kpi-detail">{{ analisis.resumen.facturas_pendientes }} factura(s) pendiente(s)</div>
+        <div class="vision-kpis">
+            <div class="kpi-card kpi-ingresos">
+                <div class="kpi-label">Ingresos</div>
+                <div class="kpi-value">${{ "%.0f"|format(analisis.resumen.ingresos) }}</div>
+                <div class="kpi-detail">Facturado y cobrado</div>
+            </div>
+            <div class="kpi-card kpi-gastos">
+                <div class="kpi-label">Gastos</div>
+                <div class="kpi-value">${{ "%.0f"|format(analisis.resumen.gastos) }}</div>
+                <div class="kpi-detail">Total de egresos</div>
+            </div>
+            <div class="kpi-card {% if analisis.resumen.ganancia_neta >= 0 %}kpi-ganancia{% else %}kpi-perdida{% endif %}">
+                <div class="kpi-label">Ganancia Neta</div>
+                <div class="kpi-value">${{ "%.0f"|format(analisis.resumen.ganancia_neta) }}</div>
+                <div class="kpi-detail">Margen: {{ analisis.resumen.margen_porcentaje }}%</div>
+            </div>
+            <div class="kpi-card kpi-pendiente">
+                <div class="kpi-label">Por Cobrar</div>
+                <div class="kpi-value">${{ "%.0f"|format(analisis.resumen.monto_pendiente) }}</div>
+                <div class="kpi-detail">{{ analisis.resumen.facturas_pendientes }} pendiente(s)</div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Sugerencias -->
-{% if analisis.sugerencias %}
+<!-- Indicadores Financieros -->
 <section class="section">
-    <h3>Sugerencias para tu negocio</h3>
-    <div class="sugerencias-grid">
-        {% for sug in analisis.sugerencias %}
-        <div class="sugerencia-card sugerencia-{{ sug.tipo }}">
-            <div class="sugerencia-header">
-                <span class="sugerencia-badge badge-{{ sug.prioridad }}">{{ sug.prioridad }}</span>
-                <span class="sugerencia-kpi">{{ sug.kpi }}</span>
-            </div>
-            <h4>{{ sug.titulo }}</h4>
-            <p>{{ sug.mensaje }}</p>
+    <h3>Indicadores Financieros</h3>
+    <div class="indicadores-grid">
+        <div class="indicador">
+            <div class="indicador-valor">${{ "%.0f"|format(analisis.indicadores.ticket_promedio) }}</div>
+            <div class="indicador-label">Ticket Promedio</div>
         </div>
-        {% endfor %}
+        <div class="indicador">
+            <div class="indicador-valor">{{ analisis.indicadores.ratio_cobro }}%</div>
+            <div class="indicador-label">Ratio de Cobro</div>
+        </div>
+        <div class="indicador">
+            <div class="indicador-valor">${{ "%.0f"|format(analisis.indicadores.ingreso_por_cliente) }}</div>
+            <div class="indicador-label">Ingreso / Cliente</div>
+        </div>
+        <div class="indicador">
+            <div class="indicador-valor">{{ analisis.indicadores.facturas_por_semana }}</div>
+            <div class="indicador-label">Facturas / Semana</div>
+        </div>
+        <div class="indicador">
+            <div class="indicador-valor">{{ analisis.indicadores.clientes_activos }}</div>
+            <div class="indicador-label">Clientes Activos</div>
+        </div>
+        <div class="indicador">
+            <div class="indicador-valor">{{ analisis.indicadores.productos_activos }}</div>
+            <div class="indicador-label">Productos Activos</div>
+        </div>
     </div>
 </section>
-{% endif %}
 
-<!-- Rankings -->
+<!-- Productos + Clientes -->
 <div class="grid-2">
     <section class="section">
-        <h3>Top Clientes</h3>
-        <table class="data-table">
-            <thead>
-                <tr><th>Cliente</th><th>Facturado</th><th>Facturas</th></tr>
-            </thead>
-            <tbody>
-                {% for c in analisis.top_clientes %}
-                <tr>
-                    <td>{{ c.cliente }}</td>
-                    <td>${{ "%.0f"|format(c.total_facturado) }}</td>
-                    <td>{{ c.facturas }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="3" class="empty">Sin datos a&uacute;n</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
-
-    <section class="section">
-        <h3>Top Productos</h3>
+        <h3>Productos M&aacute;s Vendidos</h3>
         <table class="data-table">
             <thead>
                 <tr><th>Producto</th><th>Vendidos</th><th>Total</th></tr>
@@ -96,7 +102,7 @@
             <tbody>
                 {% for p in analisis.top_productos %}
                 <tr>
-                    <td>{{ p.producto }}</td>
+                    <td><strong>{{ p.producto }}</strong></td>
                     <td>{{ p.unidades_vendidas }}</td>
                     <td>${{ "%.0f"|format(p.total) }}</td>
                 </tr>
@@ -106,12 +112,52 @@
             </tbody>
         </table>
     </section>
+
+    <section class="section">
+        <h3>Clientes Top</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Cliente</th><th>Facturado</th><th>Facturas</th></tr>
+            </thead>
+            <tbody>
+                {% for c in analisis.top_clientes %}
+                <tr>
+                    <td><strong>{{ c.cliente }}</strong></td>
+                    <td>${{ "%.0f"|format(c.total_facturado) }}</td>
+                    <td>{{ c.facturas }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">Sin datos a&uacute;n</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 </div>
+
+<!-- Gastos por Categoria -->
+<section class="section">
+    <h3>Gastos por Categor&iacute;a</h3>
+    <div class="gastos-barras">
+        {% for g in analisis.gastos_por_categoria %}
+        <div class="gasto-barra">
+            <div class="gasto-barra-label">
+                <span>{{ g.categoria }}</span>
+                <span>${{ "%.0f"|format(g.total) }} ({{ g.porcentaje }}%)</span>
+            </div>
+            <div class="barra-container">
+                <div class="barra-fill" style="width: {{ g.porcentaje }}%"></div>
+            </div>
+        </div>
+        {% else %}
+        <p class="empty">Sin gastos registrados</p>
+        {% endfor %}
+    </div>
+</section>
 
 <!-- Meta Ads Resumen -->
 {% if meta.resumen.total_leads > 0 or meta.resumen.total_gastado > 0 %}
 <section class="section">
-    <h3>Meta Ads - Resumen <a href="/meta" style="font-size:0.8rem; margin-left:8px">Ver todo &rarr;</a></h3>
+    <h3>Meta Ads <a href="/meta" style="font-size:0.8rem; margin-left:8px">Ver todo &rarr;</a></h3>
     <div class="kpi-grid" style="margin-bottom:0">
         <div class="kpi-card kpi-pendiente">
             <div class="kpi-label">Leads</div>
@@ -137,32 +183,129 @@
 </section>
 {% endif %}
 
-<!-- Gastos por categoría -->
+<!-- Sugerencias -->
+{% if analisis.sugerencias %}
 <section class="section">
-    <h3>Gastos por Categor&iacute;a</h3>
-    <div class="gastos-barras">
-        {% for g in analisis.gastos_por_categoria %}
-        <div class="gasto-barra">
-            <div class="gasto-barra-label">
-                <span>{{ g.categoria }}</span>
-                <span>${{ "%.0f"|format(g.total) }} ({{ g.porcentaje }}%)</span>
+    <h3>Sugerencias para tu negocio</h3>
+    <div class="sugerencias-grid">
+        {% for sug in analisis.sugerencias %}
+        <div class="sugerencia-card sugerencia-{{ sug.tipo }}">
+            <div class="sugerencia-header">
+                <span class="sugerencia-badge badge-{{ sug.prioridad }}">{{ sug.prioridad }}</span>
+                <span class="sugerencia-kpi">{{ sug.kpi }}</span>
             </div>
-            <div class="barra-container">
-                <div class="barra-fill" style="width: {{ g.porcentaje }}%"></div>
-            </div>
+            <h4>{{ sug.titulo }}</h4>
+            <p>{{ sug.mensaje }}</p>
         </div>
-        {% else %}
-        <p class="empty">Sin gastos registrados</p>
         {% endfor %}
     </div>
 </section>
+{% endif %}
+
+<!-- Inteligencia de Negocio -->
+{% if analisis.inteligencia %}
+<section class="section seccion-inteligencia">
+    <h3>An&aacute;lisis &amp; Estrategia</h3>
+    <p class="seccion-subtitulo">Reflexiones basadas en tus datos para tomar mejores decisiones</p>
+    <div class="inteligencia-grid">
+        {% for insight in analisis.inteligencia %}
+        <div class="insight-card insight-{{ insight.icono }}">
+            <div class="insight-categoria">{{ insight.categoria }}</div>
+            <h4>{{ insight.titulo }}</h4>
+            <p class="insight-analisis">{{ insight.analisis }}</p>
+            <div class="insight-accion">
+                <strong>Acci&oacute;n:</strong> {{ insight.accion }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 function cambiarPeriodo(dias) {
     window.location.href = '/?dias=' + dias;
+}
+
+// Grafico anual
+const ctx = document.getElementById('chartAnual');
+if (ctx) {
+    const meses = {{ analisis.facturacion_anual.meses | tojson }};
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: meses.map(m => m.mes),
+            datasets: [
+                {
+                    label: 'Facturado',
+                    data: meses.map(m => m.facturado),
+                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'Gastos',
+                    data: meses.map(m => m.gastos),
+                    backgroundColor: 'rgba(220, 38, 38, 0.3)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'Ganancia',
+                    data: meses.map(m => m.ganancia),
+                    type: 'line',
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#16a34a',
+                    borderWidth: 2,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { usePointStyle: true, padding: 16, font: { size: 11 } }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 },
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('es-AR');
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v),
+                        font: { size: 11 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                }
+            }
+        }
+    });
 }
 </script>
 {% endblock %}
