@@ -41,7 +41,7 @@ export default function LoginPage() {
           {/* Demo credentials */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm font-semibold text-blue-800 mb-1">Cuenta Demo:</p>
-            <p className="text-sm text-blue-600">Email: demo@centraleyewear.com</p>
+            <p className="text-sm text-blue-600">Email: demo@central-eyewear.com</p>
             <p className="text-sm text-blue-600">Contraseña: demo123</p>
           </div>
 

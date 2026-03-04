@@ -10,7 +10,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Glasses size={28} className="text-gold" />
-              <span className="text-xl font-bold font-[var(--font-display)]">CENTRAL EYEWEAR</span>
+              <span className="text-xl font-bold font-[var(--font-display)]">CENTRAL-Eyewear</span>
             </div>
             <p className="text-gray-300 text-sm mb-4">
               Distribuidor mayorista líder en anteojos de las mejores marcas.
@@ -85,7 +85,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-300">
                 <Mail size={16} className="shrink-0" />
-                ventas@centraleyewear.com
+                ventas@central-eyewear.com
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-300">
                 <Clock size={16} className="shrink-0" />
@@ -99,7 +99,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-400">
-          <p>&copy; 2026 Central Eyewear. Todos los derechos reservados.</p>
+          <p>&copy; 2026 CENTRAL-Eyewear. Todos los derechos reservados.</p>
           <div className="flex gap-4 mt-2 sm:mt-0">
             <a href="#" className="hover:text-gold transition-colors">Términos y Condiciones</a>
             <a href="#" className="hover:text-gold transition-colors">Política de Privacidad</a>

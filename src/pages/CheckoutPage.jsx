@@ -193,9 +193,9 @@ export default function CheckoutPage() {
                 <div className="mt-4 bg-surface p-4 rounded-lg text-sm">
                   <p className="font-semibold mb-2">Datos bancarios:</p>
                   <p>Banco: Banco Nación Argentina</p>
-                  <p>Titular: Central Eyewear SRL</p>
+                  <p>Titular: CENTRAL-Eyewear SRL</p>
                   <p>CBU: 0110000000000000000000</p>
-                  <p>Alias: CENTRAL.EYEWEAR</p>
+                  <p>Alias: CENTRAL-EYEWEAR</p>
                 </div>
               )}
 

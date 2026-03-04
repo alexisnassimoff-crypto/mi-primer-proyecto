@@ -32,7 +32,7 @@ export default function Header() {
               <Phone size={14} /> +54 11 4567-8900
             </span>
             <span className="flex items-center gap-1">
-              <Mail size={14} /> ventas@centraleyewear.com
+              <Mail size={14} /> ventas@central-eyewear.com
             </span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
@@ -58,7 +58,7 @@ export default function Header() {
               <Glasses size={36} className="text-accent" />
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-primary leading-none font-[var(--font-display)]">
-                  CENTRAL EYEWEAR
+                  CENTRAL-Eyewear
                 </h1>
                 <span className="text-xs text-gray-500 tracking-widest">VENTA MAYORISTA</span>
               </div>

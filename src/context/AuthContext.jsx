@@ -5,7 +5,7 @@ const AuthContext = createContext();
 const mockUsers = [
   {
     id: 1,
-    email: 'demo@centraleyewear.com',
+    email: 'demo@central-eyewear.com',
     password: 'demo123',
     name: 'Óptica Demo',
     company: 'Óptica Central SRL',

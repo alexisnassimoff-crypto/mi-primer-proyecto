@@ -7,7 +7,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="bg-gradient-to-r from-primary to-primary-light text-white py-20">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Sobre Central Eyewear</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Sobre CENTRAL-Eyewear</h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Más de 15 años siendo el distribuidor mayorista de anteojos de confianza para ópticas de todo el país.
           </p>
@@ -20,7 +20,7 @@ export default function AboutPage() {
           <div>
             <h2 className="text-3xl font-bold text-primary mb-6">Nuestra Historia</h2>
             <p className="text-gray-600 mb-4">
-              Central Eyewear nació en 2010 con una visión clara: democratizar el acceso a anteojos de marcas premium
+              CENTRAL-Eyewear nació en 2010 con una visión clara: democratizar el acceso a anteojos de marcas premium
               para ópticas y revendedores en toda Argentina.
             </p>
             <p className="text-gray-600 mb-4">

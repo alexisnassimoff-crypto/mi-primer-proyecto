@@ -37,7 +37,7 @@ export default function ContactPage() {
               {[
                 { icon: <MapPin size={22} />, title: 'Dirección', lines: ['Av. Corrientes 5678, Piso 3', 'C1043 - CABA, Argentina'] },
                 { icon: <Phone size={22} />, title: 'Teléfono', lines: ['+54 11 4567-8900', '+54 11 4567-8901'] },
-                { icon: <Mail size={22} />, title: 'Email', lines: ['ventas@centraleyewear.com', 'info@centraleyewear.com'] },
+                { icon: <Mail size={22} />, title: 'Email', lines: ['ventas@central-eyewear.com', 'info@central-eyewear.com'] },
                 { icon: <Clock size={22} />, title: 'Horario', lines: ['Lunes a Viernes: 9:00 - 18:00', 'Sábados: 9:00 - 13:00'] },
               ].map(item => (
                 <div key={item.title} className="flex gap-4 p-4 bg-surface rounded-xl">
