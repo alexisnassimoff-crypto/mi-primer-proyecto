@@ -36,8 +36,8 @@ export default function HomePage() {
       </section>
 
       {/* Categories - 3 columns with lifestyle images */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-[1400px] mx-auto px-6">
+      <section className="py-20 md:py-32">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
@@ -121,7 +121,7 @@ export default function HomePage() {
             ))}
           </svg>
         </div>
-        <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-8 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12 flex flex-col md:flex-row items-center justify-center gap-8 relative z-10">
           <div className="w-16 h-16 rounded-full border border-white/40 flex items-center justify-center shrink-0">
             <svg width="24" height="16" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M1 8C1 8 5 1 12 1C19 1 23 8 23 8C23 8 19 15 12 15C5 15 1 8 1 8Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -138,8 +138,8 @@ export default function HomePage() {
       </section>
 
       {/* New Arrivals */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-[1400px] mx-auto px-6">
+      <section className="py-20 md:py-32">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">NEW ARRIVALS</h2>
             <Link
@@ -164,8 +164,8 @@ export default function HomePage() {
       </section>
 
       {/* Best Sellers */}
-      <section className="bg-[#f8f8f8] py-16 md:py-24">
-        <div className="max-w-[1400px] mx-auto px-6">
+      <section className="bg-[#f8f8f8] py-20 md:py-32">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">BEST SELLERS</h2>
             <Link
@@ -194,7 +194,7 @@ export default function HomePage() {
             backgroundSize: '60px 60px'
           }} />
         </div>
-        <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12 relative z-10">
           <div className="max-w-xl ml-auto text-right">
             <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-4">
               LOCALIZADOR DE TIENDAS
@@ -218,7 +218,7 @@ export default function HomePage() {
 
       {/* Newsletter */}
       <section className="py-14 border-b border-gray-100">
-        <div className="max-w-[1400px] mx-auto px-6">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <h3 className="text-lg md:text-xl font-bold tracking-tight shrink-0">
               SUSCRIBITE A NUESTRO NEWSLETTER

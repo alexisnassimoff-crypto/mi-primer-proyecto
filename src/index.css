@@ -23,7 +23,9 @@ body {
   font-family: var(--font-sans);
   color: #1a1a1a;
   background: #fff;
-  line-height: 1.6;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3 {
@@ -48,21 +50,24 @@ img {
   flex-direction: column;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* Hide number input arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
-::-webkit-scrollbar-track {
-  background: #f5f5f5;
-}
-::-webkit-scrollbar-thumb {
-  background: #ccc;
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 
-/* Smooth hover transitions */
-.hover-lift {
-  transition: transform 0.3s ease;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
 }
-.hover-lift:hover {
-  transform: translateY(-4px);
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 2px;
 }
