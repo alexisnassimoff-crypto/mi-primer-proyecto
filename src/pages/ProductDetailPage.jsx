@@ -15,13 +15,15 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(product?.minOrder || 6);
   const [activeTab, setActiveTab] = useState('description');
   const [added, setAdded] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   if (!product) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-6xl mb-4">😕</p>
+      <div className="max-w-[1400px] mx-auto px-6 py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Producto no encontrado</h2>
-        <Link to="/productos" className="text-accent hover:underline">Volver al catálogo</Link>
+        <Link to="/productos" className="text-sm tracking-[0.15em] underline underline-offset-4 hover:opacity-60">
+          VOLVER AL CATALOGO
+        </Link>
       </div>
     );
   }
@@ -37,84 +39,92 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-[1400px] mx-auto px-6 py-8">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <Link to="/" className="hover:text-accent">Inicio</Link>
-        <ChevronRight size={14} />
-        <Link to="/productos" className="hover:text-accent">Productos</Link>
-        <ChevronRight size={14} />
-        <Link to={`/productos?categoria=${product.category.slug}`} className="hover:text-accent">{product.category.name}</Link>
-        <ChevronRight size={14} />
-        <span className="text-gray-800">{product.name}</span>
+      <nav className="flex items-center gap-2 text-[12px] text-gray-400 mb-8">
+        <Link to="/" className="hover:text-black transition-colors">Inicio</Link>
+        <ChevronRight size={12} />
+        <Link to="/productos" className="hover:text-black transition-colors">Productos</Link>
+        <ChevronRight size={12} />
+        <Link to={`/productos?categoria=${product.category.slug}`} className="hover:text-black transition-colors">{product.category.name}</Link>
+        <ChevronRight size={12} />
+        <span className="text-gray-700">{product.name}</span>
       </nav>
 
-      <div className="grid lg:grid-cols-2 gap-10">
+      <div className="grid lg:grid-cols-2 gap-12">
         {/* Images */}
         <div>
-          <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-            <span className="text-[120px] md:text-[180px]">
-              {product.categoryId === 1 ? '🕶️' : product.categoryId === 3 ? '🥽' : '👓'}
-            </span>
+          <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden">
+            <img
+              src={product.images[selectedImage] || product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
             <div className="absolute top-4 left-4 flex flex-col gap-2">
-              {product.newArrival && <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-semibold">NUEVO</span>}
-              {product.bestSeller && <span className="bg-accent text-white text-xs px-3 py-1 rounded-full font-semibold">TOP VENTA</span>}
-              {product.polarized && <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">POLARIZADO</span>}
+              {product.newArrival && <span className="bg-black text-white text-[10px] tracking-[0.15em] px-3 py-1 font-medium">NEW</span>}
+              {product.bestSeller && <span className="bg-black text-white text-[10px] tracking-[0.15em] px-3 py-1 font-medium">TOP</span>}
+              {product.polarized && <span className="bg-black text-white text-[10px] tracking-[0.15em] px-3 py-1 font-medium">POLARIZADO</span>}
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-accent transition-colors">
-                <span className="text-3xl">{product.categoryId === 1 ? '🕶️' : '👓'}</span>
-              </div>
+          <div className="flex gap-2 mt-3">
+            {product.images.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedImage(i)}
+                className={`w-20 h-20 bg-[#f5f5f5] overflow-hidden border-2 transition-colors ${
+                  selectedImage === i ? 'border-black' : 'border-transparent hover:border-gray-300'
+                }`}
+              >
+                <img src={img} alt="" className="w-full h-full object-cover" />
+              </button>
             ))}
           </div>
         </div>
 
         {/* Info */}
         <div>
-          <p className="text-accent font-semibold uppercase tracking-wide text-sm">{product.brand.name}</p>
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mt-1">{product.name}</h1>
+          <p className="text-[11px] tracking-[0.2em] text-gray-400 uppercase">{product.brand.name}</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">{product.name}</h1>
 
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={16} className={i < Math.floor(product.rating) ? 'fill-gold text-gold' : 'text-gray-300'} />
+                <Star key={i} size={14} className={i < Math.floor(product.rating) ? 'fill-black text-black' : 'text-gray-200'} />
               ))}
-              <span className="text-sm font-medium ml-1">{product.rating}</span>
-              <span className="text-sm text-gray-400">({product.reviews} reseñas)</span>
+              <span className="text-[12px] font-medium ml-1">{product.rating}</span>
+              <span className="text-[12px] text-gray-400">({product.reviews})</span>
             </div>
-            <span className="text-sm text-gray-400">SKU: {product.sku}</span>
+            <span className="text-[11px] text-gray-400 tracking-wide">SKU: {product.sku}</span>
           </div>
 
           {/* Price */}
-          <div className="mt-6 p-4 bg-surface rounded-xl">
+          <div className="mt-6 p-5 bg-[#f8f8f8]">
             <div className="flex items-end gap-3">
-              <span className="text-3xl font-bold text-primary">${currentPrice.toLocaleString()}</span>
-              <span className="text-lg text-gray-400 line-through">${product.retailPrice.toLocaleString()}</span>
-              <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
-                {Math.round((1 - currentPrice / product.retailPrice) * 100)}% OFF
+              <span className="text-2xl font-bold">${currentPrice.toLocaleString()}</span>
+              <span className="text-base text-gray-400 line-through">${product.retailPrice.toLocaleString()}</span>
+              <span className="text-[11px] bg-black text-white px-2 py-0.5 font-medium">
+                -{Math.round((1 - currentPrice / product.retailPrice) * 100)}%
               </span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">Precio por unidad · IVA no incluido</p>
+            <p className="text-[12px] text-gray-400 mt-1">Precio por unidad · IVA no incluido</p>
           </div>
 
           {/* Bulk pricing table */}
-          <div className="mt-4">
-            <h3 className="font-semibold mb-2">Precios por Volumen</h3>
+          <div className="mt-5">
+            <h3 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Precios por Volumen</h3>
             <div className="grid grid-cols-5 gap-2">
               {product.bulkPricing.map(tier => (
                 <button
                   key={tier.qty}
                   onClick={() => setQuantity(tier.qty)}
-                  className={`p-2 rounded-lg border text-center text-sm transition-colors ${
+                  className={`p-2 border text-center text-[12px] transition-colors ${
                     quantity >= tier.qty && (product.bulkPricing.find(t => t.qty > tier.qty)?.qty > quantity || !product.bulkPricing.find(t => t.qty > tier.qty))
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-gray-200 hover:border-accent'
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-200 hover:border-black'
                   }`}
                 >
                   <p className="font-bold">{tier.qty}+</p>
-                  <p className="text-xs">${tier.price}</p>
+                  <p className="text-[11px] opacity-70">${tier.price}</p>
                 </button>
               ))}
             </div>
@@ -122,14 +132,16 @@ export default function ProductDetailPage() {
 
           {/* Color */}
           <div className="mt-6">
-            <h3 className="font-semibold mb-2">Color: <span className="text-accent">{product.colors[selectedColor].name}</span></h3>
+            <h3 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">
+              Color: <span className="font-normal text-gray-500">{product.colors[selectedColor].name}</span>
+            </h3>
             <div className="flex gap-2">
               {product.colors.map((color, i) => (
                 <button
                   key={color.name}
                   onClick={() => setSelectedColor(i)}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
-                    selectedColor === i ? 'border-accent scale-110 shadow-md' : 'border-gray-300 hover:border-gray-400'
+                  className={`w-9 h-9 rounded-full border-2 transition-all ${
+                    selectedColor === i ? 'border-black scale-110' : 'border-gray-200 hover:border-gray-400'
                   }`}
                   style={{ backgroundColor: color.hex }}
                   title={color.name}
@@ -140,42 +152,44 @@ export default function ProductDetailPage() {
 
           {/* Quantity */}
           <div className="mt-6">
-            <h3 className="font-semibold mb-2">Cantidad <span className="text-sm text-gray-400 font-normal">(mín. {product.minOrder} unidades)</span></h3>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center border rounded-lg">
+            <h3 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">
+              Cantidad <span className="font-normal text-gray-400">(min. {product.minOrder} un.)</span>
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center border">
                 <button
                   onClick={() => setQuantity(q => Math.max(product.minOrder, q - product.minOrder))}
-                  className="px-3 py-2 hover:bg-surface transition-colors"
+                  className="px-3 py-2.5 hover:bg-gray-50 transition-colors"
                 >
-                  <Minus size={18} />
+                  <Minus size={16} />
                 </button>
                 <input
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(product.minOrder, parseInt(e.target.value) || product.minOrder))}
-                  className="w-20 text-center py-2 font-medium focus:outline-none"
+                  className="w-16 text-center py-2.5 text-sm font-medium focus:outline-none"
                 />
                 <button
                   onClick={() => setQuantity(q => q + product.minOrder)}
-                  className="px-3 py-2 hover:bg-surface transition-colors"
+                  className="px-3 py-2.5 hover:bg-gray-50 transition-colors"
                 >
-                  <Plus size={18} />
+                  <Plus size={16} />
                 </button>
               </div>
               <p className="text-sm text-gray-500">
-                Total: <span className="font-bold text-primary text-lg">${totalPrice.toLocaleString()}</span>
+                Total: <span className="font-bold text-black text-lg">${totalPrice.toLocaleString()}</span>
               </p>
             </div>
           </div>
 
           {/* Stock */}
-          <p className="mt-4 text-sm">
+          <p className="mt-4 text-[12px]">
             {product.stock > 50 ? (
-              <span className="text-green-600 font-medium">✓ En stock ({product.stock} disponibles)</span>
+              <span className="text-gray-600">En stock ({product.stock} disponibles)</span>
             ) : product.stock > 0 ? (
-              <span className="text-orange-500 font-medium">⚠ Últimas unidades ({product.stock} disponibles)</span>
+              <span className="text-gray-600">Ultimas unidades ({product.stock} disponibles)</span>
             ) : (
-              <span className="text-red-500 font-medium">✗ Sin stock</span>
+              <span className="text-gray-400">Sin stock</span>
             )}
           </p>
 
@@ -184,129 +198,118 @@ export default function ProductDetailPage() {
             <button
               onClick={handleAddToCart}
               disabled={product.stock === 0}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold text-lg transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-[12px] tracking-[0.15em] font-medium transition-all ${
                 added
-                  ? 'bg-green-500 text-white'
-                  : 'bg-accent text-white hover:bg-accent-hover'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  ? 'bg-green-600 text-white'
+                  : 'bg-black text-white hover:bg-gray-800'
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
             >
-              {added ? <><Check size={22} /> Agregado!</> : <><ShoppingCart size={22} /> Agregar al Carrito</>}
+              {added ? <><Check size={18} /> AGREGADO</> : <><ShoppingCart size={18} /> AGREGAR AL CARRITO</>}
             </button>
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-accent hover:text-accent transition-colors">
-              <Heart size={22} />
+            <button className="p-4 border border-gray-200 hover:border-black transition-colors">
+              <Heart size={18} />
             </button>
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-accent hover:text-accent transition-colors">
-              <Share2 size={22} />
+            <button className="p-4 border border-gray-200 hover:border-black transition-colors">
+              <Share2 size={18} />
             </button>
           </div>
 
           {!isAuthenticated && (
-            <p className="mt-3 text-sm text-gray-500 bg-surface p-3 rounded-lg">
-              💡 <Link to="/login" className="text-accent font-medium hover:underline">Iniciá sesión</Link> o{' '}
-              <Link to="/registro" className="text-accent font-medium hover:underline">registrate</Link> para ver precios exclusivos.
+            <p className="mt-4 text-[12px] text-gray-500 bg-[#f8f8f8] p-3">
+              <Link to="/login" className="underline underline-offset-2 hover:text-black">Inicia sesion</Link> o{' '}
+              <Link to="/registro" className="underline underline-offset-2 hover:text-black">registrate</Link> para ver precios exclusivos.
             </p>
           )}
 
           {/* Benefits */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t">
+          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
             <div className="text-center">
-              <Truck size={24} className="mx-auto text-accent mb-1" />
-              <p className="text-xs font-medium">Envío Gratis</p>
-              <p className="text-xs text-gray-400">+$500.000</p>
+              <Truck size={20} className="mx-auto mb-1" strokeWidth={1.5} />
+              <p className="text-[11px] font-medium">Envio Gratis</p>
+              <p className="text-[10px] text-gray-400">+$500.000</p>
             </div>
             <div className="text-center">
-              <Shield size={24} className="mx-auto text-accent mb-1" />
-              <p className="text-xs font-medium">100% Original</p>
-              <p className="text-xs text-gray-400">Garantizado</p>
+              <Shield size={20} className="mx-auto mb-1" strokeWidth={1.5} />
+              <p className="text-[11px] font-medium">100% Original</p>
+              <p className="text-[10px] text-gray-400">Garantizado</p>
             </div>
             <div className="text-center">
-              <RotateCcw size={24} className="mx-auto text-accent mb-1" />
-              <p className="text-xs font-medium">Devoluciones</p>
-              <p className="text-xs text-gray-400">30 días</p>
+              <RotateCcw size={20} className="mx-auto mb-1" strokeWidth={1.5} />
+              <p className="text-[11px] font-medium">Devoluciones</p>
+              <p className="text-[10px] text-gray-400">30 dias</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mt-12">
-        <div className="flex border-b">
+      <div className="mt-16">
+        <div className="flex border-b border-gray-200">
           {[
-            { key: 'description', label: 'Descripción' },
+            { key: 'description', label: 'Descripcion' },
             { key: 'specs', label: 'Especificaciones' },
-            { key: 'shipping', label: 'Envío' },
+            { key: 'shipping', label: 'Envio' },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === tab.key ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700'
+              className={`px-6 py-3 text-[12px] tracking-[0.1em] font-medium transition-colors ${
+                activeTab === tab.key ? 'text-black border-b-2 border-black' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <div className="py-6">
+        <div className="py-8 max-w-3xl">
           {activeTab === 'description' && (
-            <div className="prose max-w-none">
-              <p className="text-gray-600">{product.description}</p>
-              <ul className="mt-4 space-y-2 text-gray-600">
-                <li>• Material: {product.material}</li>
-                <li>• Forma: {product.shape}</li>
-                <li>• Género: {product.gender}</li>
-                {product.uv && <li>• Protección: {product.uv}</li>}
-                {product.polarized && <li>• Lentes polarizados</li>}
-                {product.lensColor && <li>• Color de lente: {product.lensColor}</li>}
-                <li>• Incluye estuche y paño de microfibra original</li>
+            <div>
+              <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
+              <ul className="mt-6 space-y-2 text-sm text-gray-600">
+                <li>Material: {product.material}</li>
+                <li>Forma: {product.shape}</li>
+                <li>Genero: {product.gender}</li>
+                {product.uv && <li>Proteccion: {product.uv}</li>}
+                {product.polarized && <li>Lentes polarizados</li>}
+                {product.lensColor && <li>Color de lente: {product.lensColor}</li>}
+                <li>Incluye estuche y pano de microfibra original</li>
               </ul>
             </div>
           )}
           {activeTab === 'specs' && (
             <div className="grid sm:grid-cols-2 gap-4 max-w-lg">
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Ancho de lente</span>
-                <span className="font-medium">{product.specs.lensWidth}mm</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Ancho de puente</span>
-                <span className="font-medium">{product.specs.bridgeWidth}mm</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Largo de patilla</span>
-                <span className="font-medium">{product.specs.templeLength}mm</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Alto de lente</span>
-                <span className="font-medium">{product.specs.lensHeight}mm</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Material</span>
-                <span className="font-medium">{product.material}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Forma</span>
-                <span className="font-medium">{product.shape}</span>
-              </div>
+              {[
+                ['Ancho de lente', `${product.specs.lensWidth}mm`],
+                ['Ancho de puente', `${product.specs.bridgeWidth}mm`],
+                ['Largo de patilla', `${product.specs.templeLength}mm`],
+                ['Alto de lente', `${product.specs.lensHeight}mm`],
+                ['Material', product.material],
+                ['Forma', product.shape],
+              ].map(([label, value]) => (
+                <div key={label} className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-400">{label}</span>
+                  <span className="text-sm font-medium">{value}</span>
+                </div>
+              ))}
             </div>
           )}
           {activeTab === 'shipping' && (
-            <div className="space-y-4 text-gray-600">
-              <div className="bg-surface p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Envío a todo el país</h4>
-                <ul className="space-y-1 text-sm">
-                  <li>• CABA y GBA: 24-48 horas hábiles</li>
-                  <li>• Interior: 3-5 días hábiles</li>
-                  <li>• Envío gratis en pedidos superiores a $500.000</li>
+            <div className="space-y-4 text-sm text-gray-600">
+              <div className="bg-[#f8f8f8] p-5">
+                <h4 className="font-semibold mb-2">Envio a todo el pais</h4>
+                <ul className="space-y-1">
+                  <li>CABA y GBA: 24-48 horas habiles</li>
+                  <li>Interior: 3-5 dias habiles</li>
+                  <li>Envio gratis en pedidos superiores a $500.000</li>
                 </ul>
               </div>
-              <div className="bg-surface p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Métodos de envío</h4>
-                <ul className="space-y-1 text-sm">
-                  <li>• Correo Argentino</li>
-                  <li>• OCA</li>
-                  <li>• Andreani</li>
-                  <li>• Retiro en showroom (CABA)</li>
+              <div className="bg-[#f8f8f8] p-5">
+                <h4 className="font-semibold mb-2">Metodos de envio</h4>
+                <ul className="space-y-1">
+                  <li>Correo Argentino</li>
+                  <li>OCA</li>
+                  <li>Andreani</li>
+                  <li>Retiro en showroom (CABA)</li>
                 </ul>
               </div>
             </div>
@@ -316,9 +319,9 @@ export default function ProductDetailPage() {
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <section className="mt-12 pt-8 border-t">
-          <h2 className="text-2xl font-bold text-primary mb-6">Productos Relacionados</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="mt-12 pt-10 border-t border-gray-100">
+          <h2 className="text-2xl font-bold tracking-tight mb-8">Productos Relacionados</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {relatedProducts.map(p => (
               <ProductCard key={p.id} product={p} />
             ))}

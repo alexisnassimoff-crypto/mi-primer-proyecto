@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, X, Grid3X3, List, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, X, Grid3X3, List } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { products, brands, categories } from '../data/products';
 
@@ -89,27 +89,27 @@ export default function ProductsPage() {
   const hasActiveFilters = activeCategory || activeBrand || searchQuery || isNew || isOffer || selectedGender || selectedShape || selectedMaterial || onlyPolarized;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-[1400px] mx-auto px-6 py-10">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary">{pageTitle}</h1>
-        <p className="text-gray-500 mt-1">{filteredProducts.length} productos encontrados</p>
+      <div className="mb-10">
+        <h1 className="text-3xl md:text-4xl font-black tracking-tight">{pageTitle}</h1>
+        <p className="text-sm text-gray-400 mt-2 tracking-wide">{filteredProducts.length} productos encontrados</p>
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex gap-10">
         {/* Sidebar Filters - Desktop */}
-        <aside className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-36 space-y-6">
+        <aside className="hidden lg:block w-56 shrink-0">
+          <div className="sticky top-36 space-y-8">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-lg">Filtros</h3>
+              <h3 className="text-xs tracking-[0.2em] font-bold uppercase">Filtros</h3>
               {hasActiveFilters && (
-                <button onClick={clearFilters} className="text-sm text-accent hover:underline">Limpiar</button>
+                <button onClick={clearFilters} className="text-[11px] text-gray-400 hover:text-black transition-colors">Limpiar</button>
               )}
             </div>
 
             {/* Categories filter */}
             <div>
-              <h4 className="font-semibold mb-2">Categoría</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Categoria</h4>
               <div className="space-y-1">
                 {categories.map(cat => (
                   <button
@@ -121,11 +121,11 @@ export default function ProductsPage() {
                       setSearchParams(params);
                       setCurrentPage(1);
                     }}
-                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                      activeCategory === cat.slug ? 'bg-accent text-white' : 'hover:bg-surface'
+                    className={`block w-full text-left px-3 py-2 text-[13px] transition-colors ${
+                      activeCategory === cat.slug ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    {cat.icon} {cat.name}
+                    {cat.name}
                   </button>
                 ))}
               </div>
@@ -133,7 +133,7 @@ export default function ProductsPage() {
 
             {/* Brand filter */}
             <div>
-              <h4 className="font-semibold mb-2">Marca</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Marca</h4>
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {brands.map(brand => (
                   <button
@@ -145,8 +145,8 @@ export default function ProductsPage() {
                       setSearchParams(params);
                       setCurrentPage(1);
                     }}
-                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                      activeBrand === brand.slug ? 'bg-accent text-white' : 'hover:bg-surface'
+                    className={`block w-full text-left px-3 py-2 text-[13px] transition-colors ${
+                      activeBrand === brand.slug ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     {brand.name}
@@ -157,14 +157,14 @@ export default function ProductsPage() {
 
             {/* Gender */}
             <div>
-              <h4 className="font-semibold mb-2">Género</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Genero</h4>
               <div className="space-y-1">
                 {['Hombre', 'Mujer', 'Unisex'].map(g => (
                   <button
                     key={g}
                     onClick={() => { setSelectedGender(selectedGender === g ? '' : g); setCurrentPage(1); }}
-                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                      selectedGender === g ? 'bg-accent text-white' : 'hover:bg-surface'
+                    className={`block w-full text-left px-3 py-2 text-[13px] transition-colors ${
+                      selectedGender === g ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     {g}
@@ -175,14 +175,14 @@ export default function ProductsPage() {
 
             {/* Shape */}
             <div>
-              <h4 className="font-semibold mb-2">Forma</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Forma</h4>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {shapes.map(shape => (
                   <button
                     key={shape}
                     onClick={() => { setSelectedShape(selectedShape === shape ? '' : shape); setCurrentPage(1); }}
-                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                      selectedShape === shape ? 'bg-accent text-white' : 'hover:bg-surface'
+                    className={`block w-full text-left px-3 py-2 text-[13px] transition-colors ${
+                      selectedShape === shape ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     {shape}
@@ -193,14 +193,14 @@ export default function ProductsPage() {
 
             {/* Material */}
             <div>
-              <h4 className="font-semibold mb-2">Material</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Material</h4>
               <div className="space-y-1">
                 {materialsSet.map(mat => (
                   <button
                     key={mat}
                     onClick={() => { setSelectedMaterial(selectedMaterial === mat ? '' : mat); setCurrentPage(1); }}
-                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                      selectedMaterial === mat ? 'bg-accent text-white' : 'hover:bg-surface'
+                    className={`block w-full text-left px-3 py-2 text-[13px] transition-colors ${
+                      selectedMaterial === mat ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     {mat}
@@ -211,7 +211,7 @@ export default function ProductsPage() {
 
             {/* Price range */}
             <div>
-              <h4 className="font-semibold mb-2">Precio Mayorista</h4>
+              <h4 className="text-[11px] tracking-[0.15em] font-semibold uppercase mb-3">Precio</h4>
               <div className="space-y-2">
                 <input
                   type="range"
@@ -219,9 +219,9 @@ export default function ProductsPage() {
                   max="300"
                   value={priceRange[1]}
                   onChange={(e) => { setPriceRange([priceRange[0], parseInt(e.target.value)]); setCurrentPage(1); }}
-                  className="w-full accent-accent"
+                  className="w-full accent-black"
                 />
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-[12px] text-gray-400">
                   <span>${priceRange[0]}</span>
                   <span>${priceRange[1]}</span>
                 </div>
@@ -234,9 +234,9 @@ export default function ProductsPage() {
                 type="checkbox"
                 checked={onlyPolarized}
                 onChange={(e) => { setOnlyPolarized(e.target.checked); setCurrentPage(1); }}
-                className="accent-accent w-4 h-4"
+                className="accent-black w-4 h-4"
               />
-              <span className="text-sm font-medium">Solo Polarizados</span>
+              <span className="text-[13px]">Solo Polarizados</span>
             </label>
           </div>
         </aside>
@@ -244,44 +244,41 @@ export default function ProductsPage() {
         {/* Products Grid */}
         <div className="flex-1">
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="lg:hidden flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-surface"
+              className="lg:hidden flex items-center gap-2 px-4 py-2 border text-[12px] tracking-wide hover:bg-gray-50"
             >
-              <SlidersHorizontal size={18} /> Filtros
-              {hasActiveFilters && <span className="w-2 h-2 bg-accent rounded-full" />}
+              <SlidersHorizontal size={16} /> FILTROS
+              {hasActiveFilters && <span className="w-2 h-2 bg-black rounded-full" />}
             </button>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 hidden sm:inline">Ordenar:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-accent"
-                >
-                  <option value="featured">Destacados</option>
-                  <option value="price-asc">Menor Precio</option>
-                  <option value="price-desc">Mayor Precio</option>
-                  <option value="name">Nombre A-Z</option>
-                  <option value="newest">Más Nuevos</option>
-                  <option value="rating">Mejor Rating</option>
-                </select>
-              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border text-[12px] focus:outline-none focus:border-black"
+              >
+                <option value="featured">Destacados</option>
+                <option value="price-asc">Menor Precio</option>
+                <option value="price-desc">Mayor Precio</option>
+                <option value="name">Nombre A-Z</option>
+                <option value="newest">Mas Nuevos</option>
+                <option value="rating">Mejor Rating</option>
+              </select>
 
-              <div className="hidden sm:flex border rounded-lg overflow-hidden">
+              <div className="hidden sm:flex border overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-accent text-white' : 'hover:bg-surface'}`}
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-black text-white' : 'hover:bg-gray-50'}`}
                 >
-                  <Grid3X3 size={18} />
+                  <Grid3X3 size={16} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-accent text-white' : 'hover:bg-surface'}`}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-black text-white' : 'hover:bg-gray-50'}`}
                 >
-                  <List size={18} />
+                  <List size={16} />
                 </button>
               </div>
             </div>
@@ -289,39 +286,39 @@ export default function ProductsPage() {
 
           {/* Active filter tags */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-6">
               {activeCategory && (
-                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                <span className="flex items-center gap-1 px-3 py-1 bg-black text-white text-[11px] tracking-wide">
                   {categories.find(c => c.slug === activeCategory)?.name}
                   <button onClick={() => { const p = new URLSearchParams(searchParams); p.delete('categoria'); setSearchParams(p); }}>
-                    <X size={14} />
+                    <X size={12} />
                   </button>
                 </span>
               )}
               {activeBrand && (
-                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                <span className="flex items-center gap-1 px-3 py-1 bg-black text-white text-[11px] tracking-wide">
                   {brands.find(b => b.slug === activeBrand)?.name}
                   <button onClick={() => { const p = new URLSearchParams(searchParams); p.delete('marca'); setSearchParams(p); }}>
-                    <X size={14} />
+                    <X size={12} />
                   </button>
                 </span>
               )}
               {selectedGender && (
-                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                <span className="flex items-center gap-1 px-3 py-1 bg-black text-white text-[11px] tracking-wide">
                   {selectedGender}
-                  <button onClick={() => setSelectedGender('')}><X size={14} /></button>
+                  <button onClick={() => setSelectedGender('')}><X size={12} /></button>
                 </span>
               )}
               {selectedShape && (
-                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                <span className="flex items-center gap-1 px-3 py-1 bg-black text-white text-[11px] tracking-wide">
                   {selectedShape}
-                  <button onClick={() => setSelectedShape('')}><X size={14} /></button>
+                  <button onClick={() => setSelectedShape('')}><X size={12} /></button>
                 </span>
               )}
               {onlyPolarized && (
-                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                <span className="flex items-center gap-1 px-3 py-1 bg-black text-white text-[11px] tracking-wide">
                   Polarizado
-                  <button onClick={() => setOnlyPolarized(false)}><X size={14} /></button>
+                  <button onClick={() => setOnlyPolarized(false)}><X size={12} /></button>
                 </span>
               )}
             </div>
@@ -329,13 +326,13 @@ export default function ProductsPage() {
 
           {/* Mobile filters panel */}
           {showFilters && (
-            <div className="lg:hidden bg-white border rounded-lg p-4 mb-6 space-y-4">
+            <div className="lg:hidden bg-white border p-5 mb-6 space-y-4">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">Filtros</h3>
-                <button onClick={() => setShowFilters(false)}><X size={20} /></button>
+                <h3 className="text-xs tracking-[0.2em] font-bold uppercase">Filtros</h3>
+                <button onClick={() => setShowFilters(false)}><X size={18} /></button>
               </div>
               <div>
-                <h4 className="font-semibold mb-1 text-sm">Categoría</h4>
+                <h4 className="text-[11px] font-semibold mb-1 uppercase tracking-wide">Categoria</h4>
                 <select
                   value={activeCategory}
                   onChange={(e) => {
@@ -344,14 +341,14 @@ export default function ProductsPage() {
                     setSearchParams(p);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 border rounded text-sm"
+                  className="w-full px-3 py-2 border text-sm"
                 >
                   <option value="">Todas</option>
                   {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <h4 className="font-semibold mb-1 text-sm">Marca</h4>
+                <h4 className="text-[11px] font-semibold mb-1 uppercase tracking-wide">Marca</h4>
                 <select
                   value={activeBrand}
                   onChange={(e) => {
@@ -360,15 +357,15 @@ export default function ProductsPage() {
                     setSearchParams(p);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 border rounded text-sm"
+                  className="w-full px-3 py-2 border text-sm"
                 >
                   <option value="">Todas</option>
                   {brands.map(b => <option key={b.id} value={b.slug}>{b.name}</option>)}
                 </select>
               </div>
               <div>
-                <h4 className="font-semibold mb-1 text-sm">Género</h4>
-                <select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }} className="w-full px-3 py-2 border rounded text-sm">
+                <h4 className="text-[11px] font-semibold mb-1 uppercase tracking-wide">Genero</h4>
+                <select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }} className="w-full px-3 py-2 border text-sm">
                   <option value="">Todos</option>
                   <option value="Hombre">Hombre</option>
                   <option value="Mujer">Mujer</option>
@@ -376,12 +373,12 @@ export default function ProductsPage() {
                 </select>
               </div>
               <label className="flex items-center gap-2">
-                <input type="checkbox" checked={onlyPolarized} onChange={(e) => setOnlyPolarized(e.target.checked)} className="accent-accent" />
+                <input type="checkbox" checked={onlyPolarized} onChange={(e) => setOnlyPolarized(e.target.checked)} className="accent-black" />
                 <span className="text-sm">Solo Polarizados</span>
               </label>
               <div className="flex gap-2">
-                <button onClick={clearFilters} className="flex-1 px-4 py-2 border rounded text-sm hover:bg-surface">Limpiar</button>
-                <button onClick={() => setShowFilters(false)} className="flex-1 px-4 py-2 bg-accent text-white rounded text-sm">Aplicar</button>
+                <button onClick={clearFilters} className="flex-1 px-4 py-2 border text-[12px] hover:bg-gray-50">Limpiar</button>
+                <button onClick={() => setShowFilters(false)} className="flex-1 px-4 py-2 bg-black text-white text-[12px]">Aplicar</button>
               </div>
             </div>
           )}
@@ -391,7 +388,7 @@ export default function ProductsPage() {
             <>
               <div className={
                 viewMode === 'grid'
-                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
+                  ? 'grid grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8'
                   : 'space-y-4'
               }>
                 {paginatedProducts.map(product => (
@@ -405,13 +402,13 @@ export default function ProductsPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
+                <div className="flex justify-center items-center gap-2 mt-12">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border rounded hover:bg-surface disabled:opacity-50"
+                    className="px-4 py-2 border text-[12px] tracking-wide hover:bg-gray-50 disabled:opacity-30"
                   >
-                    Anterior
+                    ANTERIOR
                   </button>
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let page;
@@ -423,8 +420,8 @@ export default function ProductsPage() {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`w-10 h-10 rounded font-medium ${
-                          currentPage === page ? 'bg-accent text-white' : 'border hover:bg-surface'
+                        className={`w-10 h-10 text-[13px] font-medium ${
+                          currentPage === page ? 'bg-black text-white' : 'border hover:bg-gray-50'
                         }`}
                       >
                         {page}
@@ -434,20 +431,19 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border rounded hover:bg-surface disabled:opacity-50"
+                    className="px-4 py-2 border text-[12px] tracking-wide hover:bg-gray-50 disabled:opacity-30"
                   >
-                    Siguiente
+                    SIGUIENTE
                   </button>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-20">
-              <p className="text-6xl mb-4">🔍</p>
-              <h3 className="text-xl font-bold text-gray-600 mb-2">No se encontraron productos</h3>
-              <p className="text-gray-400 mb-4">Probá con otros filtros o términos de búsqueda</p>
-              <button onClick={clearFilters} className="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent-hover">
-                Limpiar Filtros
+              <h3 className="text-lg font-bold text-gray-400 mb-2">No se encontraron productos</h3>
+              <p className="text-sm text-gray-400 mb-6">Proba con otros filtros o terminos de busqueda</p>
+              <button onClick={clearFilters} className="px-8 py-3 bg-black text-white text-[12px] tracking-[0.15em] hover:bg-gray-800">
+                LIMPIAR FILTROS
               </button>
             </div>
           )}
@@ -460,28 +456,25 @@ export default function ProductsPage() {
 function ProductListItem({ product }) {
   const discount = Math.round((1 - product.wholesalePrice / product.retailPrice) * 100);
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-4 flex gap-4 hover:shadow-md transition-shadow">
-      <div className="w-32 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-4xl shrink-0">
-        {product.categoryId === 1 ? '🕶️' : product.categoryId === 3 ? '🥽' : '👓'}
+    <a href={`/producto/${product.id}`} className="flex gap-5 p-4 border border-gray-100 hover:border-gray-300 transition-colors group">
+      <div className="w-28 h-28 bg-[#f5f5f5] shrink-0 overflow-hidden">
+        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-accent font-semibold">{product.brand.name}</p>
-        <a href={`/producto/${product.id}`} className="font-semibold text-gray-800 hover:text-accent line-clamp-1">{product.name}</a>
-        <p className="text-xs text-gray-500">SKU: {product.sku} · {product.shape} · {product.material} · {product.gender}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex gap-1">
-            {product.colors.slice(0, 4).map(c => (
-              <span key={c.name} className="w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: c.hex }} />
-            ))}
-          </div>
-          {product.polarized && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Polarizado</span>}
+        <p className="text-[11px] tracking-[0.1em] text-gray-400 uppercase">{product.brand.name}</p>
+        <p className="text-sm font-medium text-gray-900 group-hover:opacity-70 transition-opacity">{product.name}</p>
+        <p className="text-[11px] text-gray-400 mt-1">SKU: {product.sku} · {product.shape} · {product.material}</p>
+        <div className="flex gap-1 mt-2">
+          {product.colors.slice(0, 4).map(c => (
+            <span key={c.name} className="w-3 h-3 rounded-full border border-gray-200" style={{ backgroundColor: c.hex }} />
+          ))}
         </div>
       </div>
-      <div className="text-right shrink-0">
-        <p className="text-xs text-gray-400 line-through">${product.retailPrice.toLocaleString()}</p>
-        <p className="text-lg font-bold text-primary">${product.wholesalePrice.toLocaleString()}</p>
-        <span className="text-xs text-green-600 font-semibold">-{discount}% OFF</span>
+      <div className="text-right shrink-0 self-center">
+        <p className="text-[11px] text-gray-400 line-through">${product.retailPrice.toLocaleString()}</p>
+        <p className="text-base font-bold">${product.wholesalePrice.toLocaleString()}</p>
+        <span className="text-[11px] text-gray-500">-{discount}%</span>
       </div>
-    </div>
+    </a>
   );
 }

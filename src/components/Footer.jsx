@@ -7,11 +7,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Logo */}
           <div>
-            <div className="w-14 h-14 rounded-full border border-white/40 flex items-center justify-center mb-4">
-              <span className="text-xl">👁️</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center">
+                <svg width="16" height="11" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 8C1 8 5 1 12 1C19 1 23 8 23 8C23 8 19 15 12 15C5 15 1 8 1 8Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="8" r="3" stroke="white" strokeWidth="2"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-black tracking-tight">CENTRAL</h3>
+                <p className="text-[8px] tracking-[0.3em] text-gray-500 uppercase">Your Style, Our Passion</p>
+              </div>
             </div>
-            <h3 className="text-xl font-black tracking-tight">CENTRAL</h3>
-            <p className="text-[10px] tracking-[0.3em] text-gray-500 uppercase mt-1">Your Style, Our Passion</p>
           </div>
 
           {/* Links col 1 */}
@@ -26,7 +33,7 @@ export default function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-xs tracking-[0.15em] text-gray-400 hover:text-white transition-colors"
+                    className="text-[11px] tracking-[0.15em] text-gray-400 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -39,14 +46,14 @@ export default function Footer() {
           <div>
             <ul className="space-y-3">
               {[
-                { label: 'CUIDADOS BÁSICOS', to: '/nosotros' },
-                { label: 'TÉRMINOS & CONDICIONES', to: '/nosotros' },
-                { label: 'POLÍTICA DE GARANTÍA', to: '/nosotros' },
+                { label: 'CUIDADOS BASICOS', to: '/nosotros' },
+                { label: 'TERMINOS & CONDICIONES', to: '/nosotros' },
+                { label: 'POLITICA DE GARANTIA', to: '/nosotros' },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-xs tracking-[0.15em] text-gray-400 hover:text-white transition-colors"
+                    className="text-[11px] tracking-[0.15em] text-gray-400 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -57,12 +64,12 @@ export default function Footer() {
 
           {/* Social */}
           <div className="flex items-end">
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {['IG', 'TK', 'FB', 'WA'].map((social) => (
                 <a
                   key={social}
                   href="#"
-                  className="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-xs font-medium text-gray-400 hover:text-white hover:border-white transition-all"
+                  className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-[10px] font-medium text-gray-500 hover:text-white hover:border-white transition-all"
                 >
                   {social}
                 </a>

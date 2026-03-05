@@ -7,12 +7,13 @@ export default function ProductCard({ product }) {
       className="group block"
     >
       {/* Image */}
-      <div className="relative aspect-square bg-gray-50 overflow-hidden mb-4">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[80px] md:text-[100px] opacity-60 group-hover:scale-110 transition-transform duration-500">
-            {product.categoryId === 1 ? '🕶️' : product.categoryId === 3 ? '🥽' : '👓'}
-          </span>
-        </div>
+      <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden mb-4">
+        <img
+          src={product.images[0]}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          loading="lazy"
+        />
 
         {/* Minimal badge */}
         {product.newArrival && (
@@ -26,10 +27,10 @@ export default function ProductCard({ product }) {
 
       {/* Info */}
       <div>
-        <p className="text-xs tracking-[0.1em] text-gray-500 uppercase mb-1">
+        <p className="text-[11px] tracking-[0.15em] text-gray-400 uppercase mb-1">
           {product.brand.name}
         </p>
-        <h3 className="text-sm font-medium text-gray-900 group-hover:opacity-70 transition-opacity">
+        <h3 className="text-sm font-medium text-gray-900 group-hover:opacity-70 transition-opacity leading-tight">
           {product.name}
         </h3>
 

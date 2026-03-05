@@ -14,6 +14,7 @@ import BrandsPage from './pages/BrandsPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import AccountPage from './pages/AccountPage';
+import BlogPage from './pages/BlogPage';
 import ScrollToTop from './components/ScrollToTop';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/nosotros" element={<AboutPage />} />
               <Route path="/contacto" element={<ContactPage />} />
               <Route path="/mi-cuenta" element={<AccountPage />} />
+              <Route path="/blog" element={<BlogPage />} />
             </Routes>
           </main>
           <Footer />
