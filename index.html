@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturas de Torá - Parashat HaShavua</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>&#x1F4D6; Lecturas de Torá</h1>
+            <p class="subtitle">Parashat HaShavua - Porción semanal con interpretaciones</p>
+        </div>
+        <nav id="main-nav">
+            <button class="nav-btn active" data-book="bereshit">Bereshit (Génesis)</button>
+            <button class="nav-btn" data-book="shemot">Shemot (Éxodo)</button>
+            <button class="nav-btn" data-book="vayikra">Vayikrá (Levítico)</button>
+            <button class="nav-btn" data-book="bamidbar">Bamidbar (Números)</button>
+            <button class="nav-btn" data-book="devarim">Devarim (Deuteronomio)</button>
+        </nav>
+    </header>
+
+    <main>
+        <aside id="parasha-list">
+            <h2>Parashot</h2>
+            <ul id="parasha-menu"></ul>
+        </aside>
+
+        <section id="content-area">
+            <div id="welcome-screen">
+                <h2>Bienvenido a las Lecturas de Torá</h2>
+                <p>Selecciona un libro y una parashá para comenzar a estudiar.</p>
+                <p>Cada parashá incluye el texto bíblico junto con interpretaciones de los grandes comentaristas:</p>
+                <div class="commentators-intro">
+                    <div class="commentator-card">
+                        <h3>Rashi</h3>
+                        <p>Rabí Shlomó Itzjaki (1040-1105). El comentarista más fundamental de la Torá, conocido por su explicación literal (Peshat) clara y concisa.</p>
+                    </div>
+                    <div class="commentator-card">
+                        <h3>Rambán (Najmánides)</h3>
+                        <p>Rabí Moshé ben Najmán (1194-1270). Combina interpretación literal, mística (Kabbalá) y filosófica.</p>
+                    </div>
+                    <div class="commentator-card">
+                        <h3>Ibn Ezra</h3>
+                        <p>Rabí Abraham ibn Ezra (1089-1167). Enfoque gramatical y racional, con atención a la estructura del hebreo bíblico.</p>
+                    </div>
+                    <div class="commentator-card">
+                        <h3>Sforno</h3>
+                        <p>Rabí Ovadia Sforno (1475-1550). Interpretación ética y filosófica con énfasis en las lecciones morales.</p>
+                    </div>
+                </div>
+            </div>
+
+            <article id="parasha-content" class="hidden">
+                <div class="parasha-header">
+                    <h2 id="parasha-title"></h2>
+                    <p id="parasha-ref" class="reference"></p>
+                    <p id="parasha-summary" class="summary"></p>
+                </div>
+
+                <div class="interpretation-tabs">
+                    <button class="tab-btn active" data-tab="text">Texto Bíblico</button>
+                    <button class="tab-btn" data-tab="rashi">Rashi</button>
+                    <button class="tab-btn" data-tab="ramban">Rambán</button>
+                    <button class="tab-btn" data-tab="ibn-ezra">Ibn Ezra</button>
+                    <button class="tab-btn" data-tab="sforno">Sforno</button>
+                    <button class="tab-btn" data-tab="all">Ver Todas</button>
+                </div>
+
+                <div id="tab-content" class="tab-content">
+                    <div id="tab-text" class="tab-panel active">
+                        <div id="biblical-text" class="biblical-text"></div>
+                    </div>
+                    <div id="tab-rashi" class="tab-panel">
+                        <div class="commentary-header">
+                            <h3>Comentario de Rashi</h3>
+                            <span class="commentary-badge peshat">Peshat</span>
+                        </div>
+                        <div id="rashi-text" class="commentary-text"></div>
+                    </div>
+                    <div id="tab-ramban" class="tab-panel">
+                        <div class="commentary-header">
+                            <h3>Comentario de Rambán</h3>
+                            <span class="commentary-badge kabbalistic">Kabalístico</span>
+                        </div>
+                        <div id="ramban-text" class="commentary-text"></div>
+                    </div>
+                    <div id="tab-ibn-ezra" class="tab-panel">
+                        <div class="commentary-header">
+                            <h3>Comentario de Ibn Ezra</h3>
+                            <span class="commentary-badge grammatical">Gramatical</span>
+                        </div>
+                        <div id="ibn-ezra-text" class="commentary-text"></div>
+                    </div>
+                    <div id="tab-sforno" class="tab-panel">
+                        <div class="commentary-header">
+                            <h3>Comentario de Sforno</h3>
+                            <span class="commentary-badge ethical">Ético</span>
+                        </div>
+                        <div id="sforno-text" class="commentary-text"></div>
+                    </div>
+                    <div id="tab-all" class="tab-panel">
+                        <div id="all-commentaries"></div>
+                    </div>
+                </div>
+
+                <div class="parasha-nav">
+                    <button id="prev-parasha" class="parasha-nav-btn">&larr; Anterior</button>
+                    <button id="next-parasha" class="parasha-nav-btn">Siguiente &rarr;</button>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Lecturas de Torá - Estudio y reflexión &bull; Parashat HaShavua con comentarios clásicos</p>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
