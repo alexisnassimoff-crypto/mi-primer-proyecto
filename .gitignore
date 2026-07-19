@@ -1,0 +1,30 @@
+# Secrets — NUNCA commitear keys
+.env
+.env.local
+*.key
+credentials.json
+token.json
+client_secret*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Salidas de producción (assets pesados)
+output/
+assets/
+*.mp4
+*.mp3
+*.wav
+*.png
+*.jpg
+!brand/**/*.png
+!brand/**/*.jpg
+
+# Sistema
+.DS_Store
+Thumbs.db

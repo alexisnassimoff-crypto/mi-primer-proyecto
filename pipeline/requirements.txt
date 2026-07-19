@@ -1,0 +1,8 @@
+# Dependencias del pipeline (modo real). El modo --dry-run corre solo con la stdlib.
+requests>=2.31
+python-dotenv>=1.0
+# YouTube Data API (subida)
+google-api-python-client>=2.100
+google-auth>=2.23
+google-auth-oauthlib>=1.1
+# FFmpeg NO es pip: instalar el binario aparte (ver docs/SETUP.md).
