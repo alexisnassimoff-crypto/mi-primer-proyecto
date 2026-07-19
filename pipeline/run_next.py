@@ -37,13 +37,13 @@ def produce_song(song: dict, state: dict, publish: bool) -> None:
 
     # 2) Video largo (16:9) con personaje consistente
     video = atlabs_client.generate_video(
-        song_id, mp3, payload["scene_prompt"], character_ref_id=payload.get("character", "lumo"), aspect="16:9"
+        song_id, mp3, payload["scene_prompt"], character_ref_id=payload.get("character", "fenn"), aspect="16:9"
     )
 
     # 3) Short vertical (9:16)
     short = atlabs_client.generate_video(
         song_id, mp3, payload.get("short_scene", payload["scene_prompt"]),
-        character_ref_id=payload.get("character", "lumo"), aspect="9:16",
+        character_ref_id=payload.get("character", "fenn"), aspect="9:16",
     )
 
     # 4) Voz opcional (intro de marca)
@@ -53,7 +53,7 @@ def produce_song(song: dict, state: dict, publish: bool) -> None:
     video_id = youtube_client.upload_video(
         video, payload["youtube_title"], payload["description"], payload["tags"], privacy=privacy
     )
-    short_title = payload["youtube_title"].split(" | ")[0] + " #Shorts | Lumo & Friends"
+    short_title = payload["youtube_title"].split(" | ")[0] + " #Shorts | Glimmerwood"
     short_id = youtube_client.upload_video(
         short, short_title, payload["description"], payload["tags"] + ["shorts"], privacy=privacy
     )
@@ -79,16 +79,16 @@ def make_compilation(state: dict, name: str, publish: bool) -> None:
     out = assemble.make_compilation(videos, name.replace(" ", "_"))
     privacy = "public" if publish else "private"
     youtube_client.upload_video(
-        out, f"{name} 🌟 Kids Songs | Lumo & Friends",
-        "A cozy collection of learning and lullaby songs with Lumo & Friends. 🌟 Subscribe!",
-        ["kids songs compilation", "nursery rhymes", "learning songs", "lumo and friends"],
+        out, f"{name} 🌟 Kids Songs | Glimmerwood",
+        "A cozy collection of learning and lullaby songs with Glimmerwood. 🌟 Subscribe!",
+        ["kids songs compilation", "nursery rhymes", "learning songs", "fenn and friends"],
         privacy=privacy,
     )
     print(f"✓ Compilado '{name}' -> {out.name} ({privacy})")
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Lumo & Friends — produce la proxima pieza.")
+    parser = argparse.ArgumentParser(description="Glimmerwood — produce la proxima pieza.")
     parser.add_argument("--dry-run", action="store_true", help="Forzar modo simulado (sin API).")
     parser.add_argument("--live", action="store_true", help="Forzar modo real (requiere keys).")
     parser.add_argument("--song", help="Producir una cancion especifica por id (ej. S003).")
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
 
     config.ensure_dirs()
     mode = "DRY-RUN (simulado)" if config.DRY_RUN else "LIVE (real)"
-    print(f"== Lumo & Friends pipeline — modo {mode} ==")
+    print(f"== Glimmerwood pipeline — modo {mode} ==")
 
     if not config.DRY_RUN:
         missing = config.missing_keys()

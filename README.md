@@ -1,10 +1,10 @@
-# Lumo & Friends — Kids Content Engine 🌟
+# Glimmerwood — Kids Content Engine 🌟
 
 Sistema de producción de contenido infantil musical con IA, diseñado para construir un
 canal de YouTube original, monetizable y automatizado — dentro de un presupuesto de
 herramientas de **$100–300/mes**.
 
-> **IP original:** *Lumo & Friends* — Lumo, una criaturita que brilla, y sus amigos del
+> **IP original:** *Glimmerwood* — Fenn, una criaturita que brilla, y sus amigos del
 > bosque **Glimmerwood**. Contenido musical para niños de 0–5 años, 100% original para
 > sobrevivir a las políticas anti-"AI slop" de YouTube y poder licenciar/vender merch.
 
@@ -23,7 +23,7 @@ Un motor de contenido de punta a punta:
 
 | Carpeta | Contenido |
 |---|---|
-| `character-bible/` | La IP: Lumo, sus amigos, mundo, reglas de estilo y seguridad |
+| `character-bible/` | La IP: Fenn, sus amigos, mundo, reglas de estilo y seguridad |
 | `brand/` | Nombre del canal, identidad visual, briefs de logo y miniatura |
 | `content-plan/` | Calendario de 180 días + lote inicial de canciones listas |
 | `prompts/` | Generadores reutilizables (canción, video, metadata) |

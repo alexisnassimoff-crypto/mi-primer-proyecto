@@ -23,7 +23,7 @@ estacional/especial · **Dom** compilado + Short.
 ## Fase 0 — Setup (días -7 a 0)
 
 - Conectar APIs (Atlabs, Suno, YouTube) — ver `docs/SETUP.md`.
-- Lockear a Lumo en la *Consistent Character library* de Atlabs.
+- Lockear a Fenn en la *Consistent Character library* de Atlabs.
 - Crear canal, avatar, banner; configurar **Made for Kids = ON**.
 - Producir el **lote inicial** (`content-plan/starter-batch.md`): 14 canciones + 1
   compilado + 7 Shorts en cola.
@@ -68,10 +68,10 @@ Objetivo: doblar apuesta a lo que rinde (analítica) y abrir nuevas fuentes de i
 Librería objetivo: **150+ canciones**.
 
 - **Optimización:** replicar formatos/temas ganadores; rehacer miniaturas de bajo CTR.
-- **Compilados premium:** "3 Hour Bedtime", "Best of Lumo", "Learn & Play 1 Hour".
+- **Compilados premium:** "3 Hour Bedtime", "Best of Fenn", "Learn & Play 1 Hour".
 - **Merch:** primeros peluches/coloring books (print-on-demand).
 - **Licencia:** contactar apps educativas y agregadores de contenido infantil.
-- **2º canal (opcional):** *Lumo y sus amigos* (español) reutilizando la animación.
+- **2º canal (opcional):** *Fenn y sus amigos* (español) reutilizando la animación.
 
 | Semanas | Foco |
 |---|---|

@@ -1,7 +1,7 @@
 # Generador de prompts de video (Atlabs)
 
 Produce el prompt de video para Atlabs a partir de una canción. La consistencia del
-personaje la garantiza el **Consistent Character library** de Atlabs (Lumo/amigos ya
+personaje la garantiza el **Consistent Character library** de Atlabs (Fenn/amigos ya
 lockeados) + este prompt.
 
 ## Bloque de estilo base (SIEMPRE incluir)

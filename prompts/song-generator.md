@@ -6,7 +6,7 @@ generar letra + prompt de Suno; el resultado se pega en Suno.
 
 ## Instrucciones para el modelo
 
-> Escribí una canción infantil ORIGINAL para el canal *Lumo & Friends* (0–5 años).
+> Escribí una canción infantil ORIGINAL para el canal *Glimmerwood* (0–5 años).
 > Respetá la biblia (`character-bible/character-bible.md`). Entradas: `title`, `pillar`,
 > `character`, `theme`.
 >

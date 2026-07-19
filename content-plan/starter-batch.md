@@ -9,7 +9,7 @@ del Short. Estilo base del personaje: ver `character-bible/character-bible.md` �
 
 ---
 
-## 1. Lumo's ABC Glow  ·  Pilar: ABC/palabras (Rosa)
+## 1. Fenn's ABC Glow  ·  Pilar: ABC/palabras (Rosa)
 
 **Suno:** `children's music, cheerful nursery rhyme, kids choir, ukulele, glockenspiel,
 simple bouncy melody, warm, 110 BPM`
@@ -19,7 +19,7 @@ simple bouncy melody, warm, 110 BPM`
 (Chorus)
 A-B-C, come glow with me,
 sing the letters, one, two, three!
-Lumo lights them one by one,
+Fenn lights them one by one,
 learning letters is so fun!
 
 (Verse 1)
@@ -36,20 +36,20 @@ J, K, L — away we go!
 M, N, O — we're almost there,
 letters glowing everywhere!
 
-(Chorus x2 — fade with Lumo waving)
+(Chorus x2 — fade with Fenn waving)
 ```
 
-**Video (Atlabs):** `STYLE base. Lumo in the Glimmerwood clearing, glowing letters A-B-C
+**Video (Atlabs):** `STYLE base. Fenn in the Glimmerwood clearing, glowing letters A-B-C
 floating and lighting up as he touches them, gentle bounce, soft golden light, friends
 peeking from mushrooms. Slow cheerful motion.`
 
 **YouTube:**
-- **Título:** `ABC Song 🎵 Learn the Alphabet with Lumo | Lumo & Friends`
-- **Desc:** `Sing the ABCs with Lumo the little glow! A fun, gentle alphabet song for
+- **Título:** `ABC Song 🎵 Learn the Alphabet with Fenn | Glimmerwood`
+- **Desc:** `Sing the ABCs with Fenn the little glow! A fun, gentle alphabet song for
   toddlers and preschoolers. 🌟 Subscribe for a new song every day! #ABCsong #forkids`
 - **Tags:** `abc song, alphabet song, learn abc, toddler songs, nursery rhymes, preschool,
-  kids songs, lumo and friends`
-- **Short:** chorus (A-B-C come glow with me) con Lumo iluminando letras.
+  kids songs, fenn and friends`
+- **Short:** chorus (A-B-C come glow with me) con Fenn iluminando letras.
 
 ---
 
@@ -87,11 +87,11 @@ numbers 1-10 pop up glowing as objects appear (fireflies, leaves, mushrooms). Ge
 counting motion, each number lights up. Warm evening light.`
 
 **YouTube:**
-- **Título:** `Count to 10 with Beep! 🔢 Numbers Song for Kids | Lumo & Friends`
+- **Título:** `Count to 10 with Beep! 🔢 Numbers Song for Kids | Glimmerwood`
 - **Desc:** `Learn to count from 1 to 10 with Beep! A fun numbers song for toddlers. 🌟 New
   songs every day — subscribe! #numberssong #counting #forkids`
 - **Tags:** `counting song, numbers song, count to 10, learn numbers, toddler songs, kids
-  counting, lumo and friends`
+  counting, fenn and friends`
 - **Short:** chorus con los números iluminándose 1→10.
 
 ---
@@ -131,11 +131,11 @@ line up forming a soft glowing rainbow arc over Glimmerwood, each lights up as i
 is named. Gentle, colorful, warm.`
 
 **YouTube:**
-- **Título:** `Colors Song 🌈 Learn Colors with Lumo & Friends | Kids Song`
+- **Título:** `Colors Song 🌈 Learn Colors with Fenn & Friends | Glimmerwood`
 - **Desc:** `Learn your colors with the Glow Pals! Red, orange, yellow, green, blue and
   purple in a happy rainbow song for toddlers. 🌟 Subscribe! #colorssong #forkids`
 - **Tags:** `colors song, learn colors, rainbow song, toddler songs, preschool colors,
-  kids songs, lumo and friends`
+  kids songs, fenn and friends`
 - **Short:** chorus con el arcoíris formándose.
 
 ---
@@ -175,11 +175,11 @@ in Glimmerwood; soft plush cow, sheep, duck, horse appear and gently make sounds
 tender, slow motion. Child-safe.`
 
 **YouTube:**
-- **Título:** `Farm Animals Song 🐮 Animal Sounds for Kids | Lumo & Friends`
+- **Título:** `Farm Animals Song 🐮 Animal Sounds for Kids | Glimmerwood`
 - **Desc:** `Moo, baa, quack! Meet the animals of Glimmerwood Farm with Vee. A fun animal
   sounds song for toddlers. 🌟 New songs daily — subscribe! #animalsong #farmanimals`
 - **Tags:** `farm animals song, animal sounds, animals for kids, toddler songs, old
-  macdonald, kids songs, lumo and friends`
+  macdonald, kids songs, fenn and friends`
 - **Short:** chorus con los sonidos de animales.
 
 ---
@@ -219,11 +219,11 @@ Glimmerwood, gentle glowing soap bubbles float, hands-washing motion mimed cutel
 happy, warm. No scary elements.`
 
 **YouTube:**
-- **Título:** `Wash Your Hands Song 🧼 Healthy Habits for Kids | Lumo & Friends`
+- **Título:** `Wash Your Hands Song 🧼 Healthy Habits for Kids | Glimmerwood`
 - **Desc:** `Scrub-a-dub! Learn to wash your hands with Sunny. A fun healthy-habits song
   for toddlers. 🌟 Subscribe for a new song every day! #washyourhands #forkids`
 - **Tags:** `wash your hands song, healthy habits, good habits for kids, toddler songs,
-  hygiene song, kids songs, lumo and friends`
+  hygiene song, kids songs, fenn and friends`
 - **Short:** chorus con las burbujas brillantes.
 
 ---
@@ -261,11 +261,11 @@ star) under a soft crescent moon in Glimmerwood, stars twinkling slowly, very ge
 floating motion, dim warm light. Calm, no bright flashes. Perfect for sleep.`
 
 **YouTube:**
-- **Título:** `Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Lumo & Friends`
+- **Título:** `Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Glimmerwood`
 - **Desc:** `A gentle lullaby to help your little one fall asleep, with Plum under the
   Glimmerwood moon. Soft, calming and cozy. 🌟 Subscribe! #lullaby #bedtime #forkids`
 - **Tags:** `lullaby, bedtime song, sleep song for babies, baby lullaby, calming music
-  for kids, toddler sleep, lumo and friends`
+  for kids, toddler sleep, fenn and friends`
 - **Short:** primer verso (Twinkle little glow) suave.
 
 ---
@@ -305,11 +305,11 @@ square, triangle, rectangle, star) marching softly across Glimmerwood. Each shap
 up as named. Cheerful, slow-march motion.`
 
 **YouTube:**
-- **Título:** `Shapes Song ⭐ Learn Shapes with Beep | Lumo & Friends`
+- **Título:** `Shapes Song ⭐ Learn Shapes with Beep | Glimmerwood`
 - **Desc:** `Circle, square, triangle! March along and learn shapes with Beep. A fun
   learning song for toddlers. 🌟 New songs daily — subscribe! #shapessong #forkids`
 - **Tags:** `shapes song, learn shapes, circle square triangle, toddler songs, preschool
-  learning, kids songs, lumo and friends`
+  learning, kids songs, fenn and friends`
 - **Short:** chorus con el desfile de formas.
 
 ---
@@ -348,17 +348,17 @@ brushing teeth is so much fun!
 miming toothbrushing, gentle sparkle chimes on the smile. Bright, happy, warm, child-safe.`
 
 **YouTube:**
-- **Título:** `Brush Your Teeth Song 🪥 Healthy Habits for Kids | Lumo & Friends`
+- **Título:** `Brush Your Teeth Song 🪥 Healthy Habits for Kids | Glimmerwood`
 - **Desc:** `Brush, brush, brush! Learn to brush your teeth with Sunny. A fun healthy-habits
   song for toddlers. 🌟 Subscribe for a new song every day! #brushyourteeth #forkids`
 - **Tags:** `brush your teeth song, healthy habits, good habits for kids, toddler songs,
-  hygiene song, kids songs, lumo and friends`
+  hygiene song, kids songs, fenn and friends`
 - **Short:** chorus con la sonrisa que brilla.
 
 ---
 
 ## Primer compilado (Fase 0)
 
-Título: `Lumo & Friends 🌟 Learning Songs for Kids | ABC, Numbers, Colors & More`
+Título: `Glimmerwood 🌟 Learning Songs for Kids | ABC, Numbers, Colors & More`
 Orden sugerido (energía alta → calma): 1 · 3 · 2 · 7 · 4 · 5 · 8 · 6 (termina con la cuna).
 Duración objetivo: ~20–25 min (se irá extendiendo al sumar canciones).

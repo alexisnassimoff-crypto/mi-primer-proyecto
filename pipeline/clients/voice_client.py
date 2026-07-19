@@ -1,6 +1,6 @@
 """Cliente de voz (LOVO/Genny o ElevenLabs) — OPCIONAL.
 
-Genera intros/dialogos del personaje (ej. "Hi, I'm Lumo! Let's glow!"). No es necesario
+Genera intros/dialogos del personaje (ej. "Hi, I'm Fenn! Let's glow!"). No es necesario
 para las canciones (las canta Suno); util para intros de marca y mini-dialogos.
 
 NOTA: confirmar endpoint/campos contra la doc del proveedor elegido.
@@ -12,7 +12,7 @@ from pathlib import Path
 from .. import config
 
 
-def generate_voice(song_id: str, text: str, voice_id: str = "lumo_warm") -> Path | None:
+def generate_voice(song_id: str, text: str, voice_id: str = "fenn_warm") -> Path | None:
     if not text:
         return None
     out = config.OUTPUT_DIR / song_id

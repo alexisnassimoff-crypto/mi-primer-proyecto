@@ -1,4 +1,4 @@
-"""Lumo & Friends — motor de produccion de contenido infantil.
+"""Glimmerwood — motor de produccion de contenido infantil.
 
 Orquesta: Suno (cancion) -> Atlabs (video con personaje consistente) ->
 voz opcional -> ensamblado -> YouTube (subida). Lee el plan de

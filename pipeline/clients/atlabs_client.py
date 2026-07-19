@@ -1,6 +1,6 @@
 """Cliente de Atlabs — genera el video animado con el personaje CONSISTENTE.
 
-El personaje (Lumo/amigos) se lockea UNA vez en la Consistent Character library de Atlabs
+El personaje (Fenn/amigos) se lockea UNA vez en la Consistent Character library de Atlabs
 (desde su UI) y aca se referencia por id. Se le pasa la cancion (mp3/url) + el prompt de
 escena y Atlabs devuelve el video con subtitulos y (opcional) miniatura.
 
@@ -18,7 +18,7 @@ def generate_video(
     song_id: str,
     song_mp3: Path,
     scene_prompt: str,
-    character_ref_id: str = "lumo",
+    character_ref_id: str = "fenn",
     style: str = "3d_cartoon",
     aspect: str = "16:9",
 ) -> Path:
