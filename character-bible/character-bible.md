@@ -1,4 +1,4 @@
-# Biblia del personaje — *Glimmerwood* 🌟
+# Biblia del personaje — *Suki & Friends* 🌟
 
 > Documento maestro de la IP. Todo (letras, prompts, video, merch) debe respetar estas
 > reglas para lograr **consistencia** (clave anti-"AI slop") y **seguridad** (clave para
@@ -18,11 +18,11 @@ redondas, texturas blandas (tipo peluche). Es un lugar **seguro, tierno y lumino
 opuesto a cualquier cosa perturbadora (regla anti-Elsagate, ver §6).
 
 Lugares recurrentes: el Claro de los Hongos (donde cantan), el Arroyo Brillante, el Árbol
-Casa (hogar de Fenn), la Colina de las Luciérnagas.
+Casa (hogar de Suki), la Colina de las Luciérnagas.
 
 ---
 
-## 2. Protagonista: Fenn
+## 2. Protagonista: Suki
 
 - **Qué es:** una criaturita redonda y blandita que **brilla** (como un cruce de luciérnaga
   y farolito). Cálido, curioso, amable.
@@ -49,7 +49,7 @@ un **pilar de contenido** (mapea a búsquedas top de YouTube infantil):
 | **Vee** | Verde | Tranquila, tierna | Animales / naturaleza |
 | **Plum** | Violeta | Soñadora, calma | Canciones de cuna / emociones |
 
-Reglas: todos comparten la **misma silueta redonda y blanda** que Fenn (varía color,
+Reglas: todos comparten la **misma silueta redonda y blanda** que Suki (varía color,
 accesorio mínimo y expresión). Un solo accesorio distintivo por personaje (ej. Beep tiene
 un puntito-contador; Vee una hojita; Plum una estrellita). Nada más — mantener simple.
 
@@ -63,7 +63,7 @@ Pegar este bloque base en Atlabs / prompts de imagen para lockear el look:
 STYLE: soft 3D toddler cartoon, rounded shapes, plush/felt texture, warm golden-hour
 lighting, cozy glowing forest (Glimmerwood), pastel + warm palette, gentle soft shadows,
 big friendly eyes, simple clean background, no scary elements, no text overlays baked in.
-CHARACTER (Fenn): small round glowing firefly-sprite, warm golden-yellow, soft belly,
+CHARACTER (Suki): small round glowing firefly-sprite, warm golden-yellow, soft belly,
 big kind eyes, tiny translucent wings, two antennae with light dots, gentle smile.
 CONSISTENCY: same proportions and colors in every shot; character centered; slow gentle
 motion (no fast flashing — child-safe).
@@ -127,4 +127,4 @@ Cada pilar mapea a lo más buscado en YouTube infantil (asegura descubrimiento):
 - **Música:** publicar cada canción en Spotify/Apple Music (playlist infantil = ingreso
   recurrente).
 - **Licencia:** apps educativas, otras plataformas, TV infantil.
-- **2º canal:** versión en español (*Fenn y sus amigos*) reutilizando la animación.
+- **2º canal:** versión en español (*Suki y sus amigos*) reutilizando la animación.

@@ -43,7 +43,7 @@ cp pipeline/.env.example pipeline/.env
 
 ## 4. Lockear el personaje en Atlabs (clave de consistencia)
 
-En la UI de Atlabs, subí el diseño de **Fenn** y guardalo en la *Consistent Character
+En la UI de Atlabs, subí el diseño de **Suki** y guardalo en la *Consistent Character
 library*. Anotá el `character_id` y usalo en `content-plan/ready.json` (campo `character`).
 Repetí para Rosa, Beep, Sunny, Vee y Plum. Esto es lo que hace que el personaje salga
 **idéntico** en cada video.

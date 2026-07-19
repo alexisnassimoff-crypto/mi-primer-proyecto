@@ -2,13 +2,13 @@
   "_comment": "Payloads de produccion (machine-input del pipeline) para las canciones status=ready. La version legible/creativa esta en starter-batch.md.",
   "S001": {
     "suno_prompt": "children's music, cheerful nursery rhyme, kids choir, ukulele, glockenspiel, simple bouncy melody, warm, 110 BPM, child-safe, clear vocals",
-    "lyrics": "(Chorus)\nA-B-C, come glow with me,\nsing the letters, one, two, three!\nFenn lights them one by one,\nlearning letters is so fun!\n(Verse 1)\nA is for apple, B is for bee,\nC is for cuddle, come sing with me!\nD is for dance, E is for eye,\nF is for firefly flying high!\n(Chorus)\n(Verse 2)\nG, H, I - the letters glow,\nJ, K, L - away we go!\nM, N, O - we're almost there,\nletters glowing everywhere!\n(Chorus x2)",
-    "character": "fenn",
-    "scene_prompt": "Fenn in the Glimmerwood clearing, glowing letters A-B-C floating and lighting up as he touches them, gentle bounce, soft golden light, friends peeking from mushrooms, slow cheerful motion.",
-    "short_scene": "Chorus close-up: Fenn lighting letters A-B-C, centered, vertical.",
-    "youtube_title": "ABC Song 🎵 Learn the Alphabet with Fenn | Glimmerwood",
-    "description": "Sing the ABCs with Fenn the little glow! A fun, gentle alphabet song for toddlers and preschoolers. 🌟 Subscribe for a new song every day!\n\n#ABCsong #alphabet #forkids #nurseryrhymes",
-    "tags": ["abc song", "alphabet song", "learn abc", "toddler songs", "nursery rhymes", "preschool", "kids songs", "fenn and friends"]
+    "lyrics": "(Chorus)\nA-B-C, come glow with me,\nsing the letters, one, two, three!\nSuki lights them one by one,\nlearning letters is so fun!\n(Verse 1)\nA is for apple, B is for bee,\nC is for cuddle, come sing with me!\nD is for dance, E is for eye,\nF is for firefly flying high!\n(Chorus)\n(Verse 2)\nG, H, I - the letters glow,\nJ, K, L - away we go!\nM, N, O - we're almost there,\nletters glowing everywhere!\n(Chorus x2)",
+    "character": "suki",
+    "scene_prompt": "Suki in the Glimmerwood clearing, glowing letters A-B-C floating and lighting up as he touches them, gentle bounce, soft golden light, friends peeking from mushrooms, slow cheerful motion.",
+    "short_scene": "Chorus close-up: Suki lighting letters A-B-C, centered, vertical.",
+    "youtube_title": "ABC Song 🎵 Learn the Alphabet with Suki | Suki & Friends",
+    "description": "Sing the ABCs with Suki the little glow! A fun, gentle alphabet song for toddlers and preschoolers. 🌟 Subscribe for a new song every day!\n\n#ABCsong #alphabet #forkids #nurseryrhymes",
+    "tags": ["abc song", "alphabet song", "learn abc", "toddler songs", "nursery rhymes", "preschool", "kids songs", "suki and friends"]
   },
   "S002": {
     "suno_prompt": "children's counting song, upbeat, kids choir, marimba, claps, playful, 120 BPM, child-safe, clear vocals",
@@ -16,9 +16,9 @@
     "character": "beep",
     "scene_prompt": "Beep (blue round glow with a counter dot) in Glimmerwood, numbers 1-10 pop up glowing as objects appear (fireflies, leaves, mushrooms), gentle counting motion, each number lights up, warm evening light.",
     "short_scene": "Chorus: numbers 1 to 10 lighting up with Beep, vertical.",
-    "youtube_title": "Count to 10 with Beep! 🔢 Numbers Song for Kids | Glimmerwood",
+    "youtube_title": "Count to 10 with Beep! 🔢 Numbers Song for Kids | Suki & Friends",
     "description": "Learn to count from 1 to 10 with Beep! A fun numbers song for toddlers. 🌟 New songs every day - subscribe!\n\n#numberssong #counting #forkids #nurseryrhymes",
-    "tags": ["counting song", "numbers song", "count to 10", "learn numbers", "toddler songs", "kids counting", "fenn and friends"]
+    "tags": ["counting song", "numbers song", "count to 10", "learn numbers", "toddler songs", "kids counting", "suki and friends"]
   },
   "S003": {
     "suno_prompt": "happy children's song about colors, kids choir, bright ukulele, glockenspiel, cheerful, 112 BPM, child-safe, clear vocals",
@@ -26,9 +26,9 @@
     "character": "rosa",
     "scene_prompt": "The five Glow Pals (pink, orange, green, blue, purple) line up forming a soft glowing rainbow arc over Glimmerwood, each lights up as its color is named, gentle, colorful, warm.",
     "short_scene": "Chorus: rainbow forming with the five friends, vertical.",
-    "youtube_title": "Colors Song 🌈 Learn Colors with Fenn & Friends | Glimmerwood",
+    "youtube_title": "Colors Song 🌈 Learn Colors with the Glow Pals | Suki & Friends",
     "description": "Learn your colors with the Glow Pals! Red, orange, yellow, green, blue and purple in a happy rainbow song for toddlers. 🌟 Subscribe!\n\n#colorssong #learncolors #forkids #nurseryrhymes",
-    "tags": ["colors song", "learn colors", "rainbow song", "toddler songs", "preschool colors", "kids songs", "fenn and friends"]
+    "tags": ["colors song", "learn colors", "rainbow song", "toddler songs", "preschool colors", "kids songs", "suki and friends"]
   },
   "S004": {
     "suno_prompt": "children's farm animal song, playful, kids choir, banjo, ukulele, animal sounds, cheerful, 116 BPM, child-safe, clear vocals",
@@ -36,9 +36,9 @@
     "character": "vee",
     "scene_prompt": "Vee (green round glow with a leaf) at a cozy glowing farm in Glimmerwood; soft plush cow, sheep, duck, horse appear and gently make sounds, warm, tender, slow motion, child-safe.",
     "short_scene": "Chorus: animals appearing with sounds, vertical.",
-    "youtube_title": "Farm Animals Song 🐮 Animal Sounds for Kids | Glimmerwood",
+    "youtube_title": "Farm Animals Song 🐮 Animal Sounds for Kids | Suki & Friends",
     "description": "Moo, baa, quack! Meet the animals of Glimmerwood Farm with Vee. A fun animal sounds song for toddlers. 🌟 New songs daily - subscribe!\n\n#animalsong #farmanimals #forkids #nurseryrhymes",
-    "tags": ["farm animals song", "animal sounds", "animals for kids", "toddler songs", "old macdonald", "kids songs", "fenn and friends"]
+    "tags": ["farm animals song", "animal sounds", "animals for kids", "toddler songs", "old macdonald", "kids songs", "suki and friends"]
   },
   "S005": {
     "suno_prompt": "children's song about washing hands, bouncy, playful, kids choir, claps, bubbles sound, cheerful, 118 BPM, child-safe, clear vocals",
@@ -46,9 +46,9 @@
     "character": "sunny",
     "scene_prompt": "Sunny (orange round glow) at a cute glowing sink in Glimmerwood, gentle glowing soap bubbles float, hands-washing motion mimed cutely, bright, happy, warm, no scary elements.",
     "short_scene": "Chorus: glowing bubbles and hand-washing, vertical.",
-    "youtube_title": "Wash Your Hands Song 🧼 Healthy Habits for Kids | Glimmerwood",
+    "youtube_title": "Wash Your Hands Song 🧼 Healthy Habits for Kids | Suki & Friends",
     "description": "Scrub-a-dub! Learn to wash your hands with Sunny. A fun healthy-habits song for toddlers. 🌟 Subscribe for a new song every day!\n\n#washyourhands #healthyhabits #forkids",
-    "tags": ["wash your hands song", "healthy habits", "good habits for kids", "toddler songs", "hygiene song", "kids songs", "fenn and friends"]
+    "tags": ["wash your hands song", "healthy habits", "good habits for kids", "toddler songs", "hygiene song", "kids songs", "suki and friends"]
   },
   "S006": {
     "suno_prompt": "gentle lullaby, soft, calm, music box, glockenspiel, soft kids voice, dreamy, slow, 68 BPM, child-safe, clear vocals",
@@ -56,9 +56,9 @@
     "character": "plum",
     "scene_prompt": "Nighttime-cozy: Plum (purple round glow with a tiny star) under a soft crescent moon in Glimmerwood, stars twinkling slowly, very gentle floating motion, dim warm light, calm, no bright flashes, perfect for sleep.",
     "short_scene": "First verse: Plum under the moon, stars twinkling, vertical.",
-    "youtube_title": "Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Glimmerwood",
+    "youtube_title": "Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Suki & Friends",
     "description": "A gentle lullaby to help your little one fall asleep, with Plum under the Glimmerwood moon. Soft, calming and cozy. 🌟 Subscribe!\n\n#lullaby #bedtime #forkids #sleepsong",
-    "tags": ["lullaby", "bedtime song", "sleep song for babies", "baby lullaby", "calming music for kids", "toddler sleep", "fenn and friends"]
+    "tags": ["lullaby", "bedtime song", "sleep song for babies", "baby lullaby", "calming music for kids", "toddler sleep", "suki and friends"]
   },
   "S007": {
     "suno_prompt": "children's song about shapes, marching, playful, kids choir, tuba, claps, cheerful, 114 BPM, child-safe, clear vocals",
@@ -66,9 +66,9 @@
     "character": "beep",
     "scene_prompt": "Beep leads a gentle parade of glowing shapes (circle, square, triangle, rectangle, star) marching softly across Glimmerwood, each shape lights up as named, cheerful, slow-march motion.",
     "short_scene": "Chorus: glowing shapes parade, vertical.",
-    "youtube_title": "Shapes Song ⭐ Learn Shapes with Beep | Glimmerwood",
+    "youtube_title": "Shapes Song ⭐ Learn Shapes with Beep | Suki & Friends",
     "description": "Circle, square, triangle! March along and learn shapes with Beep. A fun learning song for toddlers. 🌟 New songs daily - subscribe!\n\n#shapessong #learnshapes #forkids",
-    "tags": ["shapes song", "learn shapes", "circle square triangle", "toddler songs", "preschool learning", "kids songs", "fenn and friends"]
+    "tags": ["shapes song", "learn shapes", "circle square triangle", "toddler songs", "preschool learning", "kids songs", "suki and friends"]
   },
   "S008": {
     "suno_prompt": "children's song about brushing teeth, bouncy, fun, kids choir, ukulele, sparkle chimes, cheerful, 120 BPM, child-safe, clear vocals",
@@ -76,8 +76,8 @@
     "character": "sunny",
     "scene_prompt": "Sunny in a cozy glowing bathroom in Glimmerwood, cutely miming toothbrushing, gentle sparkle chimes on the smile, bright, happy, warm, child-safe.",
     "short_scene": "Chorus: sparkling smile and brushing, vertical.",
-    "youtube_title": "Brush Your Teeth Song 🪥 Healthy Habits for Kids | Glimmerwood",
+    "youtube_title": "Brush Your Teeth Song 🪥 Healthy Habits for Kids | Suki & Friends",
     "description": "Brush, brush, brush! Learn to brush your teeth with Sunny. A fun healthy-habits song for toddlers. 🌟 Subscribe for a new song every day!\n\n#brushyourteeth #healthyhabits #forkids",
-    "tags": ["brush your teeth song", "healthy habits", "good habits for kids", "toddler songs", "hygiene song", "kids songs", "fenn and friends"]
+    "tags": ["brush your teeth song", "healthy habits", "good habits for kids", "toddler songs", "hygiene song", "kids songs", "suki and friends"]
   }
 }

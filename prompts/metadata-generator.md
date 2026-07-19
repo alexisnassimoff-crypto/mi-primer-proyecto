@@ -6,7 +6,7 @@ en título + descripción + tags + miniatura.
 
 ## Título
 
-Formato: `<TEMA clave> <emoji> | <gancho corto> | Glimmerwood`
+Formato: `<TEMA clave> <emoji> | <gancho corto> | Suki & Friends`
 - Empezar con lo que buscan los padres (ABC Song, Numbers Song, Colors Song, Lullaby...).
 - 1 emoji relevante. < 70 caracteres para que no se corte.
 
@@ -28,13 +28,13 @@ Sing along with <personaje> in Glimmerwood! 🌟
 
 - Amplios: `kids songs, nursery rhymes, toddler songs, preschool, songs for kids, baby
   songs`
-- Marca: `fenn and friends, fenn, glimmerwood`
+- Marca: `suki and friends, suki, glimmerwood`
 - Específicos del tema: p.ej. `abc song, alphabet song, learn abc` / `counting song,
   numbers song` / `lullaby, bedtime song, sleep song for babies`.
 
 ## Reglas
 
 - Nunca prometer cosas falsas ni clickbait engañoso (penaliza y rompe confianza).
-- Coherencia de marca en cada título (`| Glimmerwood`).
+- Coherencia de marca en cada título (`| Suki & Friends`).
 - Para compilados: incluir timestamps (sube retención y da rich results).
 - Miniatura según plantilla en `brand/brand.md`.

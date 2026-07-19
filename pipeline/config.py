@@ -32,7 +32,7 @@ YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET_FILE", "client_secret.j
 YOUTUBE_TOKEN_FILE = os.getenv("YOUTUBE_TOKEN_FILE", "token.json")
 
 # --- Parametros de marca ---
-CHANNEL_NAME = "Glimmerwood"
+CHANNEL_NAME = "Suki & Friends"
 MADE_FOR_KIDS = True          # Obligatorio por COPPA. No cambiar.
 DEFAULT_LANGUAGE = "en"
 

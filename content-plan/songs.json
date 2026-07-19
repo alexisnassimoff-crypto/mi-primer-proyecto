@@ -1,19 +1,19 @@
 {
   "meta": {
-    "channel": "Glimmerwood",
+    "channel": "Suki & Friends",
     "made_for_kids": true,
     "language": "en",
     "notes": "Fuente de verdad del pipeline. status: ready | planned | in_progress | published. Las 'ready' viven completas en starter-batch.md. Las 'planned' se completan con prompts/ segun el calendario."
   },
   "songs": [
-    { "id": "S001", "title": "Fenn's ABC Glow", "pillar": "letters", "character": "Rosa", "theme": "alphabet A-Z", "status": "ready", "youtube_title": "ABC Song 🎵 Learn the Alphabet with Fenn | Glimmerwood" },
-    { "id": "S002", "title": "Count with Beep", "pillar": "numbers", "character": "Beep", "theme": "counting 1-10", "status": "ready", "youtube_title": "Count to 10 with Beep! 🔢 Numbers Song for Kids | Glimmerwood" },
-    { "id": "S003", "title": "Rainbow Glow", "pillar": "colors", "character": "Rosa", "theme": "colors", "status": "ready", "youtube_title": "Colors Song 🌈 Learn Colors with Fenn & Friends | Glimmerwood" },
-    { "id": "S004", "title": "Glimmerwood Farm", "pillar": "animals", "character": "Vee", "theme": "farm animal sounds", "status": "ready", "youtube_title": "Farm Animals Song 🐮 Animal Sounds for Kids | Glimmerwood" },
-    { "id": "S005", "title": "Wishy Washy Hands", "pillar": "habits", "character": "Sunny", "theme": "washing hands", "status": "ready", "youtube_title": "Wash Your Hands Song 🧼 Healthy Habits for Kids | Glimmerwood" },
-    { "id": "S006", "title": "Twinkle Little Glow", "pillar": "bedtime", "character": "Plum", "theme": "lullaby", "status": "ready", "youtube_title": "Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Glimmerwood" },
-    { "id": "S007", "title": "Shape Parade", "pillar": "numbers", "character": "Beep", "theme": "shapes", "status": "ready", "youtube_title": "Shapes Song ⭐ Learn Shapes with Beep | Glimmerwood" },
-    { "id": "S008", "title": "Brush Brush Sparkle", "pillar": "habits", "character": "Sunny", "theme": "brushing teeth", "status": "ready", "youtube_title": "Brush Your Teeth Song 🪥 Healthy Habits for Kids | Glimmerwood" },
+    { "id": "S001", "title": "Suki's ABC Glow", "pillar": "letters", "character": "Rosa", "theme": "alphabet A-Z", "status": "ready", "youtube_title": "ABC Song 🎵 Learn the Alphabet with Suki | Suki & Friends" },
+    { "id": "S002", "title": "Count with Beep", "pillar": "numbers", "character": "Beep", "theme": "counting 1-10", "status": "ready", "youtube_title": "Count to 10 with Beep! 🔢 Numbers Song for Kids | Suki & Friends" },
+    { "id": "S003", "title": "Rainbow Glow", "pillar": "colors", "character": "Rosa", "theme": "colors", "status": "ready", "youtube_title": "Colors Song 🌈 Learn Colors with the Glow Pals | Suki & Friends" },
+    { "id": "S004", "title": "Glimmerwood Farm", "pillar": "animals", "character": "Vee", "theme": "farm animal sounds", "status": "ready", "youtube_title": "Farm Animals Song 🐮 Animal Sounds for Kids | Suki & Friends" },
+    { "id": "S005", "title": "Wishy Washy Hands", "pillar": "habits", "character": "Sunny", "theme": "washing hands", "status": "ready", "youtube_title": "Wash Your Hands Song 🧼 Healthy Habits for Kids | Suki & Friends" },
+    { "id": "S006", "title": "Twinkle Little Glow", "pillar": "bedtime", "character": "Plum", "theme": "lullaby", "status": "ready", "youtube_title": "Twinkle Bedtime Lullaby 🌙 Soft Sleep Song for Babies | Suki & Friends" },
+    { "id": "S007", "title": "Shape Parade", "pillar": "numbers", "character": "Beep", "theme": "shapes", "status": "ready", "youtube_title": "Shapes Song ⭐ Learn Shapes with Beep | Suki & Friends" },
+    { "id": "S008", "title": "Brush Brush Sparkle", "pillar": "habits", "character": "Sunny", "theme": "brushing teeth", "status": "ready", "youtube_title": "Brush Your Teeth Song 🪥 Healthy Habits for Kids | Suki & Friends" },
 
     { "id": "S009", "title": "Rainbow Colors March", "pillar": "colors", "character": "Rosa", "theme": "colors advanced", "status": "planned" },
     { "id": "S010", "title": "Circle & Square", "pillar": "numbers", "character": "Beep", "theme": "shapes 2", "status": "planned" },
@@ -35,7 +35,7 @@
     { "id": "S026", "title": "Count to Twenty", "pillar": "numbers", "character": "Beep", "theme": "counting 1-20", "status": "planned" },
     { "id": "S027", "title": "Yummy Fruits", "pillar": "habits", "character": "Vee", "theme": "healthy food fruits", "status": "planned" },
     { "id": "S028", "title": "Veggie Friends", "pillar": "habits", "character": "Vee", "theme": "healthy food veggies", "status": "planned" },
-    { "id": "S029", "title": "Good Morning Glimmerwood", "pillar": "habits", "character": "Fenn", "theme": "morning routine", "status": "planned" },
+    { "id": "S029", "title": "Good Morning Glimmerwood", "pillar": "habits", "character": "Suki", "theme": "morning routine", "status": "planned" },
     { "id": "S030", "title": "Goodnight Glow", "pillar": "bedtime", "character": "Plum", "theme": "lullaby 3", "status": "planned" },
     { "id": "S031", "title": "My Body Song", "pillar": "learning", "character": "Rosa", "theme": "body parts", "status": "planned" },
     { "id": "S032", "title": "Head to Toe Glow", "pillar": "habits", "character": "Sunny", "theme": "exercise/dance", "status": "planned" },
