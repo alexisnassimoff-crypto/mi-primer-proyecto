@@ -89,8 +89,9 @@ Cambiando `--accent` cambia toda la paleta de la web.
 
 - [ ] Completar la **matrícula profesional** en el pie (hay un `TODO` marcado en `index.html`)
 - [ ] Confirmar los horarios de atención de la sección Turnos
-- [ ] Reemplazar `https://urielgrumberg.com/` por el dominio real en las etiquetas
-      `canonical`, `og:url` y en el bloque JSON-LD del final de `index.html`
+- [ ] Al comprar el dominio propio, reemplazar
+      `https://alexisnassimoff-crypto.github.io/mi-primer-proyecto/` por el dominio real en
+      las etiquetas `canonical`, `og:url`, `og:image` y en el bloque JSON-LD de `index.html`
 
 ---
 
@@ -101,7 +102,9 @@ configurar nada: framework "Other", sin build command.
 
 **Netlify** — arrastrar la carpeta a netlify.com/drop.
 
-**GitHub Pages** — Settings → Pages → Deploy from a branch → rama `main`, carpeta `/`.
+**GitHub Pages** — ya está configurado. Cada push a `main` dispara
+`.github/workflows/pages.yml` y republica el sitio en
+<https://alexisnassimoff-crypto.github.io/mi-primer-proyecto/>.
 
 ---
 
