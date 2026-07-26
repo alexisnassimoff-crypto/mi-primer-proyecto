@@ -89,22 +89,22 @@ Cambiando `--accent` cambia toda la paleta de la web.
 
 - [ ] Completar la **matrícula profesional** en el pie (hay un `TODO` marcado en `index.html`)
 - [ ] Confirmar los horarios de atención de la sección Turnos
-- [ ] Al comprar el dominio propio, reemplazar
-      `https://alexisnassimoff-crypto.github.io/mi-primer-proyecto/` por el dominio real en
-      las etiquetas `canonical`, `og:url`, `og:image` y en el bloque JSON-LD de `index.html`
+- [ ] Poner la URL real del sitio (la de Vercel o el dominio propio) en las etiquetas
+      `canonical`, `og:url`, `og:image` y en el bloque JSON-LD de `index.html`.
+      Hoy apuntan a una URL de GitHub Pages que no existe, así que la miniatura al
+      compartir el link no se ve.
 
 ---
 
 ## Publicar
 
-**Vercel** — `vercel` en la carpeta, o importar el repo desde vercel.com. No hay que
-configurar nada: framework "Other", sin build command.
+**Vercel** (el que se usa) — importar el repo desde vercel.com. Framework preset "Other",
+sin build command y sin output directory. Publica desde `main`.
 
 **Netlify** — arrastrar la carpeta a netlify.com/drop.
 
-**GitHub Pages** — ya está configurado. Cada push a `main` dispara
-`.github/workflows/pages.yml` y republica el sitio en
-<https://alexisnassimoff-crypto.github.io/mi-primer-proyecto/>.
+**GitHub Pages** — descartado: activar Pages por primera vez requiere permisos que el
+token de Actions no tiene, y hay que hacerlo a mano desde Settings.
 
 ---
 
