@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Planificación quirúrgica — reemplazar por foto">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2=".6" y2="1">
+      <stop offset="0" stop-color="#0F1821"/>
+      <stop offset="1" stop-color="#06090C"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx=".7" cy=".2" r=".6">
+      <stop offset="0" stop-color="#6FD3E8" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#6FD3E8" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid2" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M50 0H0v50" fill="none" stroke="#ffffff" stroke-opacity=".045" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg2)"/>
+  <rect width="800" height="800" fill="url(#grid2)"/>
+  <rect width="800" height="800" fill="url(#lamp)"/>
+
+  <g fill="none" stroke="#6FD3E8" stroke-opacity=".5" stroke-width="1.5">
+    <circle cx="400" cy="400" r="250" stroke-opacity=".16"/>
+    <circle cx="400" cy="400" r="180" stroke-opacity=".26"/>
+    <circle cx="400" cy="400" r="110" stroke-opacity=".4"/>
+    <path d="M400 90v90M400 620v90M90 400h90M620 400h90" stroke-opacity=".35"/>
+    <path d="M222 222l64 64M514 514l64 64M578 222l-64 64M286 514l-64 64" stroke-opacity=".2"/>
+  </g>
+
+  <g fill="#9FE8F5">
+    <circle cx="400" cy="400" r="5"/>
+    <circle cx="400" cy="220" r="4" fill-opacity=".8"/>
+    <circle cx="580" cy="400" r="4" fill-opacity=".8"/>
+    <circle cx="400" cy="580" r="4" fill-opacity=".8"/>
+    <circle cx="220" cy="400" r="4" fill-opacity=".8"/>
+  </g>
+
+  <g stroke="#9FE8F5" stroke-opacity=".55" stroke-width="1.5" fill="none" stroke-linecap="round">
+    <path d="M400 400l180-180"/>
+    <path d="M400 400l-110 145"/>
+  </g>
+
+  <rect x="40" y="40" width="720" height="720" rx="24" fill="none" stroke="#ffffff" stroke-opacity=".08"/>
+</svg>

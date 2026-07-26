@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" width="900" height="675" role="img" aria-label="Trazado de perfil facial después de la cirugía">
+  <defs>
+    <linearGradient id="bgD" x1="0" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#0E1A22"/>
+      <stop offset="1" stop-color="#06090C"/>
+    </linearGradient>
+    <radialGradient id="glowD" cx=".55" cy=".5" r=".45">
+      <stop offset="0" stop-color="#6FD3E8" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#6FD3E8" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="gD" width="45" height="45" patternUnits="userSpaceOnUse">
+      <path d="M45 0H0v45" fill="none" stroke="#ffffff" stroke-opacity=".04" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="900" height="675" fill="url(#bgD)"/>
+  <rect width="900" height="675" fill="url(#gD)"/>
+  <rect width="900" height="675" fill="url(#glowD)"/>
+
+  <path d="M526 70v560" stroke="#ffffff" stroke-opacity=".14" stroke-width="1" stroke-dasharray="6 9"/>
+
+  <!-- trazado con avance mandibular -->
+  <g fill="none" stroke="#9FE8F5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M318 675V560c-2-40-18-55-22-100-8-60-8-160 4-220 16-75 60-130 120-130 50 0 92 30 108 80 10 30 14 45 12 60-2 8-12 8-14 16 14 34 36 62 48 78 4 8-8 12-22 12-14 0-24 2-28 12 8 10 10 18 2 26-4 8 0 16 14 24-10 10-14 24-8 40 6 14 2 24-16 34-34 16-76 22-106 18-30-4-48-22-52-52-4 34 8 74 24 104 8 30 12 70 12 105"/>
+    <ellipse cx="372" cy="332" rx="21" ry="29" stroke-opacity=".45" stroke-width="2"/>
+  </g>
+
+  <g fill="#9FE8F5">
+    <circle cx="526" cy="266" r="5"/>
+    <circle cx="574" cy="344" r="5"/>
+    <circle cx="540" cy="458" r="5"/>
+  </g>
+
+  <!-- indicador de avance -->
+  <g stroke="#6FD3E8" stroke-opacity=".7" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M488 500h56"/>
+    <path d="M536 494l8 6-8 6"/>
+  </g>
+
+  <g fill="#9FE8F5" font-family="Helvetica, Arial, sans-serif" font-size="15" letter-spacing="2.5" fill-opacity=".75">
+    <text x="620" y="205">PERFIL ARMONIZADO</text>
+  </g>
+</svg>

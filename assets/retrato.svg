@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" width="720" height="900" role="img" aria-label="Retrato — reemplazar por foto">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2=".4" y2="1">
+      <stop offset="0" stop-color="#101922"/>
+      <stop offset="1" stop-color="#06090C"/>
+    </linearGradient>
+    <radialGradient id="key" cx=".5" cy=".34" r=".55">
+      <stop offset="0" stop-color="#6FD3E8" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#6FD3E8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fig" x1=".2" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#22323E"/>
+      <stop offset="1" stop-color="#0C1319"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9FE8F5" stop-opacity=".55"/>
+      <stop offset=".35" stop-color="#9FE8F5" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grid" width="45" height="45" patternUnits="userSpaceOnUse">
+      <path d="M45 0H0v45" fill="none" stroke="#ffffff" stroke-opacity=".05" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="720" height="900" fill="url(#bg)"/>
+  <rect width="720" height="900" fill="url(#grid)"/>
+  <rect width="720" height="900" fill="url(#key)"/>
+
+  <!-- figura -->
+  <g>
+    <path d="M360 214c62 0 104 48 104 112 0 47-20 84-44 103l-6 5v34l84 36c62 27 94 76 102 143l7 61H113l7-61c8-67 40-116 102-143l84-36v-34l-6-5c-24-19-44-56-44-103 0-64 42-112 104-112Z" fill="url(#fig)"/>
+    <path d="M360 214c62 0 104 48 104 112 0 47-20 84-44 103l-6 5v34l84 36c62 27 94 76 102 143l7 61H113l7-61c8-67 40-116 102-143l84-36v-34l-6-5c-24-19-44-56-44-103 0-64 42-112 104-112Z" fill="none" stroke="url(#rim)" stroke-width="2"/>
+  </g>
+
+  <!-- viñeta inferior -->
+  <rect y="600" width="720" height="300" fill="#06090C" opacity=".55"/>
+  <rect y="560" width="720" height="140" fill="none"/>
+</svg>
