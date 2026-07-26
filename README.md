@@ -49,13 +49,18 @@ solo, con el nombre y el motivo que carga el paciente.
 
 ### 3. Fotos
 
-| Dónde | Archivo | Estado |
+Todas las imágenes son reales; no queda ningún placeholder.
+
+| Dónde | Archivo | Qué es |
 |---|---|---|
-| Hero | `assets/uriel.webp` | Retrato real, recortado en círculo con fondo transparente |
-| Perfil | `assets/quirofano.svg` | **Placeholder**. Falta una foto en quirófano o consultorio (cuadrada, ~1200×1200) |
+| Hero | `assets/uriel.jpg` | Retrato de estudio, recortado a 4:5 |
+| Perfil | `assets/quirofano.jpg` | Foto operando, recortada a cuadrado |
+| Compartir | `assets/og.jpg` | Equipo en quirófano, 1200×630, con el nombre sobreimpreso |
 | Casos | `assets/casos/caso1-*.jpg` | Caso real en tres vistas, recortado del material de Instagram |
 
-Para regenerar el retrato circular a partir de otra foto, ver `herramientas/procesar-imagenes.py`.
+`assets/og.jpg` es la miniatura que aparece al pegar el link en WhatsApp o redes.
+
+Para regenerar los recortes a partir de fotos nuevas: `herramientas/procesar-imagenes.py`.
 
 ### 4. Casos antes/después
 
@@ -82,13 +87,10 @@ Cambiando `--accent` cambia toda la paleta de la web.
 
 ## Antes de publicar
 
-- [ ] Reemplazar las fotos placeholder
 - [ ] Completar la **matrícula profesional** en el pie (hay un `TODO` marcado en `index.html`)
 - [ ] Confirmar los horarios de atención de la sección Turnos
 - [ ] Reemplazar `https://urielgrumberg.com/` por el dominio real en las etiquetas
       `canonical`, `og:url` y en el bloque JSON-LD del final de `index.html`
-- [ ] Subir una imagen de 1200×630 a `assets/og.jpg` y descomentar la etiqueta `og:image`
-      (es la miniatura que se ve al compartir el link por WhatsApp)
 
 ---
 

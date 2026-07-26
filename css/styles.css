@@ -266,16 +266,17 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
 /* Retrato */
 .hero__media{position:relative;isolation:isolate}
 .portrait{
-  position:relative;aspect-ratio:1;max-width:400px;margin-inline:auto;
-  border-radius:50%;
-  background:radial-gradient(circle at 50% 30%,#141C24,#05080A 70%);
-  box-shadow:0 0 0 1px rgba(111,211,232,.22),0 30px 70px -34px rgba(0,0,0,.95);
+  position:relative;overflow:hidden;
+  aspect-ratio:4/5;max-width:400px;margin-inline:auto;
+  border-radius:var(--r-xl);
+  background:#000;
+  box-shadow:0 0 0 1px rgba(111,211,232,.16),0 40px 90px -48px rgba(0,0,0,.95);
 }
-.portrait img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.portrait img{width:100%;height:100%;object-fit:cover;object-position:center 18%}
 .portrait__glow{
-  position:absolute;inset:-14%;border-radius:50%;z-index:-1;
-  background:radial-gradient(circle,var(--glow),transparent 62%);
-  opacity:.75;pointer-events:none;
+  position:absolute;inset:-6% -9% -10%;z-index:-1;border-radius:40px;
+  background:radial-gradient(62% 52% at 50% 62%,var(--glow),transparent 70%);
+  opacity:.8;pointer-events:none;
 }
 .badge-ig{position:absolute;left:50%;bottom:-14px;translate:-50% 0;display:inline-flex}
 .badge-ig a{
@@ -626,15 +627,18 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
   .card__ico{width:38px;height:38px;border-radius:11px}
   .card__ico svg{width:20px;height:20px}
 
-  /* perfil sin imagen ni CTA duplicada: la barra fija ya está en pantalla */
-  .perfil__media{display:none}
+  /* la CTA del perfil sobra: la barra fija ya está en pantalla */
   .perfil__copy .btn{display:none}
+  .perfil__media{max-width:none;margin-bottom:8px}
+  .frame{aspect-ratio:4/3;border-radius:var(--r-lg)}
+  .stat-chip{right:0;left:auto;bottom:-16px;padding:13px 16px}
+  .stat-chip strong{font-size:1.25rem}
 
   /* el mensaje largo se escribe en WhatsApp, no en el formulario */
   .form .form__extra{display:none}
   .form{gap:11px}
 
-  .portrait{max-width:250px}
+  .portrait{max-width:260px}
   .case__views{width:100%;gap:2px}
   .case__views button{flex:1;padding:11px 4px;font-size:.78rem}
   .case__tag{top:10px;font-size:.58rem;padding:5px 10px}
