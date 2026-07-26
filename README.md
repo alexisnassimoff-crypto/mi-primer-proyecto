@@ -29,8 +29,8 @@ python3 -m http.server 8000
 
 Está en dos lugares y hay que cambiarlo en ambos:
 
-- `js/main.js`, primera línea de configuración: `var WHATSAPP = '5491132961955';`
-- `index.html`: buscar y reemplazar `5491132961955` (son los `href` de respaldo por si
+- `js/main.js`, primera línea de configuración: `var WHATSAPP = '5493413168083';`
+- `index.html`: buscar y reemplazar `5493413168083` (son los `href` de respaldo por si
   el visitante tiene JavaScript desactivado).
 
 Formato internacional, sin `+`, sin espacios y sin guiones.
@@ -49,20 +49,22 @@ solo, con el nombre y el motivo que carga el paciente.
 
 ### 3. Fotos
 
-Los archivos actuales son **placeholders** en SVG. Para reemplazarlos, guardá las fotos
-reales en `assets/` y actualizá el `src` en `index.html`:
+| Dónde | Archivo | Estado |
+|---|---|---|
+| Hero | `assets/uriel.webp` | Retrato real, recortado en círculo con fondo transparente |
+| Perfil | `assets/quirofano.svg` | **Placeholder**. Falta una foto en quirófano o consultorio (cuadrada, ~1200×1200) |
+| Casos | `assets/casos/caso1-*.jpg` | Caso real en tres vistas, recortado del material de Instagram |
 
-| Dónde | Archivo actual | Qué poner | Formato sugerido |
-|---|---|---|---|
-| Hero | `assets/retrato.svg` | Retrato del Dr. | vertical 4:5, ~1200×1500 |
-| Perfil | `assets/quirofano.svg` | Foto en quirófano o consultorio | cuadrada, ~1200×1200 |
+Para regenerar el retrato circular a partir de otra foto, ver `herramientas/procesar-imagenes.py`.
 
 ### 4. Casos antes/después
 
-Hoy la sección **Casos** es una tarjeta que lleva al Instagram, donde ya están los casos
-reales. Cuando haya fotos propias para la web (mismo ángulo, misma distancia, misma luz y
-**consentimiento firmado del paciente**), esa tarjeta se reemplaza por una galería
-antes/después.
+Cada archivo de `assets/casos/` es **un solo JPG** con las dos fotos ya pegadas (antes a la
+izquierda, después a la derecha); las etiquetas ANTES / DESPUÉS las pone la web por CSS.
+El selector Frente / Tres cuartos / Perfil cambia entre los tres archivos.
+
+Para sumar un segundo caso hacen falta las tres vistas con el mismo encuadre y
+**consentimiento firmado del paciente**.
 
 ### 5. Colores
 
@@ -104,6 +106,7 @@ configurar nada: framework "Other", sin build command.
 ## Detalles técnicos
 
 - Responsive de 320 px en adelante, sin scroll horizontal.
+- Coberturas listadas debajo de los tratamientos y en las preguntas frecuentes.
 - Optimizada para mobile: CTA de WhatsApp arriba del pliegue, barra fija de WhatsApp que
   aparece al scrollear y se esconde sobre el formulario, tarjetas compactas y formulario
   de dos campos (el resto se escribe dentro de WhatsApp).

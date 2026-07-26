@@ -7,7 +7,7 @@
   /* ---------- CONFIGURACIÓN ----------
      Cambiá el número acá (formato internacional, sin + ni espacios)
      y también en los href="https://wa.me/..." del index.html          */
-  var WHATSAPP = '5491132961955';
+  var WHATSAPP = '5493413168083';
   var WA_BASE = 'https://wa.me/' + WHATSAPP;
 
   var $ = function (s, c) { return (c || document).querySelector(s); };
@@ -120,7 +120,22 @@
     });
   }
 
-  /* ---------- 7. Formulario → WhatsApp ---------- */
+  /* ---------- 7. Caso: cambio de vista ---------- */
+  var caso = $('#case');
+
+  if (caso) {
+    var vistas = $$('button', caso);
+    vistas.forEach(function (b) {
+      b.addEventListener('click', function () {
+        caso.setAttribute('data-view', b.dataset.view);
+        vistas.forEach(function (o) {
+          o.setAttribute('aria-pressed', String(o === b));
+        });
+      });
+    });
+  }
+
+  /* ---------- 8. Formulario → WhatsApp ---------- */
   var form = $('#form');
 
   if (form) {
@@ -161,7 +176,7 @@
     });
   }
 
-  /* ---------- 8. Año en el pie ---------- */
+  /* ---------- 9. Año en el pie ---------- */
   var year = $('#year');
   if (year) year.textContent = String(new Date().getFullYear());
 })();

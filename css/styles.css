@@ -264,26 +264,20 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
 .creds span{font-size:.72rem;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
 
 /* Retrato */
-.hero__media{position:relative}
+.hero__media{position:relative;isolation:isolate}
 .portrait{
-  position:relative;border-radius:var(--r-xl);overflow:hidden;
-  border:1px solid var(--line);
-  background:linear-gradient(160deg,var(--bg-3),#070A0D);
-  aspect-ratio:4/5;
-  box-shadow:0 40px 90px -50px rgba(0,0,0,.9);
+  position:relative;aspect-ratio:1;max-width:400px;margin-inline:auto;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 30%,#141C24,#05080A 70%);
+  box-shadow:0 0 0 1px rgba(111,211,232,.22),0 30px 70px -34px rgba(0,0,0,.95);
 }
-.portrait img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.portrait img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .portrait__glow{
-  position:absolute;inset:auto -30% -55% -30%;height:70%;
-  background:radial-gradient(ellipse at 50% 0%,var(--glow),transparent 70%);
-  opacity:.6;pointer-events:none;
+  position:absolute;inset:-14%;border-radius:50%;z-index:-1;
+  background:radial-gradient(circle,var(--glow),transparent 62%);
+  opacity:.75;pointer-events:none;
 }
-.portrait::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(6,8,9,.72),transparent 45%);
-  pointer-events:none;
-}
-.badge-ig{position:absolute;left:50%;bottom:-16px;translate:-50% 0;display:inline-flex}
+.badge-ig{position:absolute;left:50%;bottom:-14px;translate:-50% 0;display:inline-flex}
 .badge-ig a{
   display:inline-flex;align-items:center;gap:8px;
   padding:10px 18px;border-radius:999px;
@@ -331,6 +325,65 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
   transition:opacity .4s,transform .5s var(--ease);
 }
 .card:hover .card__go{opacity:1;transform:none}
+
+/* ---------- Coberturas ---------- */
+.covers{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;
+  margin-top:26px;padding:20px 22px;
+  border:1px solid var(--line);border-radius:var(--r);
+  background:var(--card);text-align:center;
+}
+.covers__label{
+  font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+}
+.covers ul{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.covers li{
+  padding:6px 13px;border-radius:999px;
+  border:1px solid var(--line-hi);background:rgba(255,255,255,.03);
+  font-size:.82rem;color:var(--txt);white-space:nowrap;
+}
+.covers p{width:100%;font-size:.8rem;color:var(--dim)}
+
+/* ---------- Caso antes / después ---------- */
+.case{max-width:900px;margin-inline:auto}
+.case__views{
+  display:flex;gap:4px;margin:0 auto 16px;width:max-content;max-width:100%;
+  padding:4px;border-radius:999px;
+  border:1px solid var(--line);background:var(--card);
+}
+.case__views button{
+  padding:10px 20px;border:0;border-radius:999px;
+  background:transparent;color:var(--muted);
+  font-size:.84rem;font-weight:500;cursor:pointer;white-space:nowrap;
+  transition:color .3s,background .35s var(--ease);
+}
+.case__views button[aria-pressed="true"]{
+  background:linear-gradient(135deg,var(--accent-2),var(--accent) 60%,#4FB6D2);
+  color:#03242D;
+}
+.case__stage{
+  position:relative;overflow:hidden;
+  aspect-ratio:900/788;background:#000;
+  border-radius:var(--r-lg);border:1px solid var(--line);
+  box-shadow:0 40px 90px -55px #000;
+}
+.case__img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  opacity:0;transition:opacity .5s var(--ease);
+}
+.case[data-view="frente"] .case__img[data-view="frente"],
+.case[data-view="tres-cuartos"] .case__img[data-view="tres-cuartos"],
+.case[data-view="perfil"] .case__img[data-view="perfil"]{opacity:1}
+.case__tag{
+  position:absolute;top:14px;
+  padding:6px 13px;border-radius:999px;
+  background:rgba(6,9,12,.62);border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:#D6DEE6;
+  pointer-events:none;
+}
+.case__tag--l{left:14px}
+.case__tag--r{right:14px;color:var(--accent-2);border-color:rgba(111,211,232,.4)}
 
 /* ---------- Casos / prueba social ---------- */
 .proof{
@@ -564,8 +617,6 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
   .creds strong{font-size:.98rem}
   .creds span{font-size:.64rem;letter-spacing:.05em}
   .hero__media{max-width:none}
-  .portrait{aspect-ratio:4/3;border-radius:var(--r-lg)}
-  .portrait img{object-position:center 25%}
 
   /* tarjetas compactas: dos columnas, sin bajada */
   .cards{grid-template-columns:1fr 1fr;gap:10px}
@@ -582,6 +633,14 @@ h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.2;letter-spacing:-.01em}
   /* el mensaje largo se escribe en WhatsApp, no en el formulario */
   .form .form__extra{display:none}
   .form{gap:11px}
+
+  .portrait{max-width:250px}
+  .case__views{width:100%;gap:2px}
+  .case__views button{flex:1;padding:11px 4px;font-size:.78rem}
+  .case__tag{top:10px;font-size:.58rem;padding:5px 10px}
+  .case__tag--l{left:10px}.case__tag--r{right:10px}
+  .covers{margin-top:20px;padding:16px;gap:8px 10px}
+  .covers li{font-size:.76rem;padding:5px 11px}
 
   .proof{padding:26px 20px}
   .proof__ico{display:none}
