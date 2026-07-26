@@ -56,13 +56,15 @@ reales en `assets/` y actualizá el `src` en `index.html`:
 |---|---|---|---|
 | Hero | `assets/retrato.svg` | Retrato del Dr. | vertical 4:5, ~1200×1500 |
 | Perfil | `assets/quirofano.svg` | Foto en quirófano o consultorio | cuadrada, ~1200×1200 |
-| Casos | `assets/casos/antes.svg` · `despues.svg` | Caso antes/después | horizontal 4:3, **mismo encuadre las dos** |
 
-Para los casos antes/después: mismo ángulo, misma distancia y misma luz en las dos fotos,
-si no el comparador se nota desprolijo. **Publicar sólo con consentimiento firmado del
-paciente.**
+### 4. Casos antes/después
 
-### 4. Colores
+Hoy la sección **Casos** es una tarjeta que lleva al Instagram, donde ya están los casos
+reales. Cuando haya fotos propias para la web (mismo ángulo, misma distancia, misma luz y
+**consentimiento firmado del paciente**), esa tarjeta se reemplaza por una galería
+antes/después.
+
+### 5. Colores
 
 Todo el diseño sale de las variables al inicio de `css/styles.css`:
 
@@ -102,7 +104,10 @@ configurar nada: framework "Other", sin build command.
 ## Detalles técnicos
 
 - Responsive de 320 px en adelante, sin scroll horizontal.
+- Optimizada para mobile: CTA de WhatsApp arriba del pliegue, barra fija de WhatsApp que
+  aparece al scrollear y se esconde sobre el formulario, tarjetas compactas y formulario
+  de dos campos (el resto se escribe dentro de WhatsApp).
 - Tipografías auto-hospedadas: no hay pedidos a Google Fonts (más rápido y sin cookies de terceros).
 - Datos estructurados `Physician` (JSON-LD) para que Google muestre la especialidad y la ubicación.
 - Respeta `prefers-reduced-motion`: si el visitante pidió menos animaciones, se desactivan.
-- Navegable por teclado; el comparador antes/después se maneja con las flechas.
+- Navegable por teclado y con foco visible en todos los controles.

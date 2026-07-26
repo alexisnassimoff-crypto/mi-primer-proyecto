@@ -20,9 +20,12 @@
     el.href = WA_BASE + (msg ? '?text=' + encodeURIComponent(msg) : '');
   });
 
-  /* ---------- 2. Header al hacer scroll ---------- */
+  /* ---------- 2. Header y CTA fija al hacer scroll ---------- */
   var header = $('#header');
   var waFloat = $('.wa-float');
+  var ctaBar = $('#ctaBar');
+  var contacto = $('#contacto');
+  var contactoVisible = false;
   var lastY = -1;
 
   function onScroll() {
@@ -30,9 +33,21 @@
     if (y === lastY) return;
     lastY = y;
     header.classList.toggle('is-stuck', y > 12);
-    if (waFloat) waFloat.classList.toggle('is-in', y > 420);
+    // La CTA fija aparece pasado el hero y se esconde sobre el formulario,
+    // para no duplicar el mismo botón dos veces en pantalla.
+    var show = y > 380 && !contactoVisible;
+    if (waFloat) waFloat.classList.toggle('is-in', show);
+    if (ctaBar) ctaBar.classList.toggle('is-in', show);
   }
   window.addEventListener('scroll', onScroll, { passive: true });
+
+  if (contacto && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      contactoVisible = entries[0].isIntersecting;
+      lastY = -1;
+      onScroll();
+    }, { threshold: 0.2 }).observe(contacto);
+  }
   onScroll();
 
   /* ---------- 3. Menú móvil ---------- */
@@ -46,9 +61,7 @@
     document.body.style.overflow = open ? 'hidden' : '';
   }
 
-  burger.addEventListener('click', function () {
-    setDrawer(drawer.hidden);
-  });
+  burger.addEventListener('click', function () { setDrawer(drawer.hidden); });
 
   $$('a', drawer).forEach(function (a) {
     a.addEventListener('click', function () { setDrawer(false); });
@@ -107,26 +120,7 @@
     });
   }
 
-  /* ---------- 7. Comparador antes / después ---------- */
-  $$('.compare__box').forEach(function (box) {
-    var range = $('.compare__range', box);
-    if (!range) return;
-    var apply = function () { box.style.setProperty('--pos', range.value + '%'); };
-    range.addEventListener('input', apply);
-
-    // Con el teclado conviene un paso más grande que el del arrastre.
-    range.addEventListener('keydown', function (e) {
-      var delta = e.key === 'ArrowLeft' ? -5 : e.key === 'ArrowRight' ? 5 : 0;
-      if (!delta) return;
-      e.preventDefault();
-      range.value = Math.min(100, Math.max(0, parseFloat(range.value) + delta));
-      apply();
-    });
-
-    apply();
-  });
-
-  /* ---------- 8. Formulario → WhatsApp ---------- */
+  /* ---------- 7. Formulario → WhatsApp ---------- */
   var form = $('#form');
 
   if (form) {
@@ -167,7 +161,7 @@
     });
   }
 
-  /* ---------- 9. Año en el pie ---------- */
+  /* ---------- 8. Año en el pie ---------- */
   var year = $('#year');
   if (year) year.textContent = String(new Date().getFullYear());
 })();
