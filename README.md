@@ -89,10 +89,10 @@ Cambiando `--accent` cambia toda la paleta de la web.
 
 - [ ] Completar la **matrícula profesional** en el pie (hay un `TODO` marcado en `index.html`)
 - [ ] Confirmar los horarios de atención de la sección Turnos
-- [ ] Poner la URL real del sitio (la de Vercel o el dominio propio) en las etiquetas
-      `canonical`, `og:url`, `og:image` y en el bloque JSON-LD de `index.html`.
-      Hoy apuntan a una URL de GitHub Pages que no existe, así que la miniatura al
-      compartir el link no se ve.
+- [ ] Agregar `<link rel="canonical">` y `<meta property="og:url">` con la URL definitiva
+      (hay un `TODO` marcado en el `<head>`). Se quitaron a propósito para no dejar una
+      URL rota; la miniatura al compartir ya funciona porque `og:image` apunta al
+      archivo del repositorio.
 
 ---
 
