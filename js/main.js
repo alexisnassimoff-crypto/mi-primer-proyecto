@@ -120,7 +120,24 @@
     });
   }
 
-  /* ---------- 7. Caso: cambio de vista ---------- */
+  /* ---------- 7. Paralaje del fondo del hero ---------- */
+  var hero = $('.hero');
+
+  if (hero && !reduced && window.matchMedia('(hover:hover)').matches) {
+    var orbes = $$('.orb', hero);
+    hero.addEventListener('pointermove', function (e) {
+      var r = hero.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      orbes.forEach(function (o, i) {
+        var f = (i + 1) * 18;
+        o.style.setProperty('--px', (x * f).toFixed(1) + 'px');
+        o.style.setProperty('--py', (y * f).toFixed(1) + 'px');
+      });
+    });
+  }
+
+  /* ---------- 8. Caso: cambio de vista ---------- */
   var caso = $('#case');
 
   if (caso) {
@@ -135,7 +152,7 @@
     });
   }
 
-  /* ---------- 8. Formulario → WhatsApp ---------- */
+  /* ---------- 9. Formulario → WhatsApp ---------- */
   var form = $('#form');
 
   if (form) {
@@ -176,7 +193,7 @@
     });
   }
 
-  /* ---------- 9. Año en el pie ---------- */
+  /* ---------- 10. Año en el pie ---------- */
   var year = $('#year');
   if (year) year.textContent = String(new Date().getFullYear());
 })();
