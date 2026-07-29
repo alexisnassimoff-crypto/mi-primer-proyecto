@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turno con oftalmólogo — OJO</title>
+<meta name="description" content="Reservá turno con oftalmólogo en CABA. Control de visión completo, refracción y receta en 30 minutos. Sin cargo si comprás tus anteojos con nosotros.">
+<meta name="theme-color" content="#F4EFE7">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/paginas.css">
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+
+<main id="principal">
+  <div class="envoltorio">
+    <nav class="migas" aria-label="Miga de pan">
+      <a href="index.html">Inicio</a><span class="migas__sep">/</span><span>Turnos</span>
+    </nav>
+  </div>
+
+  <section class="seccion" style="padding-top:0">
+    <div class="envoltorio">
+      <div class="seccion__cabeza">
+        <div class="seccion__cabeza-texto">
+          <p class="volanta"><span class="volanta__punto"></span>Consultorio</p>
+          <h1>Turno con <em class="ital">oftalmólogo</em></h1>
+          <p class="bajada mt-s">
+            Control completo de agudeza visual, refracción y receta. Treinta minutos, sin apuro.
+            Si te llevás los anteojos con nosotros, la consulta no te cuesta nada.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============ Confirmación ============ -->
+      <div id="confirmado" hidden></div>
+
+      <!-- ============ Reserva ============ -->
+      <form class="turnos" id="formulario" novalidate>
+        <div>
+          <!-- 1. Sede -->
+          <div class="checkout__bloque" style="border-top:0;padding-top:0">
+            <h2 class="config__titulo"><span class="config__num">1</span>Dónde</h2>
+            <div class="config__opciones config__opciones--2 mt-m" id="sedes"></div>
+          </div>
+
+          <!-- 2. Tipo de consulta -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">2</span>Qué necesitás</h2>
+            <div class="config__opciones mt-m" id="tipos"></div>
+          </div>
+
+          <!-- 3. Día y hora -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">3</span>Cuándo</h2>
+            <p class="config__ayuda">Elegí un día y después el horario que te quede cómodo.</p>
+
+            <div class="calendario__nav mt-m">
+              <button type="button" class="btn-icono" id="mesAnterior" aria-label="Mes anterior">‹</button>
+              <p class="calendario__mes" id="nombreMes"></p>
+              <button type="button" class="btn-icono" id="mesSiguiente" aria-label="Mes siguiente">›</button>
+            </div>
+
+            <div class="calendario" id="calendario" role="group" aria-label="Elegí un día"></div>
+
+            <div id="zonaHorarios" hidden>
+              <p class="filtros__titulo mt-l" id="tituloHorarios"></p>
+              <div class="horarios" id="horarios" role="group" aria-label="Elegí un horario"></div>
+            </div>
+          </div>
+
+          <!-- 4. Datos -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">4</span>Tus datos</h2>
+            <div id="zonaGoogleTurno" class="mt-m"></div>
+            <div class="checkout__grilla mt-m">
+              <div class="campo">
+                <label class="campo__label" for="nombre">Nombre y apellido <span class="req">*</span></label>
+                <input class="entrada" id="nombre" autocomplete="name" required>
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="telefono">WhatsApp <span class="req">*</span></label>
+                <input class="entrada" id="telefono" type="tel" autocomplete="tel" placeholder="11 5555 5555" required>
+              </div>
+              <div class="campo ancho">
+                <label class="campo__label" for="email">Email <span class="req">*</span></label>
+                <input class="entrada" id="email" type="email" autocomplete="email" required>
+              </div>
+              <div class="campo ancho">
+                <label class="campo__label" for="comentario">Algo que quieras contarnos</label>
+                <textarea class="area" id="comentario" rows="2"
+                          placeholder="Uso lentes de contacto, me molesta la luz, vengo por un control de rutina…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div id="errores"></div>
+        </div>
+
+        <!-- ============ Resumen ============ -->
+        <aside class="resumen-turno" id="resumen"></aside>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer id="pie"></footer>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/marcos.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/cristales.js"></script>
+<script src="js/promos.js"></script>
+<script src="js/carrito.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/turnos.js"></script>
+</body>
+</html>

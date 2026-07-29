@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Probador virtual — OJO</title>
+<meta name="description" content="Probate cualquier modelo con la cámara del celular o subiendo una foto, y medí tu distancia pupilar con una tarjeta. Todo se procesa en tu dispositivo: la foto nunca se sube.">
+<meta name="theme-color" content="#F4EFE7">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/paginas.css">
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+
+<main id="principal">
+  <div class="envoltorio">
+    <nav class="migas" aria-label="Miga de pan">
+      <a href="index.html">Inicio</a><span class="migas__sep">/</span><span>Probador virtual</span>
+    </nav>
+  </div>
+
+  <section class="seccion" style="padding-top:0">
+    <div class="envoltorio">
+      <div class="seccion__cabeza">
+        <div class="seccion__cabeza-texto">
+          <p class="volanta"><span class="volanta__punto"></span>Sin bajar ninguna app</p>
+          <h1>Probátelos <em class="ital">ahora</em></h1>
+          <p class="bajada mt-s">
+            Prendé la cámara o subí una foto, marcá dónde están tus ojos y probate todos los
+            modelos que quieras. La imagen no sale nunca de tu dispositivo: se procesa acá mismo,
+            en el navegador.
+          </p>
+        </div>
+      </div>
+
+      <div class="probador">
+        <!-- ============ Escena ============ -->
+        <div>
+          <div class="escena" id="escena">
+            <canvas class="escena__lienzo" id="lienzo" width="1280" height="960"></canvas>
+
+            <div class="escena__instruccion" id="instruccion" hidden></div>
+
+            <div class="escena__inicio" id="inicio">
+              <span id="iconoInicio"></span>
+              <h3>Empezá por acá</h3>
+              <p>
+                Usá la cámara para verte en vivo, o subí una foto de frente
+                donde se te vean bien los dos ojos.
+              </p>
+              <div class="fila fila--envuelve fila--centro">
+                <button class="btn btn--claro" id="btnCamara">Usar la cámara</button>
+                <button class="btn btn--fantasma-claro" id="btnSubir">Subir una foto</button>
+              </div>
+              <p class="nota" style="color:var(--sobre-negro-2);max-width:40ch">
+                No guardamos ni subimos nada. Todo pasa dentro de tu navegador.
+              </p>
+            </div>
+
+            <div class="escena__herramientas" id="herramientas" hidden>
+              <button class="btn btn--claro btn--chico" id="btnRecalibrar">Marcar los ojos de nuevo</button>
+              <button class="btn btn--claro btn--chico" id="btnFoto">Sacar foto</button>
+              <button class="btn btn--fantasma-claro btn--chico" id="btnCambiar">Cambiar imagen</button>
+            </div>
+          </div>
+
+          <input type="file" id="archivo" accept="image/*" hidden>
+
+          <!-- Ajustes finos -->
+          <div class="grilla grilla--3 mt-m" id="ajustes" hidden>
+            <div class="control">
+              <div class="control__cabeza"><span>Tamaño</span><span class="control__valor" id="valEscala">100%</span></div>
+              <input class="deslizador" type="range" id="escala" min="60" max="160" value="100" aria-label="Tamaño del anteojo">
+            </div>
+            <div class="control">
+              <div class="control__cabeza"><span>Altura</span><span class="control__valor" id="valAlto">0</span></div>
+              <input class="deslizador" type="range" id="alto" min="-60" max="60" value="0" aria-label="Altura del anteojo">
+            </div>
+            <div class="control">
+              <div class="control__cabeza"><span>Oscuridad del cristal</span><span class="control__valor" id="valTinte">Normal</span></div>
+              <input class="deslizador" type="range" id="tinte" min="0" max="100" value="50" aria-label="Oscuridad del cristal">
+            </div>
+          </div>
+          <p class="nota mt-s" id="pistaArrastre" hidden>
+            También podés arrastrar el anteojo con el dedo o el mouse para acomodarlo.
+          </p>
+        </div>
+
+        <!-- ============ Panel ============ -->
+        <aside class="probador__panel">
+          <div>
+            <div class="fila fila--entre">
+              <p class="filtros__titulo" style="margin:0">Elegí un modelo</p>
+              <a class="nota" href="tienda.html">Ver catálogo</a>
+            </div>
+            <div class="fila fila--envuelve mt-s" id="filtroTipo"></div>
+            <div class="probador__lista mt-s" id="listaModelos"></div>
+          </div>
+
+          <div id="fichaElegido"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Medidor de distancia pupilar ============ -->
+  <section class="seccion seccion--negro" id="dp">
+    <div class="envoltorio">
+      <div class="seccion__cabeza">
+        <div class="seccion__cabeza-texto">
+          <p class="volanta volanta--claro"><span class="volanta__punto"></span>Distancia pupilar</p>
+          <h2>Medite la <em class="ital--claro">DP</em> con una tarjeta</h2>
+          <p class="bajada bajada--claro mt-s">
+            La distancia pupilar es lo que hace que el cristal quede centrado justo donde está tu
+            ojo. Si querés saberla ahora, alcanza con cualquier tarjeta del tamaño de una de
+            crédito: todas miden 85,6&nbsp;mm de ancho y nos sirve de regla.
+          </p>
+        </div>
+      </div>
+
+      <div class="probador">
+        <div>
+          <div class="escena" id="escenaDp">
+            <canvas class="escena__lienzo" id="lienzoDp" width="1280" height="960"></canvas>
+            <div class="escena__instruccion" id="instruccionDp" hidden></div>
+
+            <div class="escena__inicio" id="inicioDp">
+              <span id="iconoDp"></span>
+              <h3>Cómo se hace</h3>
+              <p style="text-align:left">
+                1. Sostené una tarjeta apoyada en la frente, horizontal y bien derecha.<br>
+                2. Sacate una foto de frente, mirando a la cámara.<br>
+                3. Marcá los dos bordes de la tarjeta y después las dos pupilas.
+              </p>
+              <div class="fila fila--envuelve fila--centro">
+                <button class="btn btn--claro" id="btnCamaraDp">Usar la cámara</button>
+                <button class="btn btn--fantasma-claro" id="btnSubirDp">Subir una foto</button>
+              </div>
+            </div>
+
+            <div class="escena__herramientas" id="herramientasDp" hidden>
+              <button class="btn btn--claro btn--chico" id="btnCapturarDp">Congelar la imagen</button>
+              <button class="btn btn--fantasma-claro btn--chico" id="btnReiniciarDp">Empezar de nuevo</button>
+            </div>
+          </div>
+          <input type="file" id="archivoDp" accept="image/*" hidden>
+        </div>
+
+        <aside>
+          <div class="dp">
+            <p class="filtros__titulo" style="margin:0">Tu medición</p>
+            <p class="dp__resultado" id="resultadoDp">—<small>mm</small></p>
+            <p class="nota" id="detalleDp">Todavía no medimos nada.</p>
+            <div class="columna mt-m" id="accionesDp" hidden>
+              <button class="btn btn--acento btn--bloque" id="btnUsarDp">Usar esta medida</button>
+              <button class="btn btn--fantasma btn--bloque" id="btnRepetirDp">Medir otra vez</button>
+            </div>
+          </div>
+          <p class="nota mt-m" style="color:var(--sobre-negro-2)">
+            Es una medición orientativa y sirve perfecto para la mayoría de las graduaciones.
+            Si tu receta es alta o llevás progresivos, la medimos nosotros con precisión antes
+            de armar el anteojo — o te la tomamos en el control.
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="pie"></footer>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/marcos.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/cristales.js"></script>
+<script src="js/promos.js"></script>
+<script src="js/carrito.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/probador.js"></script>
+</body>
+</html>

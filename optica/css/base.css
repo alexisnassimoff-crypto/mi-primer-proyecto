@@ -1,0 +1,305 @@
+/* ============================================================
+   OJO — Base
+   Tokens, reset, tipografía, layout y utilidades.
+   ------------------------------------------------------------
+   La paleta sale del mundo visual de Central: piedra caliza,
+   travertino, arena y terracota bajo sol mediterráneo.
+   Cambiando --acento cambia el sitio entero.
+   ============================================================ */
+
+:root{
+  /* ---- Superficies claras ---- */
+  --hueso:#F4EFE7;
+  --hueso-2:#EFE8DD;
+  --arena:#E7DFD2;
+  --travertino:#DCD1BF;
+  --caliza:#CFC3AE;
+
+  /* ---- Superficies oscuras ---- */
+  --negro:#0C0A09;
+  --negro-2:#161210;
+  --negro-3:#221B17;
+
+  /* ---- Texto ---- */
+  --tinta:#171310;
+  --tinta-2:#4A423B;
+  --humo:#8A7F74;
+  --humo-2:#A99C8E;
+  --sobre-negro:#F0E9DF;
+  --sobre-negro-2:#A3968A;
+
+  /* ---- Acentos ---- */
+  --acento:#C4552B;          /* terracota */
+  --acento-hi:#E06B3C;
+  --acento-deep:#8E3A1B;
+  --salvia:#7E8C6A;
+  --oro:#C69A5E;
+  --blush:#E9C9BC;
+  --exito:#4E7C51;
+  --error:#B03A2E;
+
+  /* ---- Líneas ---- */
+  --linea:rgba(23,19,16,.13);
+  --linea-fuerte:rgba(23,19,16,.26);
+  --linea-clara:rgba(240,233,223,.16);
+
+  /* ---- Tipografía ---- */
+  --serif:'Instrument Serif','Times New Roman',Georgia,serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+
+  /* ---- Radios ---- */
+  --r-xs:8px;
+  --r-sm:12px;
+  --r:18px;
+  --r-lg:28px;
+  --r-xl:40px;
+  --r-full:999px;
+
+  /* ---- Layout ---- */
+  --header-h:70px;
+  --pad:clamp(18px,4.5vw,44px);
+  --sec-y:clamp(60px,9vw,132px);
+  --max:1320px;
+  --max-texto:760px;
+
+  /* ---- Movimiento ---- */
+  --ease:cubic-bezier(.22,.68,0,1);
+  --ease-suave:cubic-bezier(.4,0,.2,1);
+  --t-rapido:.18s;
+  --t:.34s;
+  --t-lento:.6s;
+
+  /* ---- Sombras ---- */
+  --sombra-sm:0 2px 8px rgba(60,40,25,.07);
+  --sombra:0 10px 34px -12px rgba(60,40,25,.24);
+  --sombra-lg:0 32px 70px -24px rgba(60,40,25,.34);
+}
+
+/* ============================================================
+   Reset
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+*{margin:0}
+html{-webkit-text-size-adjust:100%}
+
+/* Los componentes con display propio (.btn es inline-flex) le ganan al
+   display:none que el navegador le da a [hidden]. Se lo devolvemos. */
+[hidden]{display:none !important}
+html:focus-within{scroll-behavior:smooth}
+
+body{
+  font-family:var(--sans);
+  background:var(--hueso);
+  color:var(--tinta);
+  font-size:clamp(15px,1vw,16.5px);
+  line-height:1.6;
+  font-weight:350;
+  letter-spacing:.005em;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+img,svg,video,canvas{display:block;max-width:100%}
+img{height:auto}
+a{color:inherit;text-decoration:none}
+button{background:none;border:0;padding:0;cursor:pointer}
+button,input,select,textarea{font:inherit;color:inherit}
+ul,ol{list-style:none;padding:0}
+table{border-collapse:collapse;width:100%}
+
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--acento);
+  outline-offset:3px;
+  border-radius:4px;
+}
+
+::selection{background:var(--acento);color:var(--hueso)}
+
+.salto{
+  position:absolute;left:-9999px;top:0;z-index:300;
+  background:var(--acento);color:#fff;padding:14px 20px;
+  border-radius:0 0 var(--r-sm) 0;font-weight:600;
+}
+.salto:focus{left:0}
+
+/* ============================================================
+   Tipografía
+   ============================================================ */
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;line-height:1;letter-spacing:-.025em}
+
+.display{
+  font-size:clamp(3.6rem,13vw,10rem);
+  line-height:.86;
+  letter-spacing:-.045em;
+}
+h1{font-size:clamp(2.8rem,7.5vw,5.6rem);line-height:.95}
+h2{font-size:clamp(2.1rem,5vw,3.9rem);line-height:1}
+h3{font-size:clamp(1.35rem,2.4vw,1.85rem);line-height:1.08}
+h4{font-size:clamp(1.05rem,1.6vw,1.25rem);line-height:1.15;letter-spacing:-.015em}
+
+/* La itálica del serif es el gesto de marca: se usa para el acento
+   de cada título, nunca para un párrafo entero. */
+.ital{font-style:italic;color:var(--acento)}
+.ital--claro{font-style:italic;color:var(--blush)}
+
+.bajada{
+  color:var(--tinta-2);
+  font-size:clamp(1rem,1.4vw,1.15rem);
+  max-width:52ch;
+  line-height:1.62;
+}
+.bajada--claro{color:var(--sobre-negro-2)}
+
+.volanta{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--humo);
+}
+.volanta__punto{
+  width:5px;height:5px;border-radius:50%;background:var(--acento);
+  box-shadow:0 0 0 4px rgba(196,85,43,.16);
+  animation:latido 2.6s var(--ease) infinite;
+}
+.volanta--claro{color:var(--sobre-negro-2)}
+
+@keyframes latido{
+  0%,100%{box-shadow:0 0 0 3px rgba(196,85,43,.18)}
+  50%{box-shadow:0 0 0 8px rgba(196,85,43,0)}
+}
+
+.mono{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:'tnum' 1;
+}
+
+.nota{font-size:.82rem;color:var(--humo);line-height:1.5}
+.nota--sutil{margin-top:10px;font-size:.75rem}
+.nota--error{color:var(--error)}
+.nota--exito{color:var(--exito)}
+.nota code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.9em;background:var(--arena);padding:1px 5px;border-radius:5px;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.envoltorio{
+  width:100%;max-width:var(--max);
+  margin-inline:auto;padding-inline:var(--pad);
+}
+.envoltorio--angosto{max-width:920px}
+.envoltorio--texto{max-width:var(--max-texto)}
+
+.seccion{position:relative;padding-block:var(--sec-y)}
+.seccion--compacta{padding-block:clamp(40px,6vw,80px)}
+:where(section[id]){scroll-margin-top:calc(var(--header-h) + 20px)}
+
+/* Bloque oscuro: se usa alternado para dar ritmo a la página. */
+.seccion--negro{
+  background:var(--negro);
+  color:var(--sobre-negro);
+}
+.seccion--negro h1,.seccion--negro h2,.seccion--negro h3{color:var(--sobre-negro)}
+.seccion--arena{background:var(--arena)}
+.seccion--hueso2{background:var(--hueso-2)}
+
+.seccion__cabeza{
+  display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;
+  gap:24px;margin-bottom:clamp(28px,4vw,56px);
+}
+.seccion__cabeza-texto{max-width:640px}
+.seccion__cabeza h2{margin-top:14px}
+.seccion__cabeza .bajada{margin-top:16px}
+.seccion__cabeza--centro{
+  flex-direction:column;align-items:center;text-align:center;
+}
+.seccion__cabeza--centro .bajada{margin-inline:auto}
+
+/* ---- Grillas ---- */
+.grilla{display:grid;gap:clamp(14px,1.8vw,26px)}
+.grilla--2{grid-template-columns:repeat(2,1fr)}
+.grilla--3{grid-template-columns:repeat(3,1fr)}
+.grilla--4{grid-template-columns:repeat(4,1fr)}
+.grilla--auto{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+
+@media (max-width:1024px){
+  .grilla--4{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:800px){
+  .grilla--3,.grilla--4{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:520px){
+  .grilla--2,.grilla--3,.grilla--4{grid-template-columns:1fr}
+  .grilla--auto{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
+
+/* ============================================================
+   Grano de película
+   ------------------------------------------------------------
+   Central fotografía todo en Kodak Portra 400. El grano es
+   parte de la marca, así que la web también lo tiene: una capa
+   fija por encima de todo, que no intercepta clics.
+   ============================================================ */
+.grano{
+  position:fixed;inset:0;z-index:400;pointer-events:none;
+  opacity:.38;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+  background-size:180px 180px;
+}
+@media (max-width:640px){.grano{opacity:.26}}
+
+/* ============================================================
+   Aparición al scrollear
+   ============================================================ */
+.revelar{
+  opacity:0;transform:translateY(22px);
+  transition:opacity var(--t-lento) var(--ease),transform var(--t-lento) var(--ease);
+}
+.revelar.visible{opacity:1;transform:none}
+.revelar[data-retraso="1"]{transition-delay:.07s}
+.revelar[data-retraso="2"]{transition-delay:.14s}
+.revelar[data-retraso="3"]{transition-delay:.21s}
+.revelar[data-retraso="4"]{transition-delay:.28s}
+.revelar[data-retraso="5"]{transition-delay:.35s}
+
+/* ============================================================
+   Utilidades
+   ============================================================ */
+.oculto{display:none !important}
+.solo-lectores{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+.centro{text-align:center}
+.fila{display:flex;align-items:center;gap:12px}
+.fila--entre{justify-content:space-between}
+.fila--centro{justify-content:center}
+.fila--envuelve{flex-wrap:wrap}
+.columna{display:flex;flex-direction:column;gap:12px}
+.crece{flex:1}
+.mt-s{margin-top:10px}.mt-m{margin-top:20px}.mt-l{margin-top:36px}
+.tachado{text-decoration:line-through;color:var(--humo);font-weight:350}
+
+@media (max-width:640px){
+  .no-movil{display:none !important}
+}
+@media (min-width:641px){
+  .solo-movil{display:none !important}
+}
+
+/* ============================================================
+   Preferencia de menos movimiento
+   ============================================================ */
+@media (prefers-reduced-motion:reduce){
+  html:focus-within{scroll-behavior:auto}
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+  .revelar{opacity:1;transform:none}
+  .grano{display:none}
+}

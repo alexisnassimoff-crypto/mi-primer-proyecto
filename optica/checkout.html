@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout — OJO</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F4EFE7">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/paginas.css">
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+
+<main id="principal">
+  <section class="seccion" style="padding-top:32px">
+    <div class="envoltorio">
+
+      <div class="seccion__cabeza">
+        <div class="seccion__cabeza-texto">
+          <h1>Finalizar <em class="ital">compra</em></h1>
+        </div>
+        <div class="pasos">
+          <span class="paso activo"><span class="paso__num">1</span>Tus datos</span>
+          <span class="paso__linea"></span>
+          <span class="paso"><span class="paso__num">2</span>Pago</span>
+        </div>
+      </div>
+
+      <div id="vacio" hidden>
+        <div class="vacio">
+          <h2>No hay nada para pagar</h2>
+          <p class="bajada" style="margin-inline:auto">Tu carrito está vacío.</p>
+          <a class="btn btn--acento mt-m" href="tienda.html">Ver el catálogo</a>
+        </div>
+      </div>
+
+      <form class="checkout" id="formulario" novalidate>
+        <div>
+          <!-- ============ Identificación ============ -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">1</span>Tus datos</h2>
+            <p class="config__ayuda">
+              Entrá con Google y completamos todo solo. También podés seguir como invitado.
+            </p>
+            <div id="zonaGoogle"></div>
+            <div id="zonaUsuario" hidden></div>
+          </div>
+
+          <!-- ============ Contacto ============ -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">2</span>Contacto</h2>
+            <div class="checkout__grilla mt-m">
+              <div class="campo">
+                <label class="campo__label" for="nombre">Nombre y apellido <span class="req">*</span></label>
+                <input class="entrada" id="nombre" name="nombre" autocomplete="name" required>
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="email">Email <span class="req">*</span></label>
+                <input class="entrada" id="email" name="email" type="email" autocomplete="email" required>
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="telefono">WhatsApp <span class="req">*</span></label>
+                <input class="entrada" id="telefono" name="telefono" type="tel" autocomplete="tel"
+                       placeholder="11 5555 5555" required>
+                <p class="campo__ayuda">Te avisamos por acá cuando salga el pedido.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="dni">DNI <span class="req">*</span></label>
+                <input class="entrada" id="dni" name="dni" inputmode="numeric" required>
+                <p class="campo__ayuda">Lo pide la factura.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============ Entrega ============ -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">3</span>Entrega</h2>
+            <p class="config__ayuda" id="ayudaEntrega"></p>
+
+            <div class="config__opciones config__opciones--2">
+              <label class="opcion">
+                <input type="radio" name="entrega" value="envio" checked>
+                <span class="opcion__tilde" aria-hidden="true"></span>
+                <span class="opcion__cabeza">
+                  <span class="opcion__nombre">Envío a domicilio</span>
+                  <span class="opcion__precio opcion__precio--gratis">Sin cargo</span>
+                </span>
+                <span class="opcion__detalle" id="detalleEnvio"></span>
+              </label>
+              <label class="opcion">
+                <input type="radio" name="entrega" value="retiro">
+                <span class="opcion__tilde" aria-hidden="true"></span>
+                <span class="opcion__cabeza">
+                  <span class="opcion__nombre">Retiro en showroom</span>
+                  <span class="opcion__precio opcion__precio--gratis">Sin cargo</span>
+                </span>
+                <span class="opcion__detalle" id="detalleRetiro"></span>
+              </label>
+            </div>
+
+            <div class="checkout__grilla mt-m" id="camposEnvio">
+              <div class="campo ancho">
+                <label class="campo__label" for="calle">Calle y número <span class="req">*</span></label>
+                <input class="entrada" id="calle" name="calle" autocomplete="street-address">
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="piso">Piso / depto</label>
+                <input class="entrada" id="piso" name="piso">
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="cp">Código postal <span class="req">*</span></label>
+                <input class="entrada" id="cp" name="cp" inputmode="numeric">
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="ciudad">Ciudad <span class="req">*</span></label>
+                <input class="entrada" id="ciudad" name="ciudad" autocomplete="address-level2">
+              </div>
+              <div class="campo">
+                <label class="campo__label" for="provincia">Provincia <span class="req">*</span></label>
+                <select class="select" id="provincia" name="provincia"></select>
+              </div>
+              <div class="campo ancho">
+                <label class="campo__label" for="notas">Indicaciones para el correo</label>
+                <textarea class="area" id="notas" name="notas" rows="2"
+                          placeholder="Timbre, referencia, horario en el que hay alguien…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============ Pago ============ -->
+          <div class="checkout__bloque">
+            <h2 class="config__titulo"><span class="config__num">4</span>Pago</h2>
+            <p class="config__ayuda" id="ayudaPago"></p>
+            <div class="medios-pago" id="mediosPago"></div>
+            <div id="avisoSimulado"></div>
+          </div>
+
+          <div id="errores"></div>
+        </div>
+
+        <!-- ============ Resumen ============ -->
+        <aside class="checkout__resumen" id="resumen"></aside>
+      </form>
+
+    </div>
+  </section>
+</main>
+
+<footer id="pie"></footer>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/marcos.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/cristales.js"></script>
+<script src="js/promos.js"></script>
+<script src="js/carrito.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/checkout.js"></script>
+</body>
+</html>
