@@ -1,6 +1,6 @@
 // Generador del PDF de la nota de pedido — letra grande y clara, multipágina.
-// Un renglón por modelo (colores agrupados: "C1 (2); C4 (5)"), casilla ☐ a la
-// izquierda para que stock confirme cada renglón al armar el pedido.
+// UN RENGLÓN POR COLOR (pedido de Ale: más claro para stock), cada uno con su
+// casilla ☐ a la izquierda para que stock confirme al armar el pedido.
 // El guion bajo en el nombre evita que Vercel lo trate como serverless function.
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 
@@ -12,25 +12,42 @@ const GRIS_FILA = rgb(0.955, 0.955, 0.955);
 
 const fmtPeso = (n) => "$ " + Math.round(n || 0).toLocaleString("es-AR");
 
-// Columnas: casilla stock | cant | modelo(+marca) | colores | p.unit | subtotal
+// Columnas: casilla stock | cant | modelo(+marca) | color | p.unit | subtotal
 const COLS = [
   { titulo: "", x: MARGEN, w: 26, align: "center" },            // ☐
-  { titulo: "CANT.", x: MARGEN + 26, w: 40, align: "center" },
-  { titulo: "MODELO", x: MARGEN + 66, w: 148, align: "left" },
-  { titulo: "COLORES", x: MARGEN + 214, w: 155, align: "left" },
-  { titulo: "P. UNITARIO", x: MARGEN + 369, w: 74, align: "right" },
-  { titulo: "SUBTOTAL", x: MARGEN + 443, w: 72, align: "right" },
+  { titulo: "CANT.", x: MARGEN + 26, w: 42, align: "center" },
+  { titulo: "MODELO", x: MARGEN + 68, w: 200, align: "left" },
+  { titulo: "COLOR", x: MARGEN + 268, w: 68, align: "center" },
+  { titulo: "P. UNITARIO", x: MARGEN + 336, w: 92, align: "right" },
+  { titulo: "SUBTOTAL", x: MARGEN + 428, w: 87, align: "right" },
 ];
 
-const coloresTexto = (it) => {
-  const cs = (it.colores || []).filter((c) => c.color);
-  if (!cs.length) return "—";
-  return cs.map((c) => c.color + (c.cantidad > 1 ? ` (${c.cantidad})` : "")).join(";  ");
-};
 const cantidadDe = (it) =>
   it.colores && it.colores.length
     ? it.colores.reduce((a, c) => a + (c.cantidad || 0), 0)
     : it.cantidad || 0;
+
+// explota los ítems del carrito (agrupados por modelo) en un renglón por color
+const aRenglones = (items) => {
+  const out = [];
+  for (const it of items) {
+    const colores = it.colores && it.colores.length ? it.colores : [{ color: "", cantidad: it.cantidad || 0 }];
+    for (const c of colores) {
+      if (!c.cantidad) continue;
+      out.push({
+        cantidad: c.cantidad,
+        modelo: it.modelo,
+        marca: it.marca,
+        color: c.color || "—",
+        precioUnitario: it.precioUnitario || 0,
+        precioLista: it.precioLista,
+        descuentoPct: it.descuentoPct,
+        sinCargo: !!it.sinCargo,
+      });
+    }
+  }
+  return out;
+};
 
 async function generarNotaPedidoPDF(pedido) {
   const doc = await PDFDocument.create();
@@ -113,26 +130,12 @@ async function generarNotaPedidoPDF(pedido) {
   bloqueCliente();
   cabeceraTabla();
 
-  items.forEach((it, idx) => {
-    const cant = cantidadDe(it);
-    const conMarca = it.marca && it.marca !== "CENTRAL";
-    // colores puede necesitar 2 líneas
-    const colTxt = coloresTexto(it);
-    const colW = COLS[3].w - 6;
-    let colLineas = [colTxt];
-    if (font.widthOfTextAtSize(colTxt, 11.5) > colW) {
-      const partes = colTxt.split(";  ");
-      colLineas = [];
-      let linea = "";
-      for (const p of partes) {
-        const cand = linea ? linea + ";  " + p : p;
-        if (font.widthOfTextAtSize(cand, 11.5) > colW && linea) { colLineas.push(linea + ";"); linea = p; }
-        else linea = cand;
-      }
-      if (linea) colLineas.push(linea);
-    }
-    const lineasInfo = Math.max(colLineas.length, conMarca ? 2 : 1, it.sinCargo || it.descuentoPct ? 2 : 1);
-    const altoFila = 10 + lineasInfo * 13;
+  const renglones = aRenglones(items);
+  renglones.forEach((r, idx) => {
+    const conMarca = r.marca && r.marca !== "CENTRAL";
+    const notaPrecio = r.sinCargo || r.descuentoPct || (r.precioLista && r.precioLista !== r.precioUnitario);
+    const dosLineas = conMarca || notaPrecio;
+    const altoFila = dosLineas ? 33 : 22;
 
     if (y - altoFila < MARGEN + 95) nuevaPagina();
     if (idx % 2 === 1)
@@ -141,21 +144,22 @@ async function generarNotaPedidoPDF(pedido) {
     const yy = y - 11;
     // casilla para stock (sin tildar)
     page.drawRectangle({ x: COLS[0].x + 7, y: yy - 2.5, width: 11, height: 11, borderColor: NEGRO, borderWidth: 1.1 });
-    texto(cant, COLS[1].x + 3, yy, 13.5, bold, NEGRO, "center", COLS[1].w - 6);
-    texto(String(it.modelo || "").toUpperCase(), COLS[2].x + 3, yy, 13, bold, NEGRO, "left", COLS[2].w - 6);
-    if (conMarca) texto(it.marca, COLS[2].x + 3, yy - 13, 9.5, font, GRIS, "left", COLS[2].w - 6);
-    colLineas.forEach((l, li) => texto(l, COLS[3].x + 3, yy - li * 13, 11.5, bold, NEGRO, "left", colW));
+    texto(r.cantidad, COLS[1].x + 3, yy, 13.5, bold, NEGRO, "center", COLS[1].w - 6);
+    texto(String(r.modelo || "").toUpperCase(), COLS[2].x + 3, yy, 13, bold, NEGRO, "left", COLS[2].w - 6);
+    if (conMarca) texto(r.marca, COLS[2].x + 3, yy - 13, 9.5, font, GRIS, "left", COLS[2].w - 6);
+    texto(r.color, COLS[3].x + 3, yy, 13, bold, NEGRO, "center", COLS[3].w - 6);
 
-    if (it.sinCargo) {
+    if (r.sinCargo) {
       texto("SIN CARGO", COLS[4].x + 3, yy, 10.5, bold, NEGRO, "right", COLS[4].w - 6);
       texto("bonificación", COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
       texto("$ 0", COLS[5].x + 3, yy, 11.5, font, NEGRO, "right", COLS[5].w - 6);
     } else {
-      texto(fmtPeso(it.precioUnitario), COLS[4].x + 3, yy, 11.5, font, NEGRO, "right", COLS[4].w - 6);
-      if (it.descuentoPct) texto("-" + it.descuentoPct + "%", COLS[4].x + 3, yy - 12, 9, font, GRIS, "right", COLS[4].w - 6);
-      else if (it.precioLista && it.precioLista !== it.precioUnitario)
-        texto("lista " + fmtPeso(it.precioLista), COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
-      texto(fmtPeso(cant * it.precioUnitario), COLS[5].x + 3, yy, 11.5, font, NEGRO, "right", COLS[5].w - 6);
+      texto(fmtPeso(r.precioUnitario), COLS[4].x + 3, yy, 11.5, font, NEGRO, "right", COLS[4].w - 6);
+      if (r.descuentoPct)
+        texto("lista " + fmtPeso(r.precioLista) + " (-" + r.descuentoPct + "%)", COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
+      else if (r.precioLista && r.precioLista !== r.precioUnitario)
+        texto("lista " + fmtPeso(r.precioLista), COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
+      texto(fmtPeso(r.cantidad * r.precioUnitario), COLS[5].x + 3, yy, 11.5, font, NEGRO, "right", COLS[5].w - 6);
     }
     y -= altoFila;
   });

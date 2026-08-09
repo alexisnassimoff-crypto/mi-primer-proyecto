@@ -9,7 +9,7 @@ const items = [
   { marca: "CENTRAL", modelo: "VIENA", colores: [{ color: "C1", cantidad: 2 }, { color: "C2", cantidad: 1 }, { color: "C4", cantidad: 1 }], precioUnitario: 22900, precioLista: 22900 },
   { marca: "CENTRAL", modelo: "LISBOA", colores: [{ color: "C1", cantidad: 1 }], precioUnitario: 22900, precioLista: 22900 },
   { marca: "CENTRAL", modelo: "LISBOA", colores: [{ color: "C2", cantidad: 2 }, { color: "C3", cantidad: 1 }], precioUnitario: 32900, precioLista: 32900 },
-  { marca: "CENTRAL", modelo: "HUDSON", colores: [{ color: "C1", cantidad: 1 }, { color: "C2", cantidad: 1 }, { color: "C3", cantidad: 1 }], precioUnitario: 38900, precioLista: 38900, descuentoPct: 10 },
+  { marca: "CENTRAL", modelo: "HUDSON", colores: [{ color: "C1", cantidad: 1 }, { color: "C2", cantidad: 1 }, { color: "C3", cantidad: 1 }], precioUnitario: 35010, precioLista: 38900, descuentoPct: 10 },
   { marca: "CENTRAL", modelo: "PEAK", colores: [{ color: "C2", cantidad: 1 }, { color: "C4", cantidad: 2 }, { color: "C5", cantidad: 1 }], precioUnitario: 29900, precioLista: 29900 },
   { marca: "JORDAN", modelo: "2045", colores: [{ color: "C1", cantidad: 2 }], precioUnitario: 35000, precioLista: 38000, precioManual: true },
   { marca: "ALBERTA FERRETTI", modelo: "10027", colores: [], cantidad: 1, precioUnitario: 5800, precioLista: 5800 },
