@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
       const marca = String(f.Marca || "").toUpperCase().trim();
       const modelo = String(f.Modelo || "").toUpperCase().trim();
       if (!modelo) continue;
-      const key = marca + "" + modelo;
+      const key = marca + "|" + modelo;
       if (!porModelo.has(key)) porModelo.set(key, { marca, modelo, colores: [] });
       porModelo.get(key).colores.push({
         codigo: f.Codigo || "",
