@@ -1,26 +1,36 @@
 // Generador del PDF de la nota de pedido — letra grande y clara, multipágina.
-// Módulo compartido: lo usa api/pedidos.js (action:"enviar").
+// Un renglón por modelo (colores agrupados: "C1 (2); C4 (5)"), casilla ☐ a la
+// izquierda para que stock confirme cada renglón al armar el pedido.
 // El guion bajo en el nombre evita que Vercel lo trate como serverless function.
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 
 const A4 = { w: 595.28, h: 841.89 };
-const MARGEN = 42;
+const MARGEN = 40;
 const NEGRO = rgb(0.07, 0.07, 0.07);
 const GRIS = rgb(0.45, 0.45, 0.45);
 const GRIS_FILA = rgb(0.955, 0.955, 0.955);
-const LINEA = rgb(0.85, 0.85, 0.85);
 
 const fmtPeso = (n) => "$ " + Math.round(n || 0).toLocaleString("es-AR");
 
-// Columnas de la tabla de ítems: x de inicio y ancho
+// Columnas: casilla stock | cant | modelo(+marca) | colores | p.unit | subtotal
 const COLS = [
-  { titulo: "CANT.", x: MARGEN, w: 48, align: "center" },
-  { titulo: "MODELO", x: MARGEN + 48, w: 168, align: "left" },
-  { titulo: "LÍNEA", x: MARGEN + 216, w: 105, align: "left" },
-  { titulo: "COLOR", x: MARGEN + 321, w: 58, align: "center" },
-  { titulo: "P. UNITARIO", x: MARGEN + 379, w: 66, align: "right" },
-  { titulo: "SUBTOTAL", x: MARGEN + 445, w: 66, align: "right" },
+  { titulo: "", x: MARGEN, w: 26, align: "center" },            // ☐
+  { titulo: "CANT.", x: MARGEN + 26, w: 40, align: "center" },
+  { titulo: "MODELO", x: MARGEN + 66, w: 148, align: "left" },
+  { titulo: "COLORES", x: MARGEN + 214, w: 155, align: "left" },
+  { titulo: "P. UNITARIO", x: MARGEN + 369, w: 74, align: "right" },
+  { titulo: "SUBTOTAL", x: MARGEN + 443, w: 72, align: "right" },
 ];
+
+const coloresTexto = (it) => {
+  const cs = (it.colores || []).filter((c) => c.color);
+  if (!cs.length) return "—";
+  return cs.map((c) => c.color + (c.cantidad > 1 ? ` (${c.cantidad})` : "")).join(";  ");
+};
+const cantidadDe = (it) =>
+  it.colores && it.colores.length
+    ? it.colores.reduce((a, c) => a + (c.cantidad || 0), 0)
+    : it.cantidad || 0;
 
 async function generarNotaPedidoPDF(pedido) {
   const doc = await PDFDocument.create();
@@ -28,8 +38,8 @@ async function generarNotaPedidoPDF(pedido) {
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const items = pedido.items || [];
-  const totalUnidades = items.reduce((a, i) => a + (i.cantidad || 0), 0);
-  const total = items.reduce((a, i) => a + (i.cantidad || 0) * (i.precioUnitario || 0), 0);
+  const totalUnidades = items.reduce((a, i) => a + cantidadDe(i), 0);
+  const total = items.reduce((a, i) => a + (i.sinCargo ? 0 : cantidadDe(i) * (i.precioUnitario || 0)), 0);
 
   let page = doc.addPage([A4.w, A4.h]);
   let y = A4.h - MARGEN;
@@ -44,10 +54,8 @@ async function generarNotaPedidoPDF(pedido) {
   };
 
   const cabeceraPagina = () => {
-    // Marca
     texto("CENTRAL EYEWEAR", MARGEN, y - 18, 21, bold);
     texto("NOTA DE PEDIDO", MARGEN, y - 40, 13, font, GRIS);
-    // Nº y fecha a la derecha
     const derX = A4.w - MARGEN - 200;
     texto(pedido.pedidoId || "PED-", derX, y - 18, 17, bold, NEGRO, "right", 200);
     texto("Fecha: " + (pedido.fechaDisplay || pedido.fecha || ""), derX, y - 36, 11.5, font, GRIS, "right", 200);
@@ -73,7 +81,7 @@ async function generarNotaPedidoPDF(pedido) {
     const l3 = [
       pedido.condVenta ? "Condiciones de venta: " + pedido.condVenta : null,
       "Vendedor: " + (pedido.vendedorNombre || pedido.vendedor || ""),
-      "Lista " + (pedido.listaPrecio || 1),
+      pedido.tipoLista === "coniva" ? "Precios con IVA" : "Precios sin IVA",
     ].filter(Boolean).join("    ");
     texto(l3, MARGEN, y, 11.5, font, GRIS);
     y -= 12;
@@ -81,14 +89,19 @@ async function generarNotaPedidoPDF(pedido) {
 
   const cabeceraTabla = () => {
     y -= 18;
-    for (const col of COLS) texto(col.titulo, col.x + 4, y, 10.5, bold, GRIS, col.align, col.w - 8);
+    for (const col of COLS) if (col.titulo) texto(col.titulo, col.x + 3, y, 10, bold, GRIS, col.align, col.w - 6);
     y -= 6;
     page.drawLine({ start: { x: MARGEN, y }, end: { x: A4.w - MARGEN, y }, thickness: 1, color: NEGRO });
     y -= 4;
   };
 
+  const piePagina = () => {
+    texto("Página " + numPagina, MARGEN, MARGEN - 16, 9, font, GRIS);
+    texto("Central Eyewear — pedido generado digitalmente", A4.w - MARGEN - 250, MARGEN - 16, 9, font, GRIS, "right", 250);
+  };
+
   const nuevaPagina = () => {
-    texto("Página " + numPagina, MARGEN, MARGEN - 14, 9, font, GRIS);
+    piePagina();
     page = doc.addPage([A4.w, A4.h]);
     numPagina++;
     y = A4.h - MARGEN;
@@ -100,24 +113,55 @@ async function generarNotaPedidoPDF(pedido) {
   bloqueCliente();
   cabeceraTabla();
 
-  const ALTO_FILA = 21;
   items.forEach((it, idx) => {
-    if (y - ALTO_FILA < MARGEN + 90) nuevaPagina();
+    const cant = cantidadDe(it);
+    const conMarca = it.marca && it.marca !== "CENTRAL";
+    // colores puede necesitar 2 líneas
+    const colTxt = coloresTexto(it);
+    const colW = COLS[3].w - 6;
+    let colLineas = [colTxt];
+    if (font.widthOfTextAtSize(colTxt, 11.5) > colW) {
+      const partes = colTxt.split(";  ");
+      colLineas = [];
+      let linea = "";
+      for (const p of partes) {
+        const cand = linea ? linea + ";  " + p : p;
+        if (font.widthOfTextAtSize(cand, 11.5) > colW && linea) { colLineas.push(linea + ";"); linea = p; }
+        else linea = cand;
+      }
+      if (linea) colLineas.push(linea);
+    }
+    const lineasInfo = Math.max(colLineas.length, conMarca ? 2 : 1, it.sinCargo || it.descuentoPct ? 2 : 1);
+    const altoFila = 10 + lineasInfo * 13;
+
+    if (y - altoFila < MARGEN + 95) nuevaPagina();
     if (idx % 2 === 1)
-      page.drawRectangle({ x: MARGEN, y: y - ALTO_FILA + 5, width: A4.w - 2 * MARGEN, height: ALTO_FILA, color: GRIS_FILA });
-    const yy = y - 10;
-    const sub = (it.cantidad || 0) * (it.precioUnitario || 0);
-    texto(it.cantidad, COLS[0].x + 4, yy, 13, bold, NEGRO, "center", COLS[0].w - 8);
-    texto(String(it.modelo || "").toUpperCase(), COLS[1].x + 4, yy, 13, bold, NEGRO, "left", COLS[1].w - 8);
-    texto(it.linea || "", COLS[2].x + 4, yy, 11.5, font, NEGRO, "left", COLS[2].w - 8);
-    texto(it.color || "", COLS[3].x + 4, yy, 13, bold, NEGRO, "center", COLS[3].w - 8);
-    texto(fmtPeso(it.precioUnitario), COLS[4].x + 4, yy, 11.5, font, NEGRO, "right", COLS[4].w - 8);
-    texto(fmtPeso(sub), COLS[5].x + 4, yy, 11.5, font, NEGRO, "right", COLS[5].w - 8);
-    y -= ALTO_FILA;
+      page.drawRectangle({ x: MARGEN, y: y - altoFila + 5, width: A4.w - 2 * MARGEN, height: altoFila, color: GRIS_FILA });
+
+    const yy = y - 11;
+    // casilla para stock (sin tildar)
+    page.drawRectangle({ x: COLS[0].x + 7, y: yy - 2.5, width: 11, height: 11, borderColor: NEGRO, borderWidth: 1.1 });
+    texto(cant, COLS[1].x + 3, yy, 13.5, bold, NEGRO, "center", COLS[1].w - 6);
+    texto(String(it.modelo || "").toUpperCase(), COLS[2].x + 3, yy, 13, bold, NEGRO, "left", COLS[2].w - 6);
+    if (conMarca) texto(it.marca, COLS[2].x + 3, yy - 13, 9.5, font, GRIS, "left", COLS[2].w - 6);
+    colLineas.forEach((l, li) => texto(l, COLS[3].x + 3, yy - li * 13, 11.5, bold, NEGRO, "left", colW));
+
+    if (it.sinCargo) {
+      texto("SIN CARGO", COLS[4].x + 3, yy, 10.5, bold, NEGRO, "right", COLS[4].w - 6);
+      texto("bonificación", COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
+      texto("$ 0", COLS[5].x + 3, yy, 11.5, font, NEGRO, "right", COLS[5].w - 6);
+    } else {
+      texto(fmtPeso(it.precioUnitario), COLS[4].x + 3, yy, 11.5, font, NEGRO, "right", COLS[4].w - 6);
+      if (it.descuentoPct) texto("-" + it.descuentoPct + "%", COLS[4].x + 3, yy - 12, 9, font, GRIS, "right", COLS[4].w - 6);
+      else if (it.precioLista && it.precioLista !== it.precioUnitario)
+        texto("lista " + fmtPeso(it.precioLista), COLS[4].x + 3, yy - 12, 8.5, font, GRIS, "right", COLS[4].w - 6);
+      texto(fmtPeso(cant * it.precioUnitario), COLS[5].x + 3, yy, 11.5, font, NEGRO, "right", COLS[5].w - 6);
+    }
+    y -= altoFila;
   });
 
   // Totales
-  if (y < MARGEN + 130) nuevaPagina();
+  if (y < MARGEN + 135) nuevaPagina();
   y -= 4;
   page.drawLine({ start: { x: MARGEN, y }, end: { x: A4.w - MARGEN, y }, thickness: 1.4, color: NEGRO });
   y -= 24;
@@ -129,7 +173,6 @@ async function generarNotaPedidoPDF(pedido) {
     y -= 16;
     texto("Observaciones:", MARGEN, y, 11, bold, GRIS);
     y -= 15;
-    // envolver texto largo a ~95 chars por línea
     const palabras = String(pedido.observaciones).split(/\s+/);
     let linea = "";
     for (const p of palabras) {
@@ -139,10 +182,8 @@ async function generarNotaPedidoPDF(pedido) {
     if (linea) { texto(linea, MARGEN, y, 11.5, font); y -= 14; }
   }
 
-  texto("Página " + numPagina, MARGEN, MARGEN - 14, 9, font, GRIS);
-  texto("Central Eyewear — pedido generado digitalmente", A4.w - MARGEN - 250, MARGEN - 14, 9, font, GRIS, "right", 250);
-
+  piePagina();
   return Buffer.from(await doc.save());
 }
 
-module.exports = { generarNotaPedidoPDF };
+module.exports = { generarNotaPedidoPDF, cantidadDe };

@@ -3,8 +3,12 @@
 //   POST   {vendedor, cliente, ...}                → crea borrador
 //   POST   {action:"enviar", recordId, ...}        → genera PDF, manda mail, marca enviado
 //   PATCH  {recordId, items?, estado?, ...}        → actualiza borrador / anula
+//
+// Ítem: { marca, modelo, colores:[{color,cantidad,codigo}], precioUnitario,
+//         precioLista, descuentoPct?, sinCargo?, precioManual? }
+// Un ítem = un renglón del PDF (colores del mismo modelo agrupados).
 const nodemailer = require("nodemailer");
-const { generarNotaPedidoPDF } = require("./_pdf-nota.js");
+const { generarNotaPedidoPDF, cantidadDe } = require("./_pdf-nota.js");
 
 const BASE = process.env.AIRTABLE_BASE;
 const TOKEN = process.env.AIRTABLE_TOKEN;
@@ -47,7 +51,7 @@ const parsearPedido = (r) => {
     items,
     total: r.fields.Total || 0,
     unidades: r.fields.Unidades || 0,
-    listaPrecio: r.fields.ListaPrecio || 1,
+    tipoLista: r.fields.TipoLista || "siniva",
     estado: r.fields.Estado || "borrador",
     condVenta: r.fields.CondVenta || "",
     observaciones: r.fields.Observaciones || "",
@@ -57,8 +61,8 @@ const parsearPedido = (r) => {
 };
 
 const totales = (items) => ({
-  total: items.reduce((a, i) => a + (i.cantidad || 0) * (i.precioUnitario || 0), 0),
-  unidades: items.reduce((a, i) => a + (i.cantidad || 0), 0),
+  total: items.reduce((a, i) => a + (i.sinCargo ? 0 : cantidadDe(i) * (i.precioUnitario || 0)), 0),
+  unidades: items.reduce((a, i) => a + cantidadDe(i), 0),
 });
 
 // ---------- envío ----------
@@ -71,31 +75,31 @@ async function enviarPedido(body) {
   if (pedido.estado === "enviado") throw { status: 409, msg: "Este pedido ya fue enviado" };
   if (!pedido.items.length) throw { status: 400, msg: "El pedido no tiene ítems" };
 
-  // Revalidar precios contra el catálogo vivo
+  // Revalidar SOLO precios automáticos (los manuales, con descuento o sin cargo se respetan)
   const arts = await fetchAll("ARTICULOS", "&filterByFormula=" + encodeURIComponent("{Activo}=TRUE()"));
-  const porModelo = {};
+  const porCodigo = {};
   for (const a of arts)
-    porModelo[String(a.fields.Modelo || "").toUpperCase().trim()] = {
-      p1: a.fields.PrecioLista1 || 0,
-      p2: a.fields.PrecioLista2 || a.fields.PrecioLista1 || 0,
+    porCodigo[String(a.fields.Codigo || "").trim()] = {
+      coniva: a.fields.PrecioConIva || 0,
+      siniva: a.fields.PrecioSinIva || 0,
     };
   const cambios = [];
   for (const it of pedido.items) {
-    const cat = porModelo[String(it.modelo || "").toUpperCase().trim()];
-    if (!cat) continue; // modelo sacado del catálogo: se respeta el precio del borrador
-    const vigente = pedido.listaPrecio === 2 ? cat.p2 : cat.p1;
+    if (it.precioManual || it.sinCargo || it.descuentoPct) continue;
+    const cod = it.colores && it.colores[0] && it.colores[0].codigo;
+    const cat = cod && porCodigo[cod];
+    if (!cat) continue;
+    const vigente = pedido.tipoLista === "coniva" ? cat.coniva : cat.siniva;
     if (vigente && vigente !== it.precioUnitario)
-      cambios.push({ modelo: it.modelo, color: it.color, anterior: it.precioUnitario, vigente });
+      cambios.push({ modelo: it.modelo, anterior: it.precioUnitario, vigente });
   }
   if (cambios.length && !body.confirmarPrecios)
     throw { status: 409, msg: "precios_cambiados", priceChanges: cambios };
-  if (cambios.length) {
-    // repriza con los vigentes confirmados
+  if (cambios.length)
     for (const it of pedido.items) {
-      const c = cambios.find((x) => x.modelo === it.modelo && x.color === it.color);
-      if (c) it.precioUnitario = c.vigente;
+      const c = cambios.find((x) => x.modelo === it.modelo);
+      if (c) { it.precioUnitario = c.vigente; it.precioLista = c.vigente; }
     }
-  }
 
   // Número secuencial: máximo existente + 1 (volumen bajo, sin riesgo real de carrera)
   const conNumero = await fetchAll("PEDIDOS", "&filterByFormula=" + encodeURIComponent("{Numero}>0") + "&fields%5B%5D=Numero");
@@ -105,13 +109,12 @@ async function enviarPedido(body) {
   const { total, unidades } = totales(pedido.items);
   const cli = clienteInfo || {};
 
-  // PDF
   const pdfBuffer = await generarNotaPedidoPDF({
     pedidoId,
     fechaDisplay: fechaAR(),
     vendedor: pedido.vendedor,
     vendedorNombre: vendedorNombre || pedido.vendedor,
-    listaPrecio: pedido.listaPrecio,
+    tipoLista: pedido.tipoLista,
     condVenta: pedido.condVenta,
     observaciones: pedido.observaciones,
     cliente: {
@@ -174,7 +177,7 @@ async function enviarPedido(body) {
     }),
   });
 
-  // Espejo compacto en CRM_Data.pedidos[] (merge, nunca sobreescribir) — la pestaña Pedidos actual lo muestra sin cambios
+  // Espejo compacto en CRM_Data.pedidos[] (merge, nunca sobreescribir) — la pestaña Pedidos actual lo muestra
   if (pedido.clienteRecordId) {
     try {
       const cliRec = await at(`CLIENTES/${pedido.clienteRecordId}`);
@@ -182,12 +185,17 @@ async function enviarPedido(body) {
       try { crm = JSON.parse(cliRec.fields.CRM_Data || "{}"); } catch (e) {}
       crm.pedidos = crm.pedidos || [];
       const ahora = new Date().toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
+      // formato plano compatible con la pestaña Pedidos existente: un sub-ítem por color
+      const itemsPlanos = [];
+      for (const it of pedido.items)
+        for (const c of (it.colores && it.colores.length ? it.colores : [{ color: "", cantidad: it.cantidad || 0 }]))
+          itemsPlanos.push({ modelo: it.modelo, color: c.color, cantidad: c.cantidad, precioUnitario: it.sinCargo ? 0 : it.precioUnitario });
       crm.pedidos.push({
         pedidoId,
         fecha: ahora.split(",")[0].trim(),
         hora: (ahora.split(",")[1] || "").trim().slice(0, 5),
         vendedor: vendedorNombre || pedido.vendedor,
-        items: pedido.items,
+        items: itemsPlanos,
         observaciones: pedido.observaciones,
         origen: "digital",
       });
@@ -226,7 +234,6 @@ module.exports = async (req, res) => {
         const out = await enviarPedido(body);
         return res.status(200).json(out);
       }
-      // crear borrador
       const items = body.items || [];
       const { total, unidades } = totales(items);
       const j = await at("PEDIDOS", {
@@ -239,7 +246,7 @@ module.exports = async (req, res) => {
             ClienteRecordId: body.clienteRecordId || "",
             Items: JSON.stringify(items),
             Total: total, Unidades: unidades,
-            ListaPrecio: body.listaPrecio || 1,
+            TipoLista: body.tipoLista || "siniva",
             Estado: "borrador",
             CondVenta: body.condVenta || "",
             Observaciones: body.observaciones || "",
@@ -260,7 +267,7 @@ module.exports = async (req, res) => {
       }
       if (body.cliente != null) fields.Cliente = String(body.cliente).toUpperCase().trim();
       if (body.clienteRecordId != null) fields.ClienteRecordId = body.clienteRecordId;
-      if (body.listaPrecio != null) fields.ListaPrecio = body.listaPrecio;
+      if (body.tipoLista != null) fields.TipoLista = body.tipoLista;
       if (body.condVenta != null) fields.CondVenta = body.condVenta;
       if (body.observaciones != null) fields.Observaciones = body.observaciones;
       if (body.estado === "anulado") fields.Estado = "anulado";
