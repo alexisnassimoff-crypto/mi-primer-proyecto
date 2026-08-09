@@ -1,0 +1,23 @@
+NOTA DE PEDIDO DIGITAL — Archivos para subir al repo central-eyewear-crm
+========================================================================
+
+6 archivos, respetando las carpetas:
+
+  package.json              (MODIFICADO: agrega pdf-lib)
+  public/app.jsx            (MODIFICADO: wizard de pedidos integrado)
+  api/pedidos.js            (NUEVO: catálogo + pedidos + PDF + mail)
+  api/_pdf-nota.js          (NUEVO: generador del PDF)
+  api/_articulos-data.js    (NUEVO: respaldo de modelos del catálogo)
+  api/alertas-mail.js       (MODIFICADO: corrige comillas rotas)
+
+CÓMO SUBIRLOS POR LA WEB DE GITHUB (sin instalar nada):
+1. Entrá a github.com/alexisnassimoff-crypto/central-eyewear-crm
+2. Apretá la tecla . (punto) NO — más simple: botón "Add file" → "Upload files"
+3. Arrastrá las carpetas api y public y los archivos package.json
+   (GitHub respeta las carpetas al arrastrar)
+4. Abajo elegí "Commit directly to the main branch" → "Commit changes"
+5. Vercel detecta el push y deploya solo (~1 minuto)
+6. Probá en central-eyewear-crm.vercel.app con un usuario vendedor
+
+VUELTA ATRÁS: si algo saliera mal, subí de nuevo los archivos originales
+de tu ZIP de backup de la misma manera.
