@@ -76,7 +76,7 @@ async function enviarPedido(body) {
   if (!pedido.items.length) throw { status: 400, msg: "El pedido no tiene ítems" };
 
   // Revalidar SOLO precios automáticos (los manuales, con descuento o sin cargo se respetan)
-  const arts = await fetchAll("ARTICULOS", "&filterByFormula=" + encodeURIComponent("{Activo}=TRUE()"));
+  const arts = await fetchAll("ARTICULOS", "&filterByFormula=" + encodeURIComponent("NOT({Inactivo})"));
   const porCodigo = {};
   for (const a of arts)
     porCodigo[String(a.fields.Codigo || "").trim()] = {

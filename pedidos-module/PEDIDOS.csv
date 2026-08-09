@@ -1,0 +1,2 @@
+﻿PedidoID,Numero,Fecha,Vendedor,Cliente,ClienteRecordId,Items,Total,Unidades,TipoLista,Estado,CondVenta,Observaciones,EmailCliente,EnviadoAt
+EJEMPLO-BORRAR,0,2026-08-09,ale,OPTICA DE PRUEBA,,[],0,0,siniva,borrador,,Fila de ejemplo para que Airtable cree las columnas — borrala después de importar,,

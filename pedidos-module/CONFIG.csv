@@ -1,0 +1,3 @@
+﻿Clave,Valor,Nota
+iva_default,siniva,Precio que ve el vendedor por defecto: siniva o coniva
+recargo_provincia:EJEMPLO,2000,Cambiá EJEMPLO por la provincia (en mayúsculas) y el monto de recargo por unidad. Agregá una fila por provincia con recargo. Borrá esta fila si no aplica.
