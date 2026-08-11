@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Maaser</title>
+<meta name="description" content="Calculadora de maaser kesafim (diezmo monetario) según la ley judía, con fuentes. Para empleados y dueños de negocio.">
+<style>
+  :root {
+    --azul: #1d3557;
+    --azul-claro: #2b4a7a;
+    --dorado: #b8860b;
+    --dorado-suave: #f6edd8;
+    --crema: #faf7f0;
+    --blanco: #ffffff;
+    --tinta: #26303c;
+    --gris: #5c6a78;
+    --linea: #e3ddd0;
+    --verde: #2e7d52;
+    --rojo: #a63a3a;
+    --radio: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--crema);
+    color: var(--tinta);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .contenedor { max-width: 640px; margin: 0 auto; padding: 0 16px 56px; }
+
+  header {
+    background: var(--azul);
+    color: var(--blanco);
+    text-align: center;
+    padding: 36px 20px 30px;
+  }
+  header .simbolo {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+  header h1 { font-size: 1.7rem; letter-spacing: 0.3px; }
+  header p {
+    color: #c9d4e4;
+    font-size: 0.98rem;
+    max-width: 480px;
+    margin: 8px auto 0;
+  }
+
+  .tarjeta {
+    background: var(--blanco);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    padding: 20px;
+    margin-top: 18px;
+  }
+  .tarjeta h2 {
+    font-size: 1.02rem;
+    color: var(--azul);
+    margin-bottom: 4px;
+  }
+  .tarjeta .ayuda {
+    font-size: 0.88rem;
+    color: var(--gris);
+    margin-bottom: 14px;
+  }
+
+  .intro { margin-top: -22px; }
+  .intro p { font-size: 0.95rem; }
+  .intro p + p { margin-top: 8px; }
+  .intro strong { color: var(--azul); }
+
+  /* Selectores tipo píldora */
+  .pildoras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pildoras.tres { grid-template-columns: 1fr 1fr; }
+  .pildora {
+    border: 1.5px solid var(--linea);
+    border-radius: 10px;
+    background: var(--blanco);
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.93rem;
+    color: var(--tinta);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .pildora small { display: block; color: var(--gris); font-size: 0.78rem; margin-top: 2px; }
+  .pildora.activa {
+    border-color: var(--azul);
+    background: #eef3fa;
+    font-weight: 600;
+  }
+  .pildora.activa small { color: var(--azul-claro); }
+
+  .campo { margin-top: 14px; }
+  .campo label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .campo .nota {
+    font-size: 0.82rem;
+    color: var(--gris);
+    font-weight: 400;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .campo .moneda {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--linea);
+    border-radius: 10px;
+    background: var(--blanco);
+    overflow: hidden;
+  }
+  .campo .moneda span {
+    padding: 0 10px 0 14px;
+    color: var(--gris);
+    font-size: 1rem;
+  }
+  .campo input {
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 12px 14px 12px 0;
+    font-size: 1.05rem;
+    font-family: inherit;
+    color: var(--tinta);
+    background: transparent;
+  }
+  .campo .moneda:focus-within { border-color: var(--azul); }
+  .campo input::placeholder { color: #b6bec7; }
+
+  .aviso {
+    font-size: 0.85rem;
+    background: var(--dorado-suave);
+    border-left: 3px solid var(--dorado);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+    margin-top: 14px;
+    color: #5d4a12;
+  }
+
+  /* Resultado */
+  .resultado { border: 1.5px solid var(--azul); }
+  .desglose { margin-top: 6px; }
+  .desglose .linea-calculo {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.92rem;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--linea);
+  }
+  .desglose .linea-calculo span:last-child {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .desglose .linea-calculo.resta span:last-child { color: var(--rojo); }
+  .desglose .linea-calculo.base {
+    border-bottom: none;
+    font-weight: 700;
+    color: var(--azul);
+  }
+  .monto-final {
+    text-align: center;
+    background: var(--azul);
+    color: var(--blanco);
+    border-radius: 10px;
+    padding: 16px 14px;
+    margin-top: 12px;
+  }
+  .monto-final .etiqueta { font-size: 0.85rem; color: #c9d4e4; }
+  .monto-final .valor {
+    font-size: 2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .monto-final.perdida { background: #f3e9e9; color: var(--rojo); }
+  .monto-final.perdida .etiqueta { color: var(--rojo); }
+  .monto-final.perdida .valor { font-size: 1.1rem; font-weight: 600; }
+
+  .bli-neder {
+    background: #eef3fa;
+    border: 1px solid #cdd9ea;
+    border-radius: var(--radio);
+    padding: 14px 16px;
+    margin-top: 18px;
+    font-size: 0.9rem;
+  }
+  .bli-neder strong { color: var(--azul); }
+
+  /* Fuentes */
+  details {
+    background: var(--blanco);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    margin-top: 18px;
+    padding: 0 20px;
+  }
+  details summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--azul);
+    padding: 16px 0;
+    font-size: 1rem;
+    list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: " +"; color: var(--dorado); }
+  details[open] summary::after { content: " −"; }
+  details .fuente { padding-bottom: 16px; font-size: 0.9rem; }
+  details .fuente + .fuente { border-top: 1px dashed var(--linea); padding-top: 14px; }
+  details .fuente h3 { font-size: 0.94rem; color: var(--azul); margin-bottom: 4px; }
+  details .fuente cite { color: var(--gris); font-style: normal; font-size: 0.84rem; }
+
+  .compartir {
+    display: block;
+    text-align: center;
+    background: #25d366;
+    color: var(--blanco);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.02rem;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 22px;
+  }
+  .compartir:active { opacity: 0.85; }
+
+  footer {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--gris);
+    margin-top: 26px;
+    padding: 0 10px;
+  }
+  .oculto { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="simbolo" aria-hidden="true">✡</span>
+  <h1>Calculadora de Maaser</h1>
+  <p>Maaser kesafim: el diezmo monetario según la ley judía, calculado como lo indican las fuentes.</p>
+</header>
+
+<div class="contenedor">
+
+  <div class="tarjeta intro">
+    <p><strong>¿Qué es?</strong> Separar para tzedaká una parte de lo que uno gana. La medida media es el <strong>10%</strong> de la ganancia (maaser); la forma óptima de cumplir la mitzvá es el <strong>20%</strong> (jomesh). La cuenta se hace sobre la <strong>ganancia real</strong>, no sobre todo lo que entra.</p>
+  </div>
+
+  <!-- Situación laboral -->
+  <div class="tarjeta">
+    <h2>1. Tu situación</h2>
+    <p class="ayuda">La forma de calcular cambia según cómo generás tus ingresos.</p>
+    <div class="pildoras" role="group" aria-label="Situación laboral">
+      <button type="button" class="pildora activa" id="btn-empleado">Empleado<small>en relación de dependencia</small></button>
+      <button type="button" class="pildora" id="btn-dueno">Dueño / independiente<small>negocio propio</small></button>
+    </div>
+
+    <!-- Modo empleado -->
+    <div id="panel-empleado">
+      <div class="campo">
+        <label for="emp-sueldo">Sueldo de bolsillo del período
+          <span class="nota">Lo que efectivamente recibís. Si partís del bruto, restale impuestos a los ingresos y aportes obligatorios: eso no cuenta como ganancia (Igrot Moshé YD 1:143).</span>
+        </label>
+        <div class="moneda"><span>$</span><input type="number" id="emp-sueldo" min="0" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="campo">
+        <label for="emp-gastos">Gastos necesarios para poder trabajar
+          <span class="nota">Solo lo directamente ligado a generar el ingreso: transporte al trabajo, herramientas, ropa de trabajo obligatoria.</span>
+        </label>
+        <div class="moneda"><span>$</span><input type="number" id="emp-gastos" min="0" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="campo">
+        <label for="emp-otros">Otros ingresos del período
+          <span class="nota">Regalos en dinero, herencias, premios, intereses y ganancias de inversión ya realizadas (cobradas o vendidas).</span>
+        </label>
+        <div class="moneda"><span>$</span><input type="number" id="emp-otros" min="0" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <p class="aviso">Los gastos de vida (comida, vivienda, ropa, auto personal) <strong>no se descuentan</strong>: es el consenso de los poskim. Ver fuentes abajo.</p>
+    </div>
+
+    <!-- Modo dueño -->
+    <div id="panel-dueno" class="oculto">
+      <div class="campo">
+        <label>Criterio de cálculo</label>
+        <div class="pildoras" role="group" aria-label="Criterio del dueño">
+          <button type="button" class="pildora activa" id="btn-retiros">Sobre mis retiros<small>lo que saqué para mí</small></button>
+          <button type="button" class="pildora" id="btn-ganancia">Sobre la ganancia<small>criterio estricto</small></button>
+        </div>
+      </div>
+
+      <div id="panel-retiros">
+        <div class="campo">
+          <label for="due-retiros">Retiros personales del período
+            <span class="nota">Todo lo que sacaste de la empresa para vos: sueldo de dueño, dividendos cobrados, retiros de caja.</span>
+          </label>
+          <div class="moneda"><span>$</span><input type="number" id="due-retiros" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="campo">
+          <label for="due-otros-r">Otros ingresos personales
+            <span class="nota">Regalos, herencias, intereses, inversiones realizadas — fuera de la empresa.</span>
+          </label>
+          <div class="moneda"><span>$</span><input type="number" id="due-otros-r" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <p class="aviso">La ganancia que quedó <strong>reinvertida en la empresa</strong> no desaparece: queda pendiente y paga maaser el día que la retires o la realices. Anotala para no perderla de vista.</p>
+      </div>
+
+      <div id="panel-ganancia" class="oculto">
+        <div class="campo">
+          <label for="due-ingresos">Ingresos del negocio</label>
+          <div class="moneda"><span>$</span><input type="number" id="due-ingresos" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="campo">
+          <label for="due-gastos">Gastos del negocio
+            <span class="nota">Todo lo que costó generar el ingreso: mercadería, sueldos, alquiler, publicidad, seguros, servicios. El maaser es sobre la ganancia, no sobre la facturación.</span>
+          </label>
+          <div class="moneda"><span>$</span><input type="number" id="due-gastos" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="campo">
+          <label for="due-impuestos">Impuestos del negocio</label>
+          <div class="moneda"><span>$</span><input type="number" id="due-impuestos" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="campo">
+          <label for="due-perdidas">Pérdidas de otras fuentes en el mismo período
+            <span class="nota">Si otro negocio o inversión tuyo dio pérdida en este mismo período, se compensa contra la ganancia.</span>
+          </label>
+          <div class="moneda"><span>$</span><input type="number" id="due-perdidas" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="campo">
+          <label for="due-otros-g">Otros ingresos personales
+            <span class="nota">Regalos, herencias, intereses, inversiones realizadas.</span>
+          </label>
+          <div class="moneda"><span>$</span><input type="number" id="due-otros-g" min="0" inputmode="decimal" placeholder="0"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nivel -->
+  <div class="tarjeta">
+    <h2>2. Cuánto querés dar</h2>
+    <p class="ayuda">Shulján Aruj, Yoré Deá 249:1.</p>
+    <div class="pildoras" role="group" aria-label="Nivel de entrega">
+      <button type="button" class="pildora activa" id="btn-10">10% — Maaser<small>la medida media</small></button>
+      <button type="button" class="pildora" id="btn-20">20% — Jomesh<small>la forma óptima</small></button>
+    </div>
+    <p class="aviso">Más del 20% no se recomienda: la Takaná de Usha (Ketubot 50a) fija ese tope para que quien da no termine necesitando él mismo (salvo casos de gran riqueza — consultar con un rav).</p>
+  </div>
+
+  <!-- Resultado -->
+  <div class="tarjeta resultado">
+    <h2>3. Tu maaser</h2>
+    <div class="desglose" id="desglose"></div>
+    <div class="monto-final" id="monto-final">
+      <div class="etiqueta" id="monto-etiqueta">Monto a separar (10%)</div>
+      <div class="valor" id="monto-valor">$ 0</div>
+    </div>
+  </div>
+
+  <div class="bli-neder">
+    <strong>Antes de empezar, decí "bli neder"</strong> (sin voto): la costumbre repetida tres veces adquiere fuerza de voto según la halajá. Decirlo desde el principio te deja dar con constancia sin quedar atado si un mes no podés.
+  </div>
+
+  <!-- Fuentes -->
+  <details>
+    <summary>Fuentes de la ley</summary>
+    <div class="fuente">
+      <h3>Los tres niveles</h3>
+      <p>Dar hasta un quinto (20%, "jomesh") es la mitzvá cumplida de la mejor manera; un décimo (10%, "maaser") es la medida media; menos que eso, "ojo mezquino".</p>
+      <cite>Shulján Aruj, Yoré Deá 249:1 · Rambam, Matnot Aniim 7:5</cite>
+    </div>
+    <div class="fuente">
+      <h3>El tope del 20%</h3>
+      <p>"El que dispersa [para tzedaká], que no disperse más de un quinto": la Takaná de Usha, para que quien da no llegue a necesitar de los demás. Los poskim eximen del tope a los muy ricos.</p>
+      <cite>Talmud Bavlí, Ketubot 50a</cite>
+    </div>
+    <div class="fuente">
+      <h3>Se calcula sobre la ganancia, no sobre lo facturado</h3>
+      <p>El maaser es sobre los "revajim" (ganancias). Los gastos hechos para generar el ingreso se descuentan: gastos del negocio, impuestos a los ingresos y aportes obligatorios. Los impuestos al consumo y de la vivienda no se descuentan, porque son gastos de vida.</p>
+      <cite>Rema, Yoré Deá 249:1 · Igrot Moshé, Yoré Deá 1:143 · Ajavat Jésed (Jafetz Jaim)</cite>
+    </div>
+    <div class="fuente">
+      <h3>Gastos del hogar</h3>
+      <p>El consenso de los poskim contemporáneos es que los gastos de vida (comida, vivienda, ropa) <strong>no</strong> se descuentan de la base. Existe una opinión minoritaria que permite descontar gastos básicos de subsistencia (Sheilat Yaavetz; Avkat Rajel) — quien quiera apoyarse en ella debe consultarlo con un rav.</p>
+      <cite>Birkei Yosef y mayoría de los ajaronim, contra Sheilat Yaavetz</cite>
+    </div>
+    <div class="fuente">
+      <h3>Dueño de negocio: ¿cuándo nace la obligación?</h3>
+      <p>La obligación es sobre la ganancia que se concreta para la persona. Sobre ganancia reinvertida en el negocio hay base para diferir el maaser hasta retirarla (como los dividendos reinvertidos, que varios poskim permiten diferir hasta el rescate). El criterio más estricto: quien controla la decisión de distribuir o reinvertir da maaser al cerrar la cuenta del período.</p>
+      <cite>Poskim contemporáneos sobre ganancias realizadas y reinvertidas</cite>
+    </div>
+    <div class="fuente">
+      <h3>El período de la cuenta y las pérdidas</h3>
+      <p>La cuenta se hace "año por año" — o el período que uno fije (por ejemplo, mensual), manteniéndolo con consistencia. Dentro del mismo período, las pérdidas de una fuente se compensan contra las ganancias de otra.</p>
+      <cite>Rema, Yoré Deá 249:1</cite>
+    </div>
+    <div class="fuente">
+      <h3>Qué cuenta como ingreso</h3>
+      <p>Sueldo, honorarios, regalos en dinero, herencias, premios, intereses y ganancias de inversión ya realizadas. Las ganancias no realizadas (acciones que subieron pero no vendiste) no pagan hasta que se venden.</p>
+      <cite>Poskim contemporáneos de hiljot maaser kesafim</cite>
+    </div>
+    <div class="fuente">
+      <h3>Naturaleza de la obligación y "bli neder"</h3>
+      <p>La mayoría de los rishonim consideran que maaser kesafim es de origen rabínico o una costumbre consagrada (los versículos son un apoyo, "asmajtá"). Por eso conviene decir "bli neder" antes de la primera vez: una práctica repetida tres veces sin esa aclaración adquiere fuerza de voto.</p>
+      <cite>Tosafot, Taanit 9a · Baj y Taz, Yoré Deá 331 · Pitjei Teshuvá, Yoré Deá 331:12</cite>
+    </div>
+    <div class="fuente">
+      <h3>A quién se le da</h3>
+      <p>La prioridad son los pobres; también instituciones de Torá. No sirve para pagar mitzvot en las que uno ya está obligado de antes.</p>
+      <cite>Shulján Aruj, Yoré Deá 249:1 y poskim</cite>
+    </div>
+  </details>
+
+  <a class="compartir" id="btn-compartir" href="#" target="_blank" rel="noopener">Compartir por WhatsApp</a>
+
+  <footer>
+    Esta calculadora orienta según las fuentes citadas. Para casos particulares, consultá con tu rav.
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var situacion = 'empleado';   // 'empleado' | 'dueno'
+  var criterio = 'retiros';     // 'retiros' | 'ganancia'
+  var nivel = 10;               // 10 | 20
+
+  function $(id) { return document.getElementById(id); }
+
+  function valor(id) {
+    var n = parseFloat($(id).value);
+    return isNaN(n) || n < 0 ? 0 : n;
+  }
+
+  function plata(n) {
+    return '$ ' + n.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  }
+
+  function activar(botonActivo, botonInactivo) {
+    botonActivo.classList.add('activa');
+    botonInactivo.classList.remove('activa');
+  }
+
+  function filaHTML(etiqueta, monto, clase) {
+    return '<div class="linea-calculo ' + (clase || '') + '"><span>' + etiqueta +
+           '</span><span>' + (clase === 'resta' ? '− ' : '') + plata(monto) + '</span></div>';
+  }
+
+  function calcular() {
+    var filas = [];
+    var base = 0;
+
+    if (situacion === 'empleado') {
+      var sueldo = valor('emp-sueldo');
+      var gastos = valor('emp-gastos');
+      var otros = valor('emp-otros');
+      base = sueldo - gastos + otros;
+      filas.push(filaHTML('Sueldo de bolsillo', sueldo));
+      if (gastos) filas.push(filaHTML('Gastos para trabajar', gastos, 'resta'));
+      if (otros) filas.push(filaHTML('Otros ingresos', otros));
+    } else if (criterio === 'retiros') {
+      var retiros = valor('due-retiros');
+      var otrosR = valor('due-otros-r');
+      base = retiros + otrosR;
+      filas.push(filaHTML('Retiros personales', retiros));
+      if (otrosR) filas.push(filaHTML('Otros ingresos personales', otrosR));
+    } else {
+      var ingresos = valor('due-ingresos');
+      var gastosN = valor('due-gastos');
+      var impuestos = valor('due-impuestos');
+      var perdidas = valor('due-perdidas');
+      var otrosG = valor('due-otros-g');
+      base = ingresos - gastosN - impuestos - perdidas + otrosG;
+      filas.push(filaHTML('Ingresos del negocio', ingresos));
+      if (gastosN) filas.push(filaHTML('Gastos del negocio', gastosN, 'resta'));
+      if (impuestos) filas.push(filaHTML('Impuestos del negocio', impuestos, 'resta'));
+      if (perdidas) filas.push(filaHTML('Pérdidas de otras fuentes', perdidas, 'resta'));
+      if (otrosG) filas.push(filaHTML('Otros ingresos personales', otrosG));
+    }
+
+    var montoFinal = $('monto-final');
+    if (base < 0) {
+      filas.push(filaHTML('Resultado del período', base, 'base'));
+      $('desglose').innerHTML = filas.join('');
+      montoFinal.classList.add('perdida');
+      $('monto-etiqueta').textContent = 'El período dio pérdida';
+      $('monto-valor').textContent = 'No hay maaser que separar. Según la costumbre, la pérdida puede arrastrarse al período siguiente — consultalo con tu rav.';
+      return;
+    }
+
+    filas.push(filaHTML('Base de cálculo (ganancia)', base, 'base'));
+    $('desglose').innerHTML = filas.join('');
+    montoFinal.classList.remove('perdida');
+    $('monto-etiqueta').textContent = 'Monto a separar (' + nivel + '%' +
+      (nivel === 20 ? ' — jomesh' : ' — maaser') + ')';
+    $('monto-valor').textContent = plata(base * nivel / 100);
+  }
+
+  // Situación
+  $('btn-empleado').addEventListener('click', function () {
+    situacion = 'empleado';
+    activar($('btn-empleado'), $('btn-dueno'));
+    $('panel-empleado').classList.remove('oculto');
+    $('panel-dueno').classList.add('oculto');
+    calcular();
+  });
+  $('btn-dueno').addEventListener('click', function () {
+    situacion = 'dueno';
+    activar($('btn-dueno'), $('btn-empleado'));
+    $('panel-dueno').classList.remove('oculto');
+    $('panel-empleado').classList.add('oculto');
+    calcular();
+  });
+
+  // Criterio del dueño
+  $('btn-retiros').addEventListener('click', function () {
+    criterio = 'retiros';
+    activar($('btn-retiros'), $('btn-ganancia'));
+    $('panel-retiros').classList.remove('oculto');
+    $('panel-ganancia').classList.add('oculto');
+    calcular();
+  });
+  $('btn-ganancia').addEventListener('click', function () {
+    criterio = 'ganancia';
+    activar($('btn-ganancia'), $('btn-retiros'));
+    $('panel-ganancia').classList.remove('oculto');
+    $('panel-retiros').classList.add('oculto');
+    calcular();
+  });
+
+  // Nivel
+  $('btn-10').addEventListener('click', function () {
+    nivel = 10;
+    activar($('btn-10'), $('btn-20'));
+    calcular();
+  });
+  $('btn-20').addEventListener('click', function () {
+    nivel = 20;
+    activar($('btn-20'), $('btn-10'));
+    calcular();
+  });
+
+  // Recalcular en vivo
+  var inputs = document.querySelectorAll('input[type="number"]');
+  for (var i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener('input', calcular);
+  }
+
+  // Compartir por WhatsApp
+  var texto = 'Te comparto una calculadora de maaser según la ley judía: elegís si sos empleado o dueño de negocio, cargás tus números y te dice cuánto separar (10% o 20%), con las fuentes de cada regla.';
+  if (location.protocol === 'http:' || location.protocol === 'https:') {
+    texto += ' ' + location.href;
+  }
+  $('btn-compartir').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+
+  calcular();
+})();
+</script>
+</body>
+</html>
