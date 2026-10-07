@@ -4,166 +4,80 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pendientes</title>
-<meta name="description" content="Pendientes por tema, con carga rápida en castellano y envío al calendario del iPhone con alerta e invitados.">
+<meta name="description" content="Tus pendientes por tema, con avisos en el Calendario del iPhone.">
 <meta name="robots" content="noindex">
-<meta name="theme-color" id="metaTheme" content="#F2F3F6">
+<meta name="theme-color" id="metaTheme" content="#F4F5F7">
 <meta name="apple-mobile-web-app-title" content="Pendientes">
+<meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <a class="skip" href="#main">Saltar al contenido</a>
 
 <header class="top wrap">
-  <div class="top__bar">
-    <div class="top__title">
-      <p class="eyebrow" id="eyebrow">Pendientes</p>
-      <h1 class="today" id="todayLabel">Hoy</h1>
-    </div>
-    <div class="top__actions">
-      <button class="icon-btn" id="btnSearch" type="button" aria-label="Buscar" aria-pressed="false"></button>
-      <button class="icon-btn" id="btnTheme" type="button" aria-label="Cambiar tema"></button>
-      <button class="icon-btn" id="btnSettings" type="button" aria-label="Ajustes"></button>
-    </div>
+  <div class="top__row">
+    <button type="button" class="back" id="btnBack" hidden><span data-icon="chevL"></span>Inicio</button>
+    <span class="top__spacer"></span>
+    <button type="button" class="icon-btn" id="btnSettings" aria-label="Ajustes"><span data-icon="gear"></span></button>
   </div>
-  <div class="search" id="searchBar" hidden>
-    <input type="search" id="searchInput" placeholder="Buscar en pendientes…" autocomplete="off" aria-label="Buscar">
-  </div>
-  <div class="kpis" id="kpis" role="group" aria-label="Resumen"></div>
+  <h1 class="title" id="viewTitle" tabindex="-1">Hoy</h1>
+  <p class="subtitle" id="viewSub"></p>
 </header>
 
-<nav class="seg wrap" aria-label="Vistas">
-  <div class="seg__inner" role="tablist">
-    <button type="button" role="tab" id="tabTemas" aria-selected="true" aria-controls="viewTemas" data-view="temas">Temas</button>
-    <button type="button" role="tab" id="tabAgenda" aria-selected="false" aria-controls="viewAgenda" data-view="agenda">Agenda</button>
+<main id="main" class="wrap"></main>
+
+<nav class="tabbar" aria-label="Secciones">
+  <div class="tabbar__inner">
+    <button type="button" class="tab" data-go="inicio" id="tabInicio"><span data-icon="home"></span><span>Inicio</span></button>
+    <button type="button" class="tab tab--new" id="btnNew"><span data-icon="plus"></span><span>Nuevo</span></button>
+    <button type="button" class="tab" data-go="agenda" id="tabAgenda"><span data-icon="calendar"></span><span>Agenda</span></button>
   </div>
-  <div class="seg__extra" id="segExtra"></div>
 </nav>
 
-<main id="main" class="wrap">
-  <section id="viewTemas" role="tabpanel" aria-labelledby="tabTemas"></section>
-  <section id="viewAgenda" role="tabpanel" aria-labelledby="tabAgenda" hidden></section>
-</main>
-
-<!-- Carga rápida -->
-<div class="composer" id="composer">
-  <div class="composer__inner">
-    <div class="composer__preview" id="preview" aria-live="polite"></div>
-    <form class="composer__form" id="quickForm" autocomplete="off">
-      <button type="button" class="composer__topic is-auto" id="composerTopic" aria-haspopup="listbox" aria-expanded="false" title="Tema"></button>
-      <input class="composer__input" id="quickInput" type="text" placeholder="Nuevo pendiente…" enterkeyhint="done" autocapitalize="sentences" aria-label="Nuevo pendiente">
-      <button type="button" class="icon-btn composer__more" id="btnMore" aria-label="Agregar con más detalle"></button>
-      <button type="submit" class="composer__add" id="btnAdd" aria-label="Agregar"></button>
-    </form>
-    <div class="topic-menu" id="topicMenu" role="listbox" aria-label="Tema" hidden></div>
-  </div>
-</div>
-
-<!-- Hoja de edición -->
-<dialog class="sheet" id="sheet" aria-labelledby="sheetTitle">
-  <form class="sheet__form" id="itemForm" novalidate>
-    <div class="sheet__handle" aria-hidden="true"></div>
+<!-- Ficha de un pendiente -->
+<dialog class="sheet" id="detailSheet" aria-labelledby="detailTitle">
+  <div class="sheet__in">
     <header class="sheet__head">
-      <h2 class="sheet__title" id="sheetTitle">Nuevo pendiente</h2>
-      <button type="button" class="icon-btn" id="sheetClose" aria-label="Cerrar"></button>
+      <span class="sheet__title" id="detailTopic"></span>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
     </header>
-    <div class="sheet__body">
-      <label class="field"><span class="field__label">Qué</span><input id="f_title" type="text" placeholder="Qué hay que hacer" autocomplete="off" required></label>
-      <div class="field"><span class="field__label">Tema</span><div class="chips" id="f_topic" role="radiogroup" aria-label="Tema"></div></div>
-      <div class="field"><span class="field__label">Tipo</span><div class="segmented" id="f_kind" role="radiogroup" aria-label="Tipo"></div></div>
-      <div class="row2">
-        <label class="field"><span class="field__label">Fecha</span><input id="f_date" type="date"></label>
-        <label class="field"><span class="field__label">Hora</span><input id="f_time" type="time" step="300"></label>
-      </div>
-      <div class="chips chips--quick" id="quickDates"></div>
-      <div class="chips chips--quick" id="quickTimes"></div>
-      <div class="row2">
-        <label class="field"><span class="field__label">Alerta</span><select id="f_alert"></select></label>
-        <label class="field"><span class="field__label">Segunda alerta</span><select id="f_alert2"></select></label>
-      </div>
-      <div class="row2">
-        <label class="field"><span class="field__label">Duración</span><select id="f_duration"></select></label>
-        <label class="field"><span class="field__label">Repetir</span><select id="f_repeat"></select></label>
-      </div>
-      <label class="field"><span class="field__label">Invitados</span><input id="f_invitees" type="text" list="dl_people" placeholder="Nombres o mails, separados por coma" autocomplete="off"></label>
-      <datalist id="dl_people"></datalist>
-      <label class="field"><span class="field__label">Lugar</span><input id="f_location" type="text" list="dl_places" placeholder="Dónde" autocomplete="off"></label>
-      <datalist id="dl_places"></datalist>
-      <div class="row2">
-        <label class="field"><span class="field__label">Monto</span><input id="f_amount" type="text" inputmode="decimal" placeholder="$ 0"></label>
-        <label class="field field--check"><input id="f_priority" type="checkbox"><span>Prioridad alta</span></label>
-      </div>
-      <label class="field"><span class="field__label">Notas</span><textarea id="f_notes" rows="2" placeholder="Detalles, links, lo que haga falta"></textarea></label>
-      <div class="field"><span class="field__label">Calendario e invitación</span><div class="cal-actions" id="calActions"></div></div>
-    </div>
+    <div class="sheet__body" id="detailBody"></div>
+  </div>
+</dialog>
+
+<!-- Nuevo / editar: pregunta de a una cosa -->
+<dialog class="sheet sheet--page" id="formSheet" aria-labelledby="formTitle">
+  <form class="sheet__in" id="itemForm" novalidate autocomplete="off">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="formTitle" tabindex="-1">Nuevo pendiente</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="formBody"></div>
     <footer class="sheet__foot">
-      <button type="button" class="btn btn--ghost btn--danger" id="btnDelete">Eliminar</button>
-      <button type="button" class="btn btn--ghost" id="btnDone">Marcar hecha</button>
-      <button type="submit" class="btn btn--primary" id="btnSave">Guardar</button>
+      <p class="form-err" id="formErr" role="alert"></p>
+      <button type="submit" class="btn btn--primary btn--block" id="btnSave">Guardar</button>
     </footer>
   </form>
 </dialog>
 
 <!-- Ajustes -->
-<dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
-  <form class="sheet__form" id="settingsForm" method="dialog">
-    <div class="sheet__handle" aria-hidden="true"></div>
+<dialog class="sheet" id="settingsSheet" aria-labelledby="settingsTitle">
+  <div class="sheet__in">
     <header class="sheet__head">
       <h2 class="sheet__title" id="settingsTitle">Ajustes</h2>
-      <button type="button" class="icon-btn" id="settingsClose" aria-label="Cerrar"></button>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
     </header>
-    <div class="sheet__body">
-      <div class="set">
-        <h3>Vos</h3>
-        <div class="row2">
-          <label class="field"><span class="field__label">Nombre</span><input id="s_name" type="text" placeholder="Cómo te ven los invitados" autocomplete="name"></label>
-          <label class="field"><span class="field__label">Mail</span><input id="s_email" type="email" placeholder="Para figurar como organizador" autocomplete="email"></label>
-        </div>
-      </div>
-      <div class="set">
-        <h3>Por defecto</h3>
-        <div class="row2">
-          <label class="field"><span class="field__label">Alerta con hora</span><select id="s_alertTimed"></select></label>
-          <label class="field"><span class="field__label">Alerta todo el día</span><select id="s_alertAllDay"></select></label>
-        </div>
-        <div class="row2">
-          <label class="field"><span class="field__label">Duración de reuniones</span><select id="s_meetingDuration"></select></label>
-          <label class="field"><span class="field__label">Apariencia</span><select id="s_theme"><option value="auto">Automática</option><option value="light">Clara</option><option value="dark">Oscura</option></select></label>
-        </div>
-      </div>
-      <div class="set">
-        <h3>Temas</h3>
-        <div id="topicEditor" class="set"></div>
-        <div class="btns"><button type="button" class="btn btn--ghost" id="btnAddTopic">Agregar tema</button></div>
-      </div>
-      <div class="set">
-        <h3>Datos</h3>
-        <p>Todo se guarda en este dispositivo. Hacé un respaldo cada tanto o antes de cambiar de teléfono.</p>
-        <div class="btns">
-          <button type="button" class="btn btn--ghost" id="btnExportIcs">Mandar toda la agenda al calendario</button>
-          <button type="button" class="btn btn--ghost" id="btnExportJson">Descargar respaldo</button>
-          <label class="btn btn--ghost" for="importFile">Restaurar respaldo</label>
-          <input id="importFile" type="file" accept="application/json,.json" hidden>
-          <button type="button" class="btn btn--ghost" id="btnClearDone">Borrar hechas</button>
-        </div>
-      </div>
-      <div class="set">
-        <h3>En el iPhone</h3>
-        <div class="tip">
-          <span><b>Pantalla de inicio:</b> en Safari tocá Compartir y después «Agregar a inicio». Queda como una app.</span>
-          <span><b>Calendario:</b> «Agregar al iPhone» abre el evento en Calendario con su alerta e invitados; tocá «Añadir». Si en cambio se descarga un archivo, abrilo desde Descargas y tocá «Añadir todo».</span>
-          <span><b>Invitaciones:</b> WhatsApp o Mail mandan el detalle con un link para que la otra persona lo agregue a su calendario. Google Calendar manda la invitación formal.</span>
-        </div>
-      </div>
-    </div>
-    <footer class="sheet__foot">
-      <button type="submit" class="btn btn--primary" id="btnSettingsOk">Listo</button>
-    </footer>
-  </form>
+    <div class="sheet__body" id="settingsBody"></div>
+  </div>
 </dialog>
 
+<datalist id="dl_people"></datalist>
+<datalist id="dl_places"></datalist>
+<input id="importFile" type="file" accept="application/json,.json" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="ics.js"></script>

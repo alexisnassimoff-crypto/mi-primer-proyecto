@@ -26,10 +26,23 @@ python3 -m http.server 8000
 
 ## Pendientes — dashboard personal (carpeta `pendientes/`)
 
-App aparte, con su propia dirección, para organizar pendientes por tema (Central, Familia, La casa,
-Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al calendario del
-iPhone con alerta e invitados. Pensada para el teléfono: la carga rápida está abajo, al alcance
-del pulgar, y entiende castellano:
+App aparte, con su propia dirección, para organizar pendientes por tema (Central, Familia,
+La casa, Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al
+calendario del iPhone con aviso e invitados.
+
+Pensada para el teléfono y para no marear:
+
+- **Inicio** muestra solo lo de hoy (y lo atrasado) y los temas como botones grandes. Cada tema se
+  abre en su propia pantalla; **Agenda** ordena todo por día.
+- **Nuevo** pregunta de a una cosa: qué, tema, cuándo, hora y aviso. Lo demás (repetir, con quién,
+  dónde, monto, importante, notas) queda guardado en «Más opciones». Se puede guardar en cualquier
+  paso.
+- Cada pendiente abre una **ficha** con acciones claras: marcar hecho, agregar al Calendario,
+  invitar, editar y eliminar.
+- Accesible: botones grandes con texto, contraste AA en claro y oscuro, la letra sigue el tamaño
+  elegido en el iPhone y el gesto de volver funciona.
+
+Si en la frase ya decís el día, la hora o el aviso, los entiende y se saltea esas preguntas:
 
 ```
 Llamar a Matías mañana 10:00 #central !30m
@@ -53,8 +66,8 @@ Recordar sacar la basura todos los lunes !0
 ```
 pendientes/index.html       estructura
 pendientes/app.css          diseño (tokens de color al inicio, claro y oscuro)
-pendientes/app.js           la app: tablero, agenda, hoja de edición, ajustes
-pendientes/parser.js        carga rápida en castellano
+pendientes/app.js           la app: inicio, temas, agenda, ficha, formulario paso a paso y ajustes
+pendientes/parser.js        entiende frases en castellano (fechas, horas, avisos, montos)
 pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
 pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)

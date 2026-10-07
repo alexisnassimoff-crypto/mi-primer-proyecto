@@ -1,7 +1,8 @@
 /* ============================================================
    Pendientes — app
-   Todo vive en localStorage de este dispositivo. Sin dependencias.
-   Módulos: ics.js (archivos .ics) y parser.js (carga rápida en castellano).
+   Inicio (hoy + temas), Agenda y un formulario que pregunta de a una
+   cosa. Todo vive en localStorage de este dispositivo. Sin dependencias.
+   Módulos: ics.js (archivos .ics) y parser.js (entiende frases en castellano).
    ============================================================ */
 (function () {
 'use strict';
@@ -21,6 +22,8 @@ const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.
 const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const slug = s => Parser.plain(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'evento';
 const short = s => s.replace(/\.$/, '');
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const F = {
   wdLong: new Intl.DateTimeFormat('es-AR', { weekday: 'long' }),
   wdShort: new Intl.DateTimeFormat('es-AR', { weekday: 'short' }),
@@ -36,48 +39,47 @@ const ICONS = {
   check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  glasses: '<circle cx="6.5" cy="14.5" r="3.5"/><circle cx="17.5" cy="14.5" r="3.5"/><path d="M10 14.5h4M3 14.5l1.8-6.5h2.7M21 14.5l-1.8-6.5h-2.7"/>',
-  people: '<circle cx="9" cy="8" r="3.25"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 15.2a4.5 4.5 0 0 1 6 4.3"/>',
+  chevL: '<path d="M15 5l-7 7 7 7"/>',
+  chevR: '<path d="M9 5l7 7-7 7"/>',
+  chevD: '<path d="M6 9l6 6 6-6"/>',
   home: '<path d="M3.5 11.5L12 4.5l8.5 7"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
-  star: '<path d="M12 3.5l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17.4l-5.4 2.9 1.1-6.1-4.5-4.3 6.1-.8z"/>',
-  heart: '<path d="M12 20.3S3.5 15.3 3.5 9.3A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 8.5 2.1c0 6-8.5 11-8.5 11z"/>',
-  wallet: '<path d="M3.5 7.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V9"/><path d="M3.5 7.5v10a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-13a2 2 0 0 1-2-2"/><path d="M16 14.5h1.5"/>',
-  cart: '<path d="M3 4.5h2.2l2.1 10.2a1.5 1.5 0 0 0 1.5 1.2h7.8a1.5 1.5 0 0 0 1.5-1.1L20 8.5H6.3"/><circle cx="10" cy="19.5" r="1.2"/><circle cx="16.5" cy="19.5" r="1.2"/>',
-  tag: '<path d="M3.5 11.5V4.5h7l9 9-7 7z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
-  briefcase: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/>',
-  bell: '<path d="M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  bell: '<path d="M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  repeat: '<path d="M17 2.5l3 3-3 3"/><path d="M4 11V8.5a3 3 0 0 1 3-3h13"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 13v2.5a3 3 0 0 1-3 3H4"/>',
   pin: '<path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.3 12 21 12 21z"/><circle cx="12" cy="10" r="2.3"/>',
-  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  people: '<circle cx="9" cy="8" r="3.25"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 15.2a4.5 4.5 0 0 1 6 4.3"/>',
+  money: '<rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  note: '<path d="M6 3.5h8.5L18 7v13.5H6z"/><path d="M14 3.5V7.5h4M9 12h6M9 16h6"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
-  moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
-  auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/>',
-  sliders: '<path d="M4 6.5h9M18 6.5h2M4 12h2M11 12h9M4 17.5h11M20 17.5h0"/><circle cx="15.5" cy="6.5" r="2"/><circle cx="8.5" cy="12" r="2"/><circle cx="17.5" cy="17.5" r="2"/>',
-  arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
-  trash: '<path d="M4.5 6.5h15M9.5 6.5v-2h5v2M7 6.5l.8 13h8.4l.8-13"/>',
   share: '<path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M5.5 11.5v7a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-7"/>',
   copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/>',
   mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M3.5 7.5l8.5 6 8.5-6"/>',
   whatsapp: '<path fill="currentColor" stroke="none" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm5.8 14.16c-.24.68-1.42 1.31-1.96 1.36-.5.05-.98.23-3.3-.69-2.78-1.1-4.55-3.94-4.69-4.12-.14-.18-1.13-1.5-1.13-2.86 0-1.36.71-2.03.96-2.31.25-.28.55-.35.73-.35h.52c.17 0 .4-.06.62.48.24.57.8 1.98.87 2.12.07.14.12.31.02.49-.09.18-.14.29-.28.45-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.72 1.18 1.54 1.91 1.06.94 1.95 1.23 2.23 1.37.28.14.44.12.6-.07.17-.19.7-.81.88-1.09.19-.28.37-.23.63-.14.25.09 1.62.76 1.9.9.28.14.46.21.53.33.07.11.07.64-.17 1.32Z"/>',
   google: '<circle cx="12" cy="12" r="8.5"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" stroke="none" font-family="system-ui,sans-serif">G</text>',
-  repeat: '<path d="M17 2.5l3 3-3 3"/><path d="M4 11V8.5a3 3 0 0 1 3-3h13"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 13v2.5a3 3 0 0 1-3 3H4"/>',
-  flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
-  money: '<rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
-  car: '<path d="M4 15l1.5-5a2 2 0 0 1 1.9-1.5h9.2a2 2 0 0 1 1.9 1.5L20 15"/><rect x="3" y="15" width="18" height="4.5" rx="1.5"/><circle cx="7.5" cy="17.3" r="1" fill="currentColor"/><circle cx="16.5" cy="17.3" r="1" fill="currentColor"/>',
+  trash: '<path d="M4.5 6.5h15M9.5 6.5v-2h5v2M7 6.5l.8 13h8.4l.8-13"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  eye: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
+  /* íconos de temas */
+  tag: '<path d="M3.5 11.5V4.5h7l9 9-7 7z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
+  briefcase: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/>',
+  glasses: '<circle cx="6.5" cy="14.5" r="3.5"/><circle cx="17.5" cy="14.5" r="3.5"/><path d="M10 14.5h4M3 14.5l1.8-6.5h2.7M21 14.5l-1.8-6.5h-2.7"/>',
+  star: '<path d="M12 3.5l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17.4l-5.4 2.9 1.1-6.1-4.5-4.3 6.1-.8z"/>',
+  heart: '<path d="M12 20.3S3.5 15.3 3.5 9.3A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 8.5 2.1c0 6-8.5 11-8.5 11z"/>',
+  wallet: '<path d="M3.5 7.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V9"/><path d="M3.5 7.5v10a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-13a2 2 0 0 1-2-2"/><path d="M16 14.5h1.5"/>',
+  cart: '<path d="M3 4.5h2.2l2.1 10.2a1.5 1.5 0 0 0 1.5 1.2h7.8a1.5 1.5 0 0 0 1.5-1.1L20 8.5H6.3"/><circle cx="10" cy="19.5" r="1.2"/><circle cx="16.5" cy="19.5" r="1.2"/>',
+  car: '<path d="M4 15l1.5-5a2 2 0 0 1 1.9-1.5h9.2a2 2 0 0 1 1.9 1.5L20 15"/><rect x="3" y="15" width="18" height="4.5" rx="1.5"/>',
   book: '<path d="M4.5 4.5h6a2 2 0 0 1 2 2v13a1.5 1.5 0 0 0-1.5-1.5h-6.5z"/><path d="M19.5 4.5h-6a2 2 0 0 0-2 2v13a1.5 1.5 0 0 1 1.5-1.5h6.5z"/>',
   gift: '<rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M3.5 13h17M12 9v11"/><path d="M12 9c-2-.5-4.5-.5-5-2.5S9 3 12 9c3-6 5.5-4.5 5-2.5S14 8.5 12 9z"/>',
   plane: '<path d="M21 3L10.5 13.5M21 3l-7 18-3.5-7.5L3 10z"/>',
   tool: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
   phone: '<path d="M5 4h3.5l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5L16 14l4 1.5V19a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
-  sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
-  paw: '<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15.5" cy="6.5" r="1.8"/><circle cx="19" cy="10" r="1.8"/><path d="M8 17.5c0-3 2-5 5-5s5 2 5 5c0 2-1.5 3-3 3s-2-1-2-1-.5 1-2 1-3-1-3-3z"/>',
-  eye: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
-  eyeOff: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
-  more: '<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>'
+  sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  paw: '<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15.5" cy="6.5" r="1.8"/><circle cx="19" cy="10" r="1.8"/><path d="M8 17.5c0-3 2-5 5-5s5 2 5 5c0 2-1.5 3-3 3s-2-1-2-1-.5 1-2 1-3-1-3-3z"/>'
 };
-const icon = (name, cls) => `<svg class="ico${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.tag}</svg>`;
+const icon = name => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name] || ICONS.tag}</svg>`;
 const TOPIC_ICONS = ['tag', 'briefcase', 'glasses', 'people', 'home', 'star', 'heart', 'wallet', 'money', 'cart', 'car', 'book', 'gift', 'plane', 'tool', 'phone', 'sparkle', 'paw', 'flag', 'calendar'];
 const ICON_LABELS = { tag: 'Etiqueta', briefcase: 'Maletín', glasses: 'Anteojos', people: 'Personas', home: 'Casa', star: 'Estrella', heart: 'Corazón', wallet: 'Billetera', money: 'Dinero', cart: 'Carrito', car: 'Auto', book: 'Libro', gift: 'Regalo', plane: 'Avión', tool: 'Herramienta', phone: 'Teléfono', sparkle: 'Brillo', paw: 'Mascota', flag: 'Bandera', calendar: 'Calendario' };
 const PALETTE = ['#0E7490', '#D97706', '#059669', '#7C3AED', '#E11D48', '#2563EB', '#65A30D', '#DB2777', '#0891B2', '#9333EA'];
@@ -99,9 +101,11 @@ const DEFAULT_TOPICS = [
   { id: 'otros', name: 'Otros', color: '#6B7280', icon: 'tag', aliases: ['otro', 'varios'], keywords: '' }
 ];
 const SUGGEST_ORDER = ['harper', 'juli', 'familia', 'compras', 'gastos', 'casa', 'central'];
-const KINDS = { tarea: { label: 'Tarea', icon: 'check' }, reunion: { label: 'Reunión', icon: 'people' }, recordatorio: { label: 'Recordatorio', icon: 'bell' } };
-const ALERTS_TIMED = [['', 'Sin alerta'], ['0', 'En el momento'], ['5', '5 min antes'], ['10', '10 min antes'], ['15', '15 min antes'], ['30', '30 min antes'], ['60', '1 hora antes'], ['120', '2 horas antes'], ['1440', '1 día antes'], ['2880', '2 días antes'], ['10080', '1 semana antes']];
-const ALERTS_ALLDAY = [['', 'Sin alerta'], ['-540', 'Ese día, 9:00'], ['900', '1 día antes, 9:00'], ['2340', '2 días antes, 9:00'], ['9540', '1 semana antes, 9:00']];
+const ALERTS_TIMED = [['', 'Sin aviso'], ['0', 'En el momento'], ['5', '5 min antes'], ['10', '10 min antes'], ['15', '15 min antes'], ['30', '30 min antes'], ['60', '1 hora antes'], ['120', '2 horas antes'], ['1440', '1 día antes'], ['2880', '2 días antes'], ['10080', '1 semana antes']];
+const ALERTS_ALLDAY = [['', 'Sin aviso'], ['-540', 'Ese día a las 9'], ['900', 'El día anterior a las 9'], ['2340', 'Dos días antes a las 9'], ['9540', 'Una semana antes a las 9']];
+const ASK_ALERT_TIMED = [['15', '15 min antes'], ['60', '1 hora antes'], ['1440', '1 día antes'], ['0', 'En el momento'], ['', 'No avisar']];
+const ASK_ALERT_ALLDAY = [['-540', 'Ese día a las 9'], ['900', 'El día anterior'], ['', 'No avisar']];
+const ASK_TIMES = [['09:00', '9:00'], ['12:00', '12:00'], ['15:00', '15:00'], ['18:00', '18:00'], ['20:00', '20:00'], ['custom', 'Otra hora']];
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 480];
 const REPEATS = [['none', 'No se repite'], ['daily', 'Todos los días'], ['weekly', 'Todas las semanas'], ['monthly', 'Todos los meses'], ['yearly', 'Todos los años']];
 const DEFAULT_SETTINGS = { name: '', email: '', alertTimed: 15, alertAllDay: -540, meetingDuration: 60, theme: 'auto' };
@@ -117,7 +121,7 @@ function load() {
   s.people = Array.isArray(s.people) ? s.people : [];
   s.places = Array.isArray(s.places) ? s.places : [];
   const mine = Array.isArray(s.topics) && s.topics.length ? s.topics : clone(DEFAULT_TOPICS);
-  /* los temas de fábrica reciben alias y palabras clave actualizadas; lo que editó el usuario se respeta */
+  /* los temas de fábrica reciben alias y palabras clave al día; lo que editaste se respeta */
   s.topics = mine.map(t => { const d = DEFAULT_TOPICS.find(x => x.id === t.id); return d ? Object.assign({}, t, { aliases: d.aliases, keywords: d.keywords }) : t; });
   if (!s.topics.some(t => t.id === 'otros')) s.topics.push(clone(DEFAULT_TOPICS[DEFAULT_TOPICS.length - 1]));
   return s;
@@ -126,32 +130,37 @@ let state = load();
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { toast('No se pudo guardar en este navegador (¿modo privado?)'); } }, 40);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { toast('No se pudo guardar en este navegador'); } }, 40);
 }
-const ui = { view: 'temas', filter: null, query: '', showDone: false, composerTopic: 'auto', editing: null, apiOk: false };
-try { ui.composerTopic = localStorage.getItem('pendientes.ctopic') || 'auto'; } catch (e) {}
+const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false };
 
-/* ---------- ítems ---------- */
+/* ---------- pendientes ---------- */
 const byId = id => state.items.find(x => x.id === id);
 const topicOf = id => state.topics.find(t => t.id === id) || state.topics.find(t => t.id === 'otros') || state.topics[0];
+const visibleTopics = () => state.topics.filter(t => !t.hidden);
+const pending = () => state.items.filter(it => !it.done);
 function itemStart(it) { if (!it.date) return null; const d = fromYmd(it.date); if (it.time) { const p = it.time.split(':'); d.setHours(+p[0], +p[1], 0, 0); } return d; }
 function itemEnd(it) { const s = itemStart(it); if (!s) return null; if (!it.time) return addDays(s, 1); return new Date(s.getTime() + (it.duration || 60) * 60000); }
 function dayDiff(dateStr) { return Math.round((fromYmd(dateStr) - fromYmd(todayStr())) / 86400000); }
-function isOverdue(it) { if (it.done || !it.date) return false; const dd = dayDiff(it.date); if (dd < 0) return true; return dd === 0 && !!it.time && itemStart(it).getTime() < Date.now(); }
+function isLate(it) { if (it.done || !it.date) return false; const dd = dayDiff(it.date); if (dd < 0) return true; return dd === 0 && !!it.time && itemStart(it).getTime() < Date.now(); }
 function whenLabel(it) {
   if (!it.date) return '';
   const dd = dayDiff(it.date), d = fromYmd(it.date); let s;
   if (dd === 0) s = 'Hoy'; else if (dd === 1) s = 'Mañana'; else if (dd === -1) s = 'Ayer';
   else if (dd > 1 && dd < 7) s = cap(F.wdLong.format(d));
-  else { s = short(F.wdShort.format(d)) + ' ' + d.getDate() + ' ' + short(F.moShort.format(d)); if (d.getFullYear() !== new Date().getFullYear()) s += ' ' + d.getFullYear(); }
+  else { s = cap(short(F.wdShort.format(d))) + ' ' + d.getDate() + ' ' + short(F.moShort.format(d)); if (d.getFullYear() !== new Date().getFullYear()) s += ' ' + d.getFullYear(); }
   if (it.time) s += ' · ' + it.time;
   return s;
 }
+function dateLong(s) {
+  const d = fromYmd(s), dd = dayDiff(s);
+  let base = F.wdLong.format(d) + ' ' + d.getDate() + ' de ' + F.moLong.format(d);
+  if (d.getFullYear() !== new Date().getFullYear()) base += ' de ' + d.getFullYear();
+  return dd === 0 ? 'Hoy, ' + base : dd === 1 ? 'Mañana, ' + base : cap(base);
+}
 function longWhen(it) {
-  const d = fromYmd(it.date);
-  let s = cap(F.wdLong.format(d)) + ' ' + d.getDate() + ' de ' + F.moLong.format(d);
-  if (d.getFullYear() !== new Date().getFullYear()) s += ' de ' + d.getFullYear();
-  if (it.time) { const e = itemEnd(it); s += ' · ' + it.time + ' a ' + pad(e.getHours()) + ':' + pad(e.getMinutes()); } else s += ' · todo el día';
+  let s = dateLong(it.date);
+  if (it.time) { const e = itemEnd(it); s += ', de ' + it.time + ' a ' + pad(e.getHours()) + ':' + pad(e.getMinutes()); } else s += ', todo el día';
   return s;
 }
 function sortPending(a, b) {
@@ -161,149 +170,21 @@ function sortPending(a, b) {
   if ((b.priority || 0) - (a.priority || 0)) return (b.priority || 0) - (a.priority || 0);
   return (b.createdAt || 0) - (a.createdAt || 0);
 }
-function matchesQuery(it) {
-  if (!ui.query) return true;
-  const hay = Parser.plain([it.title, it.notes, it.location, (it.invitees || []).join(' '), topicOf(it.topic).name].join(' '));
-  return hay.indexOf(Parser.plain(ui.query)) >= 0;
-}
-const pending = () => state.items.filter(it => !it.done && matchesQuery(it));
-function counts() {
-  const p = pending();
-  return {
-    overdue: p.filter(it => it.date && dayDiff(it.date) < 0).length,
-    today: p.filter(it => it.date && dayDiff(it.date) === 0).length,
-    week: p.filter(it => it.date && dayDiff(it.date) > 0 && dayDiff(it.date) <= 7).length,
-    undated: p.filter(it => !it.date).length,
-    total: p.length
-  };
-}
 function durLabel(m) { m = Number(m); if (!m) return ''; if (m < 60) return m + ' min'; const h = Math.floor(m / 60), r = m % 60; return r ? h + ' h ' + pad(r) : h + ' h'; }
 function repeatLabel(r) { const x = REPEATS.find(o => o[0] === r); return x ? x[1] : ''; }
 function alertLabelFor(min, allDay) {
-  if (min === null || min === undefined || min === '') return 'Sin alerta';
-  const list = allDay ? ALERTS_ALLDAY : ALERTS_TIMED;
-  const hit = list.find(o => o[0] === String(min));
+  if (min === null || min === undefined || min === '') return 'Sin aviso';
+  const list = allDay ? ALERTS_ALLDAY : ALERTS_TIMED, hit = list.find(o => o[0] === String(min));
   if (hit) return hit[1];
   min = Number(min);
   if (min === 0) return 'En el momento';
-  const a = Math.abs(min), u = a % 1440 === 0 ? (a / 1440) + (a === 1440 ? ' día' : ' días') : a % 60 === 0 ? (a / 60) + ' h' : a + ' min';
+  const a = Math.abs(min), u = a % 1440 === 0 ? (a / 1440) + (a === 1440 ? ' día' : ' días') : a % 60 === 0 ? (a / 60) + (a === 60 ? ' hora' : ' horas') : a + ' min';
   return min > 0 ? u + ' antes' : u + ' después';
 }
-function defaultAlertFor(date, time) { if (!date) return null; return time ? state.settings.alertTimed : state.settings.alertAllDay; }
-
-/* ---------- render ---------- */
-function renderAll() {
-  renderHeader(); renderKpis(); renderSegExtra();
-  if (ui.view === 'temas') renderTemas(); else renderAgenda();
-  $('#viewTemas').hidden = ui.view !== 'temas';
-  $('#viewAgenda').hidden = ui.view !== 'agenda';
-  $$('.seg [role="tab"]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === ui.view)));
-}
-function renderHeader() {
-  const d = new Date();
-  $('#todayLabel').textContent = cap(F.wdLong.format(d)) + ' ' + d.getDate() + ' de ' + F.moLong.format(d);
-  const c = counts();
-  $('#eyebrow').textContent = 'Pendientes · ' + (c.total === 1 ? '1 abierto' : c.total + ' abiertos');
-}
-function renderKpis() {
-  const c = counts();
-  const tiles = [['overdue', 'Vencidos', c.overdue, 'is-danger'], ['today', 'Hoy', c.today, 'is-today'], ['week', '7 días', c.week, ''], ['undated', 'Sin fecha', c.undated, '']];
-  $('#kpis').innerHTML = tiles.map(t => `<button type="button" class="kpi ${t[3]}${t[2] ? ' has' : ''}" data-filter="${t[0]}" aria-pressed="${ui.filter === t[0]}"><span class="kpi__n">${t[2]}</span><span class="kpi__l">${t[1]}</span></button>`).join('');
-}
-function renderSegExtra() {
-  const el = $('#segExtra');
-  if (ui.view !== 'agenda') { el.innerHTML = ui.query ? `<span class="chip is-on">«${esc(ui.query)}»</span>` : ''; return; }
-  const names = { overdue: 'Vencidos', today: 'Hoy', week: '7 días', undated: 'Sin fecha' };
-  el.innerHTML = (ui.filter ? `<button type="button" class="chip is-on" data-act="clear-filter">${names[ui.filter]} ${icon('x')}</button>` : '') +
-    `<label><input type="checkbox" id="showDone"${ui.showDone ? ' checked' : ''}> Hechas</label>`;
-}
-/* En el iPhone el link al .ics va en la misma pestaña: Safari muestra la hoja nativa de Calendario.
-   En una pestaña nueva queda la pantalla en blanco. En otros dispositivos se descarga el archivo. */
-function icsAttrs(it) { return isIOS() ? '' : ` download="${esc(slug(it.title || 'evento'))}.ics"`; }
-function calLink(it, cls, label) {
-  const inner = icon('calendar') + (label ? `<span>${label}</span>` : '');
-  if (ui.apiOk) return `<a class="${cls}" href="${esc(links(it).ios)}"${icsAttrs(it)} aria-label="Agregar al calendario" title="Agregar al calendario">${inner}</a>`;
-  return `<button type="button" class="${cls}" data-act="cal" aria-label="Agregar al calendario" title="Agregar al calendario">${inner}</button>`;
-}
-function itemRow(it, opts) {
-  opts = opts || {};
-  const tp = topicOf(it.topic), over = isOverdue(it), dd = it.date ? dayDiff(it.date) : null;
-  const meta = [];
-  if (it.date) meta.push(`<span class="when${over ? ' is-overdue' : dd === 0 ? ' is-today' : ''}">${icon(it.time ? 'clock' : 'calendar')}${esc(whenLabel(it))}</span>`);
-  if (opts.showTopic) meta.push(`<span class="meta meta--topic" style="--tc:${esc(tp.color)}"><i class="dot"></i>${esc(tp.name)}</span>`);
-  if (it.kind === 'reunion') meta.push(`<span class="meta">${icon('people')}${it.invitees && it.invitees.length ? esc(it.invitees.slice(0, 2).join(', ')) + (it.invitees.length > 2 ? ' +' + (it.invitees.length - 2) : '') : 'Reunión'}</span>`);
-  else if (it.kind === 'recordatorio') meta.push(`<span class="meta">${icon('bell')}Recordatorio</span>`);
-  if (it.date && it.alert !== null && it.alert !== undefined && it.alert !== '') meta.push(`<span class="meta">${icon('bell')}${esc(alertLabelFor(it.alert, !it.time))}</span>`);
-  if (it.repeat && it.repeat !== 'none') meta.push(`<span class="meta">${icon('repeat')}${esc(repeatLabel(it.repeat))}</span>`);
-  if (it.location) meta.push(`<span class="meta">${icon('pin')}${esc(it.location)}</span>`);
-  if (it.amount !== null && it.amount !== undefined) meta.push(`<span class="meta meta--amt">${esc(fmtMoney(it.amount))}</span>`);
-  if (it.notes && opts.showNotes) meta.push(`<span class="meta">${esc(it.notes.slice(0, 60))}</span>`);
-  return `<li class="item${it.done ? ' is-done' : ''}${over ? ' is-overdue' : ''}${it.priority ? ' is-pri' : ''}" data-id="${esc(it.id)}">
-    <button type="button" class="check" data-act="toggle" aria-label="${it.done ? 'Volver a pendiente' : 'Marcar hecha'}" aria-pressed="${!!it.done}">${icon('check')}</button>
-    <div class="item__body" data-act="open" role="button" tabindex="0" aria-label="Abrir: ${esc(it.title)}"><div class="item__title">${it.priority ? '<span class="pri" title="Prioridad alta"></span>' : ''}<span>${esc(it.title)}</span></div>${meta.length ? `<div class="item__meta">${meta.join('')}</div>` : ''}</div>
-    ${it.date && !it.done ? calLink(it, 'item__cal') : ''}
-  </li>`;
-}
-function helloCard() {
-  const ex = ['Llamar a Matías mañana 10:00 #central !30m', 'Pagar expensas el 10 $185.000', 'Cena con Juli viernes a la noche', 'Pediatra Harper 15/10 9hs !1d', 'Comprar pañales y leche', 'Plomero pasado mañana a la tarde'];
-  return `<section class="hello">
-    <h2 class="hello__title">Escribilo como lo dirías.</h2>
-    <p>La barra de abajo entiende fechas, horas, temas, alertas, invitados y montos. Tocá un ejemplo para probarlo:</p>
-    <ul class="hello__ex">${ex.map(e => `<li><code data-act="example">${esc(e)}</code></li>`).join('')}</ul>
-    <p>Cada pendiente con fecha se manda al calendario del iPhone con un toque, con su alerta y sus invitados.</p>
-    <button type="button" class="btn btn--ghost" data-act="samples">Cargar ejemplos para ver cómo queda</button>
-  </section>`;
-}
-function renderTemas() {
-  const el = $('#viewTemas'), p = pending();
-  let html = state.items.length ? '' : helloCard();
-  html += '<div class="board">';
-  state.topics.forEach(tp => {
-    if (tp.hidden) return;
-    const its = p.filter(it => it.topic === tp.id).sort(sortPending);
-    const done = state.items.filter(it => it.done && it.topic === tp.id && matchesQuery(it)).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-    if (tp.id === 'otros' && !its.length && !done.length) return;
-    if (ui.query && !its.length && !done.length) return;
-    const sum = its.reduce((s, it) => s + (Number(it.amount) || 0), 0);
-    html += `<section class="topic" style="--tc:${esc(tp.color)}" data-topic="${esc(tp.id)}">
-      <header class="topic__head"><span class="topic__icon">${icon(tp.icon)}</span><h2 class="topic__name">${esc(tp.name)}</h2><span class="topic__count">${its.length}</span>${sum ? `<span class="topic__sum">${esc(fmtMoney(sum))}</span>` : ''}<button type="button" class="icon-btn topic__add" data-act="add-topic" data-topic="${esc(tp.id)}" aria-label="Agregar en ${esc(tp.name)}">${icon('plus')}</button></header>
-      ${its.length ? `<ul class="list">${its.map(it => itemRow(it)).join('')}</ul>` : '<p class="empty">Nada pendiente.</p>'}
-      ${done.length ? `<details class="done"><summary>Hechas · ${done.length}</summary><ul class="list">${done.slice(0, 25).map(it => itemRow(it)).join('')}</ul></details>` : ''}
-    </section>`;
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-function dayGroup(dateStr, items) {
-  const d = fromYmd(dateStr), dd = dayDiff(dateStr);
-  const full = cap(F.wdLong.format(d)) + ' ' + d.getDate() + ' de ' + F.moLong.format(d) + (d.getFullYear() !== new Date().getFullYear() ? ' de ' + d.getFullYear() : '');
-  const name = dd === 0 ? 'Hoy' : dd === 1 ? 'Mañana' : cap(F.wdLong.format(d)) + ' ' + d.getDate();
-  const sub = dd <= 1 ? full : F.moLong.format(d) + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '') + ' · en ' + dd + ' días';
-  return { name, sub, items, kind: dd === 0 ? 'today' : 'future' };
-}
-function renderAgenda() {
-  const el = $('#viewAgenda'), p = pending().sort(sortPending), f = ui.filter, groups = [];
-  const overdue = p.filter(it => it.date && dayDiff(it.date) < 0);
-  const undated = p.filter(it => !it.date);
-  const byDay = {};
-  p.filter(it => it.date && dayDiff(it.date) >= 0).forEach(it => { (byDay[it.date] = byDay[it.date] || []).push(it); });
-  const days = Object.keys(byDay).sort();
-  if (f === 'overdue') groups.push({ name: 'Vencidos', sub: overdue.length ? overdue.length + ' sin resolver' : '', items: overdue, kind: 'overdue' });
-  else if (f === 'today') groups.push(dayGroup(todayStr(), byDay[todayStr()] || []));
-  else if (f === 'week') { const wk = days.filter(d => dayDiff(d) > 0 && dayDiff(d) <= 7); if (!wk.length) groups.push({ name: 'Próximos 7 días', sub: '', items: [], kind: 'future' }); wk.forEach(d => groups.push(dayGroup(d, byDay[d]))); }
-  else if (f === 'undated') groups.push({ name: 'Sin fecha', sub: 'Ponele fecha a lo que importa', items: undated, kind: 'undated' });
-  else {
-    if (overdue.length) groups.push({ name: 'Vencidos', sub: overdue.length + ' sin resolver', items: overdue, kind: 'overdue' });
-    if (!byDay[todayStr()]) groups.push(dayGroup(todayStr(), []));
-    days.forEach(d => groups.push(dayGroup(d, byDay[d])));
-    if (undated.length) groups.push({ name: 'Sin fecha', sub: undated.length + (undated.length === 1 ? ' pendiente' : ' pendientes'), items: undated, kind: 'undated' });
-  }
-  if (ui.showDone) {
-    const done = state.items.filter(it => it.done && matchesQuery(it)).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-    if (done.length) groups.push({ name: 'Hechas', sub: done.length + ' en total', items: done.slice(0, 60), kind: 'done' });
-  }
-  el.innerHTML = groups.map(g => `<section class="day day--${g.kind}"><header class="day__head"><h2 class="day__name">${esc(g.name)}</h2><span class="day__sub">${esc(g.sub)}</span></header>${g.items.length ? `<ul class="list">${g.items.map(it => itemRow(it, { showTopic: true })).join('')}</ul>` : `<p class="empty">${g.kind === 'today' ? 'Nada para hoy. Buen momento para adelantar algo de la lista.' : 'Nada por acá.'}</p>`}</section>`).join('');
-}
+function defaultAlertFor(date, time) { if (!date) return null; return time ? Number(state.settings.alertTimed) : Number(state.settings.alertAllDay); }
+/* Un aviso "con hora" son minutos antes; uno "de todo el día" se mide desde la medianoche. */
+function alertValid(v, timed) { if (v === null || v === undefined) return true; v = Number(v); return timed ? v >= 0 : ALERTS_ALLDAY.some(o => o[0] === String(v)); }
+function toAllDayAlert(v) { if (v === null || v === undefined) return v; return v < 1440 ? -540 : Math.round(v / 1440) * 1440 - 540; }
 
 /* ---------- calendario e invitaciones ---------- */
 function toEvent(it) {
@@ -343,6 +224,9 @@ function links(it) {
     mail: 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent(it.title) + '&body=' + encodeURIComponent(text)
   };
 }
+/* En el iPhone el link al .ics va en la misma pestaña: Safari muestra la hoja de Calendario.
+   En una pestaña nueva queda la pantalla en blanco. En otros equipos se descarga el archivo. */
+function icsAttrs(it) { return isIOS() ? '' : ` download="${esc(slug(it.title || 'evento'))}.ics"`; }
 function downloadIcs(items, name) {
   const text = ICS.build({ events: items.map(toEvent), name: 'Pendientes' });
   if (ui.apiOk && items.length > 1) { postIcs(text, name); return; }
@@ -351,7 +235,7 @@ function downloadIcs(items, name) {
   const a = document.createElement('a'); a.href = url; a.download = name + '.ics'; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
-  if (isIOS()) toast('Se descargó el .ics: abrilo desde Descargas y tocá «Añadir todo».');
+  if (isIOS()) toast('Abrilo desde Descargas y tocá «Añadir todo»');
 }
 function postIcs(text, name) {
   const f = document.createElement('form'); f.method = 'POST'; f.action = '/api/ics'; f.target = isIOS() ? '_self' : '_blank'; f.hidden = true;
@@ -360,7 +244,7 @@ function postIcs(text, name) {
   f.appendChild(t); f.appendChild(n); document.body.appendChild(f); f.submit(); setTimeout(() => f.remove(), 1000);
 }
 function copyText(text) {
-  const done = () => toast('Copiado. Pegalo donde quieras.');
+  const done = () => toast('Copiado');
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
   else fallbackCopy(text, done);
 }
@@ -368,26 +252,13 @@ function fallbackCopy(text, done) {
   const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
   document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('No se pudo copiar'); } t.remove();
 }
-function calActionsHtml(it) {
-  if (!it.date) return '<p class="cal-hint">Ponele fecha para mandarlo al calendario o invitar a alguien.</p>';
-  const L = links(it), iosLabel = isIOS() ? 'Agregar al iPhone' : 'Calendario (.ics)';
-  const first = L.ios ? `<a class="cal-btn cal-btn--primary" href="${esc(L.ios)}"${icsAttrs(it)}>${icon('calendar')}${iosLabel}</a>`
-    : `<button type="button" class="cal-btn cal-btn--primary" data-act="ics">${icon('calendar')}${iosLabel}</button>`;
-  return first +
-    `<a class="cal-btn" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Google</a>` +
-    `<a class="cal-btn" href="${esc(L.wa)}" target="_blank" rel="noopener">${icon('whatsapp')}WhatsApp</a>` +
-    `<a class="cal-btn" href="${esc(L.mail)}">${icon('mail')}Mail</a>` +
-    `<button type="button" class="cal-btn" data-act="copy">${icon('copy')}Copiar</button>` +
-    (navigator.share ? `<button type="button" class="cal-btn" data-act="share">${icon('share')}Compartir</button>` : '');
-}
 
-/* ---------- mutaciones ---------- */
+/* ---------- cambios ---------- */
 function rememberPeople(it) {
   (it.invitees || []).forEach(p => { if (p && state.people.indexOf(p) < 0) state.people.unshift(p); });
   if (it.location && state.places.indexOf(it.location) < 0) state.places.unshift(it.location);
   state.people = state.people.slice(0, 60); state.places = state.places.slice(0, 40);
 }
-function addItem(it) { state.items.unshift(it); rememberPeople(it); save(); renderAll(); }
 function nextOccurrence(dateStr, repeat) {
   const d = fromYmd(dateStr), today = fromYmd(todayStr());
   let guard = 0;
@@ -402,230 +273,481 @@ function nextOccurrence(dateStr, repeat) {
 function toggleDone(id) {
   const it = byId(id); if (!it) return;
   if (!it.done && it.repeat && it.repeat !== 'none' && it.date) {
-    const prev = it.date; it.date = nextOccurrence(it.date, it.repeat); it.updatedAt = Date.now(); save(); renderAll();
-    toast('Hecha. Se repite: pasa a ' + whenLabel(it), [{ label: 'Deshacer', fn: () => { it.date = prev; save(); renderAll(); } }]);
+    const prev = it.date; it.date = nextOccurrence(it.date, it.repeat); it.updatedAt = Date.now(); save(); render();
+    toast('Hecho. Vuelve ' + whenLabel(it).toLowerCase(), [{ label: 'Deshacer', fn: () => { it.date = prev; save(); render(); } }]);
     return;
   }
-  it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); renderAll();
-  toast(it.done ? 'Hecha: ' + it.title : 'Vuelve a pendientes', [{ label: 'Deshacer', fn: () => { it.done = !it.done; it.doneAt = it.done ? Date.now() : null; save(); renderAll(); } }]);
+  it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); render();
+  toast(it.done ? 'Hecho' : 'Volvió a pendientes', [{ label: 'Deshacer', fn: () => { it.done = !it.done; it.doneAt = it.done ? Date.now() : null; save(); render(); } }]);
 }
 function removeItem(id) {
   const idx = state.items.findIndex(x => x.id === id); if (idx < 0) return;
-  const it = state.items[idx]; state.items.splice(idx, 1); save(); renderAll();
-  toast('Eliminado: ' + it.title, [{ label: 'Deshacer', fn: () => { state.items.splice(Math.min(idx, state.items.length), 0, it); save(); renderAll(); } }]);
-}
-function resolveTopic(parsed, text) {
-  if (parsed.topic) return { id: parsed.topic, auto: false };
-  if (ui.composerTopic !== 'auto' && topicOf(ui.composerTopic).id === ui.composerTopic) return { id: ui.composerTopic, auto: false };
-  const ordered = SUGGEST_ORDER.map(id => state.topics.find(t => t.id === id)).filter(Boolean).concat(state.topics.filter(t => SUGGEST_ORDER.indexOf(t.id) < 0));
-  return { id: Parser.suggestTopic(text, parsed, ordered) || 'otros', auto: true };
-}
-function buildFromParse(p, text) {
-  const t = resolveTopic(p, text);
-  return {
-    id: uid(), title: p.title || text.trim(), notes: '', topic: t.id, kind: p.kind, date: p.date, time: p.time,
-    duration: p.duration || (p.time ? (p.kind === 'reunion' ? Number(state.settings.meetingDuration) : 60) : null),
-    alert: p.alert !== undefined ? p.alert : defaultAlertFor(p.date, p.time), alert2: p.alert2 !== undefined && p.alert2 !== null ? p.alert2 : null,
-    repeat: p.repeat || 'none', invitees: p.invitees, location: p.location || '', amount: p.amount, priority: p.priority,
-    done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now()
-  };
+  const it = state.items[idx]; state.items.splice(idx, 1); save(); render();
+  toast('Eliminado', [{ label: 'Deshacer', fn: () => { state.items.splice(Math.min(idx, state.items.length), 0, it); save(); render(); } }]);
 }
 function loadSamples() {
   const t = fromYmd(todayStr()), dow = t.getDay();
   const fri = addDays(t, ((5 - dow + 7) % 7) || 7), sun = addDays(t, ((0 - dow + 7) % 7) || 7);
-  const mk = (o) => Object.assign({ id: uid(), notes: 'Ejemplo: borralo cuando quieras.', kind: 'tarea', date: null, time: null, duration: null, alert: null, alert2: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now() }, o);
-  const s = [
-    mk({ title: 'Llamar a Matías por la ruta de Córdoba', topic: 'central', kind: 'reunion', date: ymd(addDays(t, 1)), time: '10:00', duration: 30, alert: 15, invitees: ['Matías'] }),
+  const tenth = new Date(t.getFullYear(), t.getMonth(), 10) <= t ? new Date(t.getFullYear(), t.getMonth() + 1, 10) : new Date(t.getFullYear(), t.getMonth(), 10);
+  const mk = o => Object.assign({ id: uid(), notes: 'Ejemplo: borralo cuando quieras.', kind: 'tarea', date: null, time: null, duration: null, alert: null, alert2: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now() }, o);
+  [
+    mk({ title: 'Llamar a Matías por la ruta de Córdoba', topic: 'central', kind: 'reunion', date: todayStr(), time: '18:00', duration: 30, alert: 15, invitees: ['Matías'] }),
     mk({ title: 'Revisar stock de estuches', topic: 'central', priority: 1 }),
-    mk({ title: 'Pagar expensas', topic: 'gastos', date: ymd(new Date(t.getFullYear(), t.getMonth(), 10) <= t ? new Date(t.getFullYear(), t.getMonth() + 1, 10) : new Date(t.getFullYear(), t.getMonth(), 10)), alert: -540, amount: 185000, repeat: 'monthly' }),
+    mk({ title: 'Pagar expensas', topic: 'gastos', date: ymd(tenth), alert: -540, amount: 185000, repeat: 'monthly' }),
     mk({ title: 'Comprar pañales y leche', topic: 'compras' }),
     mk({ title: 'Pediatra Harper', topic: 'harper', date: ymd(addDays(t, 3)), time: '09:00', duration: 45, alert: 60, alert2: 1440 }),
     mk({ title: 'Cena con Juli', topic: 'juli', kind: 'reunion', date: ymd(fri), time: '20:30', duration: 120, alert: 60 }),
     mk({ title: 'Plomero: pérdida en la cocina', topic: 'casa', date: ymd(addDays(t, 2)), time: '15:00', duration: 60, alert: 30 }),
     mk({ title: 'Asado familiar', topic: 'familia', kind: 'reunion', date: ymd(sun), time: '13:00', duration: 240, alert: 120 }),
     mk({ title: 'Mandar muestrario a Mendoza', topic: 'central', date: ymd(addDays(t, -2)), alert: -540 })
-  ];
-  s.forEach(it => state.items.push(it));
-  save(); renderAll();
-  toast('Cargué 9 ejemplos. Marcalos o borralos cuando quieras.');
+  ].forEach(it => state.items.push(it));
+  save(); render();
+  toast('Listo: 9 ejemplos para mirar');
 }
 
-/* ---------- aviso (toast) ---------- */
-let toastTimer = null;
-function toast(msg, actions) {
-  const el = $('#toast');
-  el.innerHTML = `<span class="toast__msg">${esc(msg)}</span>` + (actions && actions.length ? `<span class="toast__acts">${actions.map((a, i) => {
-    if (a.cal) return ui.apiOk ? `<a href="${esc(links(a.cal).ios)}"${icsAttrs(a.cal)}>${esc(a.label)}</a>` : `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
-    return `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
-  }).join('')}</span>` : '');
-  el.hidden = false;
-  el.onclick = e => { const b = e.target.closest('[data-ti]'); if (!b) return; const a = actions[+b.dataset.ti]; if (a.cal) downloadIcs([a.cal], slug(a.cal.title)); else if (a.fn) a.fn(); el.hidden = true; };
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, actions && actions.length ? 7000 : 3500);
+/* ---------- pantallas ---------- */
+function whenHtml(it, timeOnly) {
+  if (!it.date || it.done) return '';
+  const late = isLate(it), today = dayDiff(it.date) === 0;
+  const txt = timeOnly ? (it.time || '') : whenLabel(it);
+  if (!txt && !late) return '';
+  return `<span class="when${late ? ' is-late' : today ? ' is-today' : ''}">${late ? 'Atrasado' + (txt ? ' · ' : '') : ''}${esc(txt)}</span>`;
+}
+function rowHtml(it, o) {
+  o = o || {};
+  const t = topicOf(it.topic), meta = [];
+  const w = whenHtml(it, o.timeOnly); if (w) meta.push(w);
+  if (o.topic) meta.push(`<span class="tdot" style="--tc:${esc(t.color)}">${esc(t.name)}</span>`);
+  if (it.repeat && it.repeat !== 'none' && it.date && !it.done) meta.push(`<span title="${esc(repeatLabel(it.repeat))}">${icon('repeat')}<span class="sr">${esc(repeatLabel(it.repeat))}</span></span>`);
+  if (it.priority && !it.done) meta.push('<span class="imp">Importante</span>');
+  return `<li class="row${it.done ? ' is-done' : ''}${it.priority ? ' is-pri' : ''}" data-id="${esc(it.id)}">` +
+    `<button type="button" class="check" data-act="toggle" aria-label="${it.done ? 'Volver a pendientes' : 'Marcar como hecho'}: ${esc(it.title)}"><span class="check__c">${icon('check')}</span></button>` +
+    `<button type="button" class="row__body" data-act="open"><span class="row__title">${esc(it.title)}</span>${meta.length ? `<span class="row__meta">${meta.join('')}</span>` : ''}</button></li>`;
+}
+function tilesHtml() {
+  const p = pending();
+  return visibleTopics().filter(t => t.id !== 'otros' || p.some(it => it.topic === 'otros')).map(t => {
+    const its = p.filter(it => it.topic === t.id), late = its.filter(isLate).length;
+    return `<button type="button" class="tile" data-go="tema" data-topic="${esc(t.id)}" style="--tc:${esc(t.color)}">` +
+      `<span class="ticon">${icon(t.icon)}</span><span class="tile__name">${esc(t.name)}</span>` +
+      `<span class="tile__count">${its.length ? plural(its.length, 'pendiente', 'pendientes') : 'Nada pendiente'}</span>` +
+      (late ? `<span class="late-pill">${plural(late, 'atrasado', 'atrasados')}</span>` : '') + '</button>';
+  }).join('');
+}
+function viewInicio() {
+  let h = '';
+  if (!state.items.length) {
+    h += `<section class="card welcome"><h2>Empezá por acá</h2><p>Tocá <b>Nuevo</b> para anotar tu primer pendiente.</p><button type="button" class="btn btn--secondary" data-act="samples">Ver con ejemplos</button></section>`;
+  } else {
+    const p = pending(), hoy = p.filter(it => it.date && dayDiff(it.date) <= 0).sort(sortPending);
+    if (hoy.length) {
+      const show = hoy.slice(0, 6);
+      h += `<div class="card"><ul class="list">${show.map(it => rowHtml(it, { topic: true })).join('')}</ul>` +
+        (hoy.length > show.length ? `<button type="button" class="addrow" data-go="agenda">${icon('calendar')}Ver ${hoy.length - show.length} más en la agenda</button>` : '') + '</div>';
+    } else {
+      const next = p.filter(it => it.date && dayDiff(it.date) > 0).sort(sortPending)[0];
+      h += `<div class="card"><p class="empty">Nada para hoy.</p>${next ? `<p class="empty-k">Lo próximo</p><ul class="list">${rowHtml(next, { topic: true })}</ul>` : ''}</div>`;
+    }
+  }
+  h += `<section class="section" aria-labelledby="hTemas"><h2 class="section__h" id="hTemas">Temas</h2><div class="tiles">${tilesHtml()}</div></section>`;
+  return h;
+}
+function viewTema(id) {
+  const t = topicOf(id);
+  const p = pending().filter(it => it.topic === t.id).sort(sortPending);
+  const done = state.items.filter(it => it.done && it.topic === t.id).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  let h = `<div class="card">${p.length ? `<ul class="list">${p.map(it => rowHtml(it)).join('')}</ul>` : ''}` +
+    `<button type="button" class="addrow" data-act="new-in" data-topic="${esc(t.id)}">${icon('plus')}Agregar en ${esc(t.name)}</button></div>`;
+  if (done.length) h += `<details class="fold section"><summary>Hechas · ${done.length} ${icon('chevD')}</summary><div class="card"><ul class="list">${done.slice(0, 30).map(it => rowHtml(it)).join('')}</ul></div></details>`;
+  return h;
+}
+function group(title, sub, items, kind, emptyText) {
+  return `<section class="section"><h2 class="section__h${kind === 'late' ? ' is-late' : kind === 'today' ? ' is-today' : ''}">${esc(title)}${sub ? `<span class="section__sub">${esc(sub)}</span>` : ''}</h2>` +
+    `<div class="card">${items.length ? `<ul class="list">${items.map(it => rowHtml(it, { topic: true, timeOnly: kind !== 'late' })).join('')}</ul>` : `<p class="empty">${esc(emptyText || 'Nada.')}</p>`}</div></section>`;
+}
+function viewAgenda() {
+  const p = pending().sort(sortPending);
+  if (!p.length) return `<div class="card"><p class="empty">No hay nada pendiente.</p></div>`;
+  const late = p.filter(it => it.date && dayDiff(it.date) < 0), undated = p.filter(it => !it.date), byDay = {};
+  p.filter(it => it.date && dayDiff(it.date) >= 0).forEach(it => { (byDay[it.date] = byDay[it.date] || []).push(it); });
+  const days = Object.keys(byDay).sort(), near = days.filter(d => dayDiff(d) <= 14), far = days.filter(d => dayDiff(d) > 14);
+  const dayGroup = d => {
+    const dt = fromYmd(d), dd = dayDiff(d);
+    const title = dd === 0 ? 'Hoy' : dd === 1 ? 'Mañana' : cap(F.wdLong.format(dt)) + ' ' + dt.getDate();
+    const sub = dd <= 1 ? F.wdLong.format(dt) + ' ' + dt.getDate() + ' de ' + F.moLong.format(dt) : 'de ' + F.moLong.format(dt) + (dt.getFullYear() !== new Date().getFullYear() ? ' de ' + dt.getFullYear() : '');
+    return group(title, sub, byDay[d], dd === 0 ? 'today' : 'day');
+  };
+  let h = '';
+  if (late.length) h += group('Atrasados', '', late, 'late');
+  if (!byDay[todayStr()]) h += group('Hoy', '', [], 'today', 'Nada para hoy.');
+  near.forEach(d => { h += dayGroup(d); });
+  if (far.length) {
+    if (ui.agendaAll) far.forEach(d => { h += dayGroup(d); });
+    else h += `<div class="section"><button type="button" class="btn btn--secondary btn--block" data-act="agenda-all">Ver más adelante · ${far.reduce((s, d) => s + byDay[d].length, 0)}</button></div>`;
+  }
+  if (undated.length) h += `<details class="fold section"><summary>Sin fecha · ${undated.length} ${icon('chevD')}</summary><div class="card"><ul class="list">${undated.map(it => rowHtml(it, { topic: true })).join('')}</ul></div></details>`;
+  return h;
+}
+function renderHeader() {
+  const title = $('#viewTitle'), sub = $('#viewSub');
+  $('#btnBack').hidden = ui.view !== 'tema';
+  if (ui.view === 'tema') {
+    const t = topicOf(ui.topicId), n = pending().filter(it => it.topic === t.id).length;
+    title.innerHTML = `<span class="ticon" style="--tc:${esc(t.color)}">${icon(t.icon)}</span><span>${esc(t.name)}</span>`;
+    sub.textContent = n ? plural(n, 'pendiente', 'pendientes') : 'Nada pendiente';
+    document.title = t.name + ' · Pendientes';
+  } else if (ui.view === 'agenda') {
+    title.textContent = 'Agenda';
+    const n = pending().filter(it => it.date).length;
+    sub.textContent = n ? plural(n, 'pendiente con fecha', 'pendientes con fecha') : 'Sin pendientes con fecha';
+    document.title = 'Agenda · Pendientes';
+  } else {
+    const d = new Date();
+    title.textContent = 'Hoy';
+    sub.textContent = cap(F.wdLong.format(d)) + ' ' + d.getDate() + ' de ' + F.moLong.format(d);
+    document.title = 'Pendientes';
+  }
+  $('#tabInicio').setAttribute('aria-current', ui.view === 'agenda' ? 'false' : 'page');
+  $('#tabAgenda').setAttribute('aria-current', ui.view === 'agenda' ? 'page' : 'false');
+}
+function render() {
+  renderHeader();
+  $('#main').innerHTML = ui.view === 'agenda' ? viewAgenda() : ui.view === 'tema' ? viewTema(ui.topicId) : viewInicio();
 }
 
-/* ---------- carga rápida ---------- */
-function renderComposerTopic() {
-  const b = $('#composerTopic');
-  if (ui.composerTopic === 'auto' || topicOf(ui.composerTopic).id !== ui.composerTopic) { ui.composerTopic = 'auto'; b.innerHTML = icon('sparkle') + '<span>Auto</span>'; b.style.removeProperty('--tc'); b.classList.add('is-auto'); }
-  else { const tp = topicOf(ui.composerTopic); b.innerHTML = icon(tp.icon) + '<span>' + esc(tp.name) + '</span>'; b.style.setProperty('--tc', tp.color); b.classList.remove('is-auto'); }
-  try { localStorage.setItem('pendientes.ctopic', ui.composerTopic); } catch (e) {}
+/* ---------- navegación (el gesto de volver del iPhone funciona) ---------- */
+function parseHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (h === 'agenda') return { v: 'agenda', id: null };
+  if (h.indexOf('tema-') === 0 && state.topics.some(t => t.id === h.slice(5))) return { v: 'tema', id: h.slice(5) };
+  return { v: 'inicio', id: null };
 }
-function renderTopicMenu() {
-  const m = $('#topicMenu');
-  const opts = [{ id: 'auto', name: 'Auto', icon: 'sparkle', color: '#6B7280', hint: 'según el texto' }].concat(state.topics.filter(t => !t.hidden));
-  m.innerHTML = opts.map(t => `<button type="button" role="option" data-topic="${esc(t.id)}" aria-selected="${ui.composerTopic === t.id}" style="--tc:${esc(t.color)}"><span class="tdot">${icon(t.icon)}</span><span>${esc(t.name)}</span>${t.hint ? `<small>${t.hint}</small>` : ''}</button>`).join('');
+function urlFor(v, id) { return v === 'inicio' ? location.pathname + location.search : '#' + (v === 'tema' ? 'tema-' + id : v); }
+function go(v, id) {
+  id = id || null;
+  if (v === ui.view && id === ui.topicId) { window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); return; }
+  ui.view = v; ui.topicId = id; ui.agendaAll = false; ui.depth += 1;
+  history.pushState({ v, id, d: ui.depth }, '', urlFor(v, id));
+  render(); window.scrollTo(0, 0);
+  try { $('#viewTitle').focus({ preventScroll: true }); } catch (e) {}
 }
-function toggleTopicMenu(open) {
-  const m = $('#topicMenu'), b = $('#composerTopic');
-  const show = open === undefined ? m.hidden : open;
-  if (show) renderTopicMenu();
-  m.hidden = !show; b.setAttribute('aria-expanded', String(show));
-}
-let previewTimer = null;
-function renderPreview() {
-  const text = $('#quickInput').value, el = $('#preview');
-  if (!text.trim()) { el.innerHTML = '<span class="hint">Probá: <b>mañana 10:00</b> · <b>el viernes</b> · <b>#central</b> · <b>@matias</b> · <b>!30m</b> · <b>$5000</b> · <b>todos los lunes</b></span>'; return; }
-  const p = Parser.parse(text, { topics: state.topics }), t = resolveTopic(p, text), tp = topicOf(t.id), chips = [];
-  chips.push(`<span class="pchip pchip--topic" style="--tc:${esc(tp.color)}">${icon(tp.icon)}${esc(tp.name)}${t.auto ? ' <em>auto</em>' : ''}</span>`);
-  if (p.date) chips.push(`<span class="pchip">${icon(p.time ? 'clock' : 'calendar')}${esc(whenLabel({ date: p.date, time: p.time }))}</span>`);
-  else chips.push(`<span class="pchip pchip--muted">${icon('calendar')}Sin fecha</span>`);
-  if (p.kind !== 'tarea') chips.push(`<span class="pchip">${icon(KINDS[p.kind].icon)}${KINDS[p.kind].label}</span>`);
-  if (p.duration) chips.push(`<span class="pchip">${icon('clock')}${durLabel(p.duration)}</span>`);
-  const al = p.alert !== undefined ? p.alert : defaultAlertFor(p.date, p.time);
-  if (p.date && al !== null) chips.push(`<span class="pchip">${icon('bell')}${esc(alertLabelFor(al, !p.time))}</span>`);
-  if (p.date && p.alert2 !== undefined && p.alert2 !== null) chips.push(`<span class="pchip">${icon('bell')}${esc(alertLabelFor(p.alert2, !p.time))}</span>`);
-  if (p.repeat) chips.push(`<span class="pchip">${icon('repeat')}${esc(repeatLabel(p.repeat))}</span>`);
-  if (p.invitees.length) chips.push(`<span class="pchip">${icon('people')}${esc(p.invitees.join(', '))}</span>`);
-  if (p.location) chips.push(`<span class="pchip">${icon('pin')}${esc(p.location)}</span>`);
-  if (p.amount !== null) chips.push(`<span class="pchip">${icon('money')}${esc(fmtMoney(p.amount))}</span>`);
-  if (p.priority) chips.push(`<span class="pchip pchip--pri">${icon('flag')}Alta</span>`);
-  p.hints.forEach(h => { if (h.indexOf('tema-desconocido:') === 0) chips.push(`<span class="pchip pchip--muted">#${esc(h.slice(17))}: no es un tema</span>`); });
-  el.innerHTML = chips.join('');
-}
-function submitQuick() {
-  const input = $('#quickInput'), text = input.value;
-  if (!text.trim()) { openSheet(null); return; }
-  const p = Parser.parse(text, { topics: state.topics });
-  if (!p.title) { toast('Falta decir qué hay que hacer'); return; }
-  const it = buildFromParse(p, text);
-  addItem(it);
-  input.value = ''; renderPreview();
-  const acts = [{ label: 'Editar', fn: () => openSheet(it.id) }];
-  if (it.date) acts.unshift({ label: 'Calendario', cal: it });
-  toast(cap(topicOf(it.topic).name) + ': ' + it.title + (it.date ? ' · ' + whenLabel(it) : ''), acts);
+function goBack() {
+  if (ui.depth > 0) { history.back(); return; }
+  ui.view = 'inicio'; ui.topicId = null;
+  history.replaceState({ v: 'inicio', id: null, d: 0 }, '', urlFor('inicio'));
+  render(); window.scrollTo(0, 0);
 }
 
-/* ---------- hoja de edición ---------- */
-const f = id => $('#' + id);
-function fillSelect(sel, pairs, value) { sel.innerHTML = pairs.map(p => `<option value="${esc(p[0])}">${esc(p[1])}</option>`).join(''); sel.value = value; if (sel.value !== value) sel.selectedIndex = 0; }
-function renderTopicChips(selected) {
-  f('f_topic').innerHTML = state.topics.filter(t => !t.hidden || t.id === selected).map(t => `<button type="button" class="chip chip--topic" role="radio" aria-checked="${t.id === selected}" data-topic="${esc(t.id)}" style="--tc:${esc(t.color)}">${icon(t.icon)}${esc(t.name)}</button>`).join('');
+/* ---------- hojas ---------- */
+function openSheet(dlg) { dlg._opener = document.activeElement; hideToast(); if (!dlg.open) dlg.showModal(); }
+function closeSheet(dlg) { if (dlg && dlg.open) dlg.close(); }
+
+/* ---------- ficha de un pendiente ---------- */
+let detailId = null;
+function calBtn(it) {
+  if (ui.apiOk) return `<a class="btn btn--secondary btn--block" href="${esc(links(it).ios)}"${icsAttrs(it)}>${icon('calendar')}Agregar al Calendario</a>`;
+  return `<button type="button" class="btn btn--secondary btn--block" data-act="d-ics">${icon('calendar')}Agregar al Calendario</button>`;
 }
-function renderKind(selected) {
-  f('f_kind').innerHTML = Object.keys(KINDS).map(k => `<button type="button" role="radio" aria-checked="${k === selected}" data-kind="${k}">${icon(KINDS[k].icon)}${KINDS[k].label}</button>`).join('');
+function inviteHtml(it) {
+  const L = links(it);
+  const first = navigator.share
+    ? `<button type="button" class="btn btn--secondary btn--block" data-act="d-share">${icon('share')}Mandar por WhatsApp o Mail</button>`
+    : `<a class="btn btn--secondary btn--block" href="${esc(L.wa)}" target="_blank" rel="noopener">${icon('whatsapp')}WhatsApp</a><a class="btn btn--secondary btn--block" href="${esc(L.mail)}">${icon('mail')}Mail</a>`;
+  return first + `<a class="btn btn--secondary btn--block" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Invitar con Google Calendar</a>` +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="d-copy">${icon('copy')}Copiar el texto</button>`;
 }
-function renderQuickChips() {
-  const t = fromYmd(todayStr()), dv = f('f_date').value, tv = f('f_time').value;
-  const chips = [['Hoy', ymd(t)], ['Mañana', ymd(addDays(t, 1))], [cap(short(F.wdShort.format(addDays(t, 2)))), ymd(addDays(t, 2))], [cap(short(F.wdShort.format(addDays(t, 3)))), ymd(addDays(t, 3))],
-    ['Lunes', ymd(addDays(t, ((1 - t.getDay() + 7) % 7) || 7))], ['+1 sem', ymd(addDays(t, 7))], ['Sin fecha', '']];
-  f('quickDates').innerHTML = chips.map(c => `<button type="button" class="chip" data-date="${c[1]}" aria-pressed="${dv === c[1]}">${esc(c[0])}</button>`).join('');
-  const times = [['9:00', '09:00'], ['10:00', '10:00'], ['12:00', '12:00'], ['15:00', '15:00'], ['18:00', '18:00'], ['20:00', '20:00'], ['Todo el día', '']];
-  f('quickTimes').innerHTML = times.map(c => `<button type="button" class="chip" data-time="${c[1]}" aria-pressed="${tv === c[1]}">${esc(c[0])}</button>`).join('');
+function renderDetail() {
+  const it = byId(detailId); if (!it) { closeSheet($('#detailSheet')); return; }
+  const t = topicOf(it.topic), info = [];
+  if (it.date) info.push(['calendar', (isLate(it) ? '<span class="late-txt">Atrasado</span> · ' : '') + esc(longWhen(it))]);
+  else info.push(['calendar', 'Sin fecha']);
+  if (it.date) info.push(['bell', it.alert === null || it.alert === undefined ? 'Sin aviso' : 'Aviso: ' + esc(alertLabelFor(it.alert, !it.time).toLowerCase())]);
+  if (it.date && it.alert2 !== null && it.alert2 !== undefined) info.push(['bell', 'Segundo aviso: ' + esc(alertLabelFor(it.alert2, !it.time).toLowerCase())]);
+  if (it.date && it.repeat && it.repeat !== 'none') info.push(['repeat', esc(repeatLabel(it.repeat))]);
+  if (it.invitees && it.invitees.length) info.push(['people', 'Con ' + esc(it.invitees.join(', '))]);
+  if (it.location) info.push(['pin', esc(it.location)]);
+  if (it.amount !== null && it.amount !== undefined) info.push(['money', esc(fmtMoney(it.amount))]);
+  if (it.priority) info.push(['flag', '<span class="imp">Importante</span>']);
+  if (it.notes) info.push(['note', esc(it.notes).replace(/\n/g, '<br>')]);
+  $('#detailTopic').innerHTML = `<span class="det__topic" style="--tc:${esc(t.color)}"><span class="ticon ticon--sm">${icon(t.icon)}</span>${esc(t.name)}</span>`;
+  const open = it.date && !it.done;
+  $('#detailBody').innerHTML = `<h2 class="det__title" id="detailTitle" tabindex="-1">${esc(it.title)}</h2>` +
+    `<ul class="det__info">${info.map(r => `<li>${icon(r[0])}<span>${r[1]}</span></li>`).join('')}</ul>` +
+    `<div class="actions">` +
+    `<button type="button" class="btn btn--primary btn--block" data-act="d-done">${icon('check')}${it.done ? 'Volver a pendientes' : 'Marcar como hecho'}</button>` +
+    (open ? calBtn(it) : '') +
+    (open ? `<button type="button" class="btn btn--secondary btn--block" data-act="d-invite" aria-expanded="false" aria-controls="invitePanel">${icon('people')}Invitar a alguien</button><div class="invite" id="invitePanel" hidden>${inviteHtml(it)}</div>` : '') +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="d-edit">${icon('edit')}Editar</button>` +
+    `<button type="button" class="btn btn--danger btn--block" data-act="d-delete">${icon('trash')}Eliminar</button></div>`;
 }
-function syncAlertOptions(a1, a2) {
-  const allDay = !f('f_time').value, list = allDay ? ALERTS_ALLDAY : ALERTS_TIMED;
-  const cur1 = a1 !== undefined ? a1 : f('f_alert').value, cur2 = a2 !== undefined ? a2 : f('f_alert2').value;
-  const norm = v => (v === null || v === undefined) ? '' : String(v);
-  const pick = (v, dflt) => list.some(o => o[0] === norm(v)) ? norm(v) : dflt;
-  fillSelect(f('f_alert'), list, pick(cur1, f('f_date').value ? norm(defaultAlertFor(f('f_date').value, f('f_time').value)) : ''));
-  fillSelect(f('f_alert2'), list, pick(cur2, ''));
+function openDetail(id) {
+  detailId = id; renderDetail();
+  const dlg = $('#detailSheet'); openSheet(dlg);
+  dlg.querySelector('.sheet__body').scrollTop = 0;
+  try { $('#detailTitle').focus({ preventScroll: true }); } catch (e) {}
 }
-function fillForm(d) {
-  f('f_title').value = d.title || '';
-  renderTopicChips(d.topic); renderKind(d.kind || 'tarea');
-  f('f_date').value = d.date || ''; f('f_time').value = d.time || '';
-  fillSelect(f('f_duration'), DURATIONS.map(m => [String(m), durLabel(m)]), String(d.duration || (d.kind === 'reunion' ? state.settings.meetingDuration : 60)));
-  fillSelect(f('f_repeat'), REPEATS, d.repeat || 'none');
-  syncAlertOptions(d.alert, d.alert2);
-  f('f_invitees').value = (d.invitees || []).join(', ');
-  f('f_location').value = d.location || '';
-  f('f_amount').value = d.amount !== null && d.amount !== undefined ? String(d.amount).replace('.', ',') : '';
-  f('f_priority').checked = !!d.priority;
-  f('f_notes').value = d.notes || '';
-  $('#dl_people').innerHTML = state.people.map(p => `<option value="${esc(p)}">`).join('');
-  $('#dl_places').innerHTML = state.places.map(p => `<option value="${esc(p)}">`).join('');
-  renderQuickChips();
+
+/* ---------- nuevo / editar: una pregunta por vez ---------- */
+let draft = null, lastStep = null;
+const ORDER = ['que', 'tema', 'cuando', 'hora', 'aviso'];
+function newDraft(b) {
+  const d = Object.assign({ id: null, title: '', topic: null, topicAuto: false, date: undefined, time: undefined, alert: undefined, alertPending: undefined, alert2: null, duration: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, notes: '', kind: 'tarea', step: 'que', custom: null, more: false }, b || {});
+  d.invitees = (d.invitees || []).slice();
+  if (!d.id) d.step = d.title ? nextStep(d) : 'que';
+  return d;
 }
-function readForm() {
-  const topicBtn = $('#f_topic [aria-checked="true"]'), kindBtn = $('#f_kind [aria-checked="true"]');
-  const amtRaw = f('f_amount').value.replace(/[^\d.,]/g, '');
-  const amount = amtRaw ? Parser.parseAmount(amtRaw) : null;
-  const time = f('f_time').value ? f('f_time').value.slice(0, 5) : null;
-  const sel = v => (v === '' ? null : Number(v));
+function editDraft(it) {
   return {
-    title: f('f_title').value.trim(), topic: topicBtn ? topicBtn.dataset.topic : 'otros', kind: kindBtn ? kindBtn.dataset.kind : 'tarea',
-    date: f('f_date').value || null, time, duration: time ? Number(f('f_duration').value) : null,
-    alert: f('f_date').value ? sel(f('f_alert').value) : null, alert2: f('f_date').value ? sel(f('f_alert2').value) : null,
-    repeat: f('f_repeat').value, invitees: f('f_invitees').value.split(',').map(s => s.trim()).filter(Boolean),
-    location: f('f_location').value.trim(), amount: amount === null || isNaN(amount) ? null : amount, priority: f('f_priority').checked ? 1 : 0, notes: f('f_notes').value.trim()
+    id: it.id, title: it.title, topic: it.topic, date: it.date || null, time: it.date ? (it.time || null) : null,
+    alert: it.date ? (it.alert === undefined ? null : it.alert) : null, alert2: it.date && it.alert2 !== undefined ? it.alert2 : null,
+    duration: it.duration || null, repeat: it.repeat || 'none', invitees: it.invitees || [], location: it.location || '',
+    amount: it.amount === undefined ? null : it.amount, priority: it.priority ? 1 : 0, notes: it.notes || '', kind: it.kind || 'tarea', step: 'listo',
+    more: !!((it.repeat && it.repeat !== 'none') || (it.invitees && it.invitees.length) || it.location || (it.amount !== null && it.amount !== undefined) || it.priority || it.notes || (it.alert2 !== null && it.alert2 !== undefined))
   };
 }
-function renderCalActions() {
-  const d = readForm(); d.id = ui.editing || 'borrador';
-  $('#calActions').innerHTML = calActionsHtml(d);
+function nextStep(d) {
+  if (!d.title) return 'que';
+  if (!d.topic) return 'tema';
+  if (d.date === undefined) return 'cuando';
+  if (typeof d.date === 'string' && d.time === undefined) return 'hora';
+  if (typeof d.date === 'string' && d.alert === undefined) return 'aviso';
+  return 'listo';
 }
-function openSheet(idOrDraft) {
-  const it = typeof idOrDraft === 'string' ? byId(idOrDraft) : null;
-  ui.editing = it ? it.id : null;
-  const base = { title: '', notes: '', topic: ui.composerTopic !== 'auto' ? ui.composerTopic : 'otros', kind: 'tarea', date: null, time: null, duration: null, alert: undefined, alert2: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0 };
-  const data = it || Object.assign(base, idOrDraft && typeof idOrDraft === 'object' ? idOrDraft : {});
-  fillForm(data);
-  $('#sheetTitle').textContent = it ? 'Editar' : 'Nuevo pendiente';
-  $('#btnDelete').hidden = !it; $('#btnDone').hidden = !it;
-  if (it) $('#btnDone').textContent = it.done ? 'Volver a pendiente' : 'Marcar hecha';
-  renderCalActions();
-  const dlg = $('#sheet');
-  if (!dlg.open) dlg.showModal();
-  dlg.querySelector('.sheet__body').scrollTop = 0;
-  if (!it) setTimeout(() => f('f_title').focus(), 60);
+function isAnswered(step) {
+  const d = draft;
+  if (step === 'que') return !!d.title;
+  if (step === 'tema') return !!d.topic;
+  if (step === 'cuando') return d.date !== undefined;
+  if (step === 'hora') return d.time !== undefined;
+  return d.alert !== undefined;
 }
-function saveSheet() {
-  const d = readForm();
-  if (!d.title) { f('f_title').focus(); toast('Falta decir qué hay que hacer'); return; }
-  if (ui.editing) {
-    const it = byId(ui.editing); if (!it) return;
-    Object.assign(it, d, { updatedAt: Date.now() }); rememberPeople(it); save(); renderAll();
-    $('#sheet').close(); toast('Guardado', it.date && !it.done ? [{ label: 'Calendario', cal: it }] : []);
-  } else {
-    const it = Object.assign({ id: uid(), done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now() }, d);
-    addItem(it); $('#sheet').close();
-    toast(cap(topicOf(it.topic).name) + ': ' + it.title + (it.date ? ' · ' + whenLabel(it) : ''), it.date ? [{ label: 'Calendario', cal: it }] : []);
+function suggestTopic(text, p) {
+  const ordered = SUGGEST_ORDER.map(id => state.topics.find(t => t.id === id)).filter(Boolean).concat(state.topics.filter(t => SUGGEST_ORDER.indexOf(t.id) < 0));
+  const id = Parser.suggestTopic(text, p, ordered);
+  return id && id !== 'otros' ? id : null;
+}
+function setDate(v) {
+  const had = typeof draft.date === 'string';
+  draft.date = v;
+  if (v === null) { draft.time = null; draft.alert = null; draft.alert2 = null; draft.alertPending = undefined; }
+  else if (!had) { if (draft.time === null) draft.time = undefined; if (draft.alert === null) draft.alert = undefined; }
+}
+function resolvePendingAlert() {
+  if (draft.alertPending === undefined || draft.time === undefined) return;
+  const v = draft.alertPending; draft.alertPending = undefined;
+  draft.alert = v === null ? null : typeof draft.time === 'string' ? Math.max(0, v) : toAllDayAlert(v);
+}
+function setTimeVal(v) {
+  const was = typeof draft.time === 'string', now = typeof v === 'string';
+  draft.time = v;
+  if (draft.alertPending !== undefined) { resolvePendingAlert(); return; }
+  if (was !== now && draft.alert !== undefined && draft.alert !== null) draft.alert = undefined; /* cambió el tipo de aviso: se vuelve a preguntar */
+  if (draft.alert2 !== null && draft.alert2 !== undefined && !alertValid(draft.alert2, now)) draft.alert2 = null;
+}
+/* Lee lo escrito: separa el título y aprovecha fecha, hora, tema y demás si los dijiste. */
+function commitTitle() {
+  const input = $('#f_title'), raw = (input ? input.value : draft.title || '').trim();
+  if (!raw) return false;
+  if (raw === draft.title) return true;
+  const p = Parser.parse(raw, { topics: state.topics });
+  draft.title = p.title || raw;
+  if (p.topic) { draft.topic = p.topic; draft.topicAuto = false; }
+  else if (!draft.topic || draft.topicAuto) { const s = suggestTopic(raw, p); if (s) { draft.topic = s; draft.topicAuto = true; } }
+  if (p.date) { setDate(p.date); if (p.time) setTimeVal(p.time); }
+  if (p.alert !== undefined) { draft.alertPending = p.alert; resolvePendingAlert(); }
+  if (p.alert2 !== undefined && p.alert2 !== null) draft.alert2 = p.alert2;
+  if (p.duration) draft.duration = p.duration;
+  if (p.repeat) draft.repeat = p.repeat;
+  p.invitees.forEach(x => { if (draft.invitees.indexOf(x) < 0) draft.invitees.push(x); });
+  if (p.location) draft.location = p.location;
+  if (p.amount !== null) draft.amount = p.amount;
+  if (p.priority) draft.priority = 1;
+  if (p.kind !== 'tarea') draft.kind = p.kind;
+  return true;
+}
+function question(step, isNew) {
+  const d = draft, cls = 'q' + (isNew ? ' is-new' : '');
+  if (step === 'que') {
+    return `<section class="${cls}"><label class="q__label" for="f_title">¿Qué hay que hacer?</label>` +
+      `<input class="q__input" id="f_title" type="text" value="${esc(d.title)}" placeholder="Ej.: Llamar a Matías mañana 10 hs" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">` +
+      `<div class="understood" id="understood" aria-live="polite"></div></section>`;
   }
+  if (step === 'tema') {
+    return `<section class="${cls}"><h3 class="q__label" tabindex="-1">¿De qué tema?</h3><div class="opts">` +
+      state.topics.filter(t => !t.hidden || t.id === d.topic).map(t => `<button type="button" class="opt opt--topic" data-act="f-topic" data-topic="${esc(t.id)}" aria-pressed="${d.topic === t.id}" style="--tc:${esc(t.color)}"><span class="ticon">${icon(t.icon)}</span><span>${esc(t.name)}</span></button>`).join('') +
+      '</div></section>';
+  }
+  if (step === 'cuando') {
+    const t = fromYmd(todayStr()), day = n => addDays(t, n), name = n => cap(F.wdLong.format(day(n))) + ' ' + day(n).getDate(), custom = d.custom === 'fecha';
+    const opts = [['Hoy', ymd(t)], ['Mañana', ymd(day(1))], [name(2), ymd(day(2))], [name(3), ymd(day(3))], ['Elegir día', 'custom'], ['Sin fecha', '']];
+    return `<section class="${cls}"><h3 class="q__label" tabindex="-1">¿Cuándo?</h3><div class="opts">` +
+      opts.map(o => `<button type="button" class="opt" data-act="f-date" data-value="${o[1]}" aria-pressed="${o[1] === 'custom' ? custom : !custom && (o[1] === '' ? d.date === null : d.date === o[1])}">${esc(o[0])}</button>`).join('') + '</div>' +
+      (custom ? `<div class="custom"><label class="sr" for="f_date">Día</label><input id="f_date" type="date" value="${typeof d.date === 'string' ? d.date : ''}"><button type="button" class="btn btn--primary" data-act="f-date-ok">Listo</button></div>` : '') + '</section>';
+  }
+  if (step === 'hora') {
+    const custom = d.custom === 'hora';
+    return `<section class="${cls}"><h3 class="q__label" tabindex="-1">¿A qué hora?</h3><div class="opts opts--times">` +
+      `<button type="button" class="opt opt--wide" data-act="f-time" data-value="" aria-pressed="${!custom && d.time === null}">Todo el día</button>` +
+      ASK_TIMES.map(o => `<button type="button" class="opt" data-act="f-time" data-value="${o[0]}" aria-pressed="${o[0] === 'custom' ? custom : !custom && d.time === o[0]}">${o[1]}</button>`).join('') + '</div>' +
+      (custom ? `<div class="custom"><label class="sr" for="f_time">Hora</label><input id="f_time" type="time" step="300" value="${typeof d.time === 'string' ? d.time : ''}"><button type="button" class="btn btn--primary" data-act="f-time-ok">Listo</button></div>` : '') + '</section>';
+  }
+  const timed = typeof d.time === 'string', list = timed ? ASK_ALERT_TIMED : ASK_ALERT_ALLDAY;
+  return `<section class="${cls}"><h3 class="q__label" tabindex="-1">¿Te aviso?</h3><div class="opts">` +
+    list.map(o => `<button type="button" class="opt" data-act="f-alert" data-value="${o[0]}" aria-pressed="${o[0] === '' ? d.alert === null : String(d.alert) === o[0]}">${o[1]}</button>`).join('') + '</div></section>';
+}
+function answerRow(step) {
+  const d = draft; let k, v, ic;
+  if (step === 'que') { k = 'Qué'; v = esc(d.title); ic = icon('check'); }
+  else if (step === 'tema') { const t = topicOf(d.topic); k = 'Tema'; v = esc(t.name); ic = `<span class="ticon ticon--sm" style="--tc:${esc(t.color)}">${icon(t.icon)}</span>`; }
+  else if (step === 'cuando') { k = 'Cuándo'; v = d.date ? esc(dateLong(d.date)) : 'Sin fecha'; ic = icon('calendar'); }
+  else if (step === 'hora') { k = 'Hora'; v = d.time ? esc(d.time) : 'Todo el día'; ic = icon('clock'); }
+  else { k = 'Aviso'; v = d.alert === null ? 'No avisar' : esc(alertLabelFor(d.alert, typeof d.time !== 'string')); ic = icon('bell'); }
+  return `<div class="ans"><span class="ans__ic">${ic}</span><span class="ans__txt"><span class="ans__k">${k}</span><span class="ans__v">${v}</span></span>` +
+    `<button type="button" class="ans__edit" data-act="f-change" data-step="${step}" aria-label="Cambiar ${k.toLowerCase()}">Cambiar</button></div>`;
+}
+const fieldText = (id, label, value, attrs) => `<label class="field" for="${id}"><span class="field__l">${label}</span><input id="${id}" type="text" value="${esc(value)}" ${attrs || ''}></label>`;
+const fieldSelect = (id, label, pairs, value) => `<label class="field" for="${id}"><span class="field__l">${label}</span><select id="${id}">${pairs.map(p => `<option value="${esc(p[0])}"${String(value) === p[0] ? ' selected' : ''}>${esc(p[1])}</option>`).join('')}</select></label>`;
+function moreHtml() {
+  const d = draft, dated = typeof d.date === 'string', timed = dated && typeof d.time === 'string', sum = [];
+  if (dated && d.repeat !== 'none') sum.push(repeatLabel(d.repeat));
+  if (d.invitees.length) sum.push('Con ' + d.invitees.join(', '));
+  if (d.location) sum.push(d.location);
+  if (d.amount !== null) sum.push(fmtMoney(d.amount));
+  if (d.priority) sum.push('Importante');
+  if (d.notes) sum.push('Notas');
+  return `<button type="button" class="more-toggle" data-act="f-more" aria-expanded="${d.more}" aria-controls="moreBox"><span>Más opciones${sum.length && !d.more ? `<small>${esc(sum.join(' · '))}</small>` : ''}</span>${icon('chevD')}</button>` +
+    `<div class="more" id="moreBox"${d.more ? '' : ' hidden'}>` +
+    (dated ? fieldSelect('f_repeat', 'Repetir', REPEATS, d.repeat || 'none') : '') +
+    fieldText('f_invitees', 'Con quién', d.invitees.join(', '), 'list="dl_people" placeholder="Nombres o mails, separados por coma" autocomplete="off"') +
+    fieldText('f_location', 'Dónde', d.location, 'list="dl_places" autocomplete="off"') +
+    fieldText('f_amount', 'Monto', d.amount !== null ? String(d.amount).replace('.', ',') : '', 'inputmode="decimal" placeholder="$ 0"') +
+    (timed ? fieldSelect('f_duration', 'Duración', DURATIONS.map(m => [String(m), durLabel(m)]), String(d.duration || (d.kind === 'reunion' || d.invitees.length ? state.settings.meetingDuration : 60))) : '') +
+    (dated ? fieldSelect('f_alert2', 'Segundo aviso', timed ? ALERTS_TIMED : ALERTS_ALLDAY, d.alert2 === null || d.alert2 === undefined ? '' : String(d.alert2)) : '') +
+    `<label class="switch" for="f_priority"><span>Importante</span><input id="f_priority" type="checkbox"${d.priority ? ' checked' : ''}></label>` +
+    `<label class="field" for="f_notes"><span class="field__l">Notas</span><textarea id="f_notes" rows="3">${esc(d.notes)}</textarea></label></div>`;
+}
+function renderForm() {
+  const d = draft, parts = [];
+  $('#formTitle').textContent = d.id ? 'Editar' : 'Nuevo pendiente';
+  ORDER.forEach(step => {
+    if ((step === 'hora' || step === 'aviso') && typeof d.date !== 'string') return;
+    if (d.step === step) parts.push(question(step, lastStep !== step && !reduced()));
+    else if (isAnswered(step)) parts.push(answerRow(step));
+  });
+  if (d.step === 'listo') parts.push(moreHtml());
+  $('#formBody').innerHTML = parts.join('');
+  lastStep = d.step;
+  $('#formErr').textContent = '';
+  $('#btnSave').textContent = d.step === 'que' ? 'Siguiente' : 'Guardar';
+  updateTitleUi();
+}
+function updateTitleUi() {
+  const input = $('#f_title'), v = input ? input.value.trim() : draft.title;
+  $('#btnSave').disabled = !v;
+  const el = $('#understood'); if (!el) return;
+  if (!v || v === draft.title) { el.innerHTML = ''; return; }
+  const p = Parser.parse(v, { topics: state.topics }), chips = [];
+  const tid = p.topic || (!draft.topic || draft.topicAuto ? suggestTopic(v, p) : null);
+  if (tid) { const t = topicOf(tid); chips.push(`<span class="chip" style="--tc:${esc(t.color)}"><span class="ticon ticon--xs">${icon(t.icon)}</span>${esc(t.name)}</span>`); }
+  if (p.date) chips.push(`<span class="chip">${icon(p.time ? 'clock' : 'calendar')}${esc(whenLabel({ date: p.date, time: p.time }))}</span>`);
+  if (p.alert !== undefined) chips.push(`<span class="chip">${icon('bell')}${p.alert === null ? 'Sin aviso' : esc(alertLabelFor(p.alert, false))}</span>`);
+  if (p.repeat) chips.push(`<span class="chip">${icon('repeat')}${esc(repeatLabel(p.repeat))}</span>`);
+  if (p.invitees.length) chips.push(`<span class="chip">${icon('people')}${esc(p.invitees.join(', '))}</span>`);
+  if (p.location) chips.push(`<span class="chip">${icon('pin')}${esc(p.location)}</span>`);
+  if (p.amount !== null) chips.push(`<span class="chip">${icon('money')}${esc(fmtMoney(p.amount))}</span>`);
+  if (p.priority) chips.push(`<span class="chip">${icon('flag')}Importante</span>`);
+  el.innerHTML = chips.length ? `<span class="understood__k">Entendí</span>${chips.join('')}` : '';
+}
+function formError(msg) { $('#formErr').textContent = msg; }
+function advance() {
+  draft.step = nextStep(draft); draft.custom = null;
+  renderForm();
+  const active = document.activeElement; if (active && active.blur && active.id === 'f_title') active.blur();
+  const target = draft.step === 'listo' ? $('#btnSave') : $('#formBody .q .q__label');
+  if (target) {
+    try { target.focus({ preventScroll: true }); } catch (e) {}
+    const box = $('#formBody .q') || $('#formBody .more-toggle');
+    if (box) box.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
+  }
+}
+function openForm(base) {
+  draft = newDraft(base); lastStep = null;
+  $('#dl_people').innerHTML = state.people.map(p => `<option value="${esc(p)}">`).join('');
+  $('#dl_places').innerHTML = state.places.map(p => `<option value="${esc(p)}">`).join('');
+  renderForm();
+  const dlg = $('#formSheet'); openSheet(dlg);
+  dlg.querySelector('.sheet__body').scrollTop = 0;
+  const input = $('#f_title');
+  if (draft.step === 'que' && input) input.focus(); else { try { $('#formTitle').focus({ preventScroll: true }); } catch (e) {} }
+}
+function saveForm() {
+  const d = draft;
+  if (d.step === 'que' && !commitTitle()) { formError('Escribí qué hay que hacer'); const i = $('#f_title'); if (i) i.focus(); return; }
+  if (d.alertPending !== undefined) { if (d.time === undefined) d.time = null; resolvePendingAlert(); }
+  const date = typeof d.date === 'string' ? d.date : null;
+  const time = date && typeof d.time === 'string' ? d.time : null;
+  const topic = d.topic || suggestTopic(d.title, { amount: d.amount }) || 'otros';
+  const kind = d.invitees.length ? 'reunion' : (d.kind || 'tarea');
+  let alert = date ? (d.alert === undefined ? defaultAlertFor(date, time) : d.alert) : null;
+  if (date && !alertValid(alert, !!time)) alert = defaultAlertFor(date, time);
+  const alert2 = date && d.alert2 !== null && d.alert2 !== undefined && alertValid(d.alert2, !!time) ? d.alert2 : null;
+  const data = {
+    title: d.title, topic, kind, date, time,
+    duration: time ? (d.duration || (kind === 'reunion' ? Number(state.settings.meetingDuration) : 60)) : null,
+    alert, alert2, repeat: date ? (d.repeat || 'none') : 'none', invitees: d.invitees.slice(), location: d.location || '',
+    amount: d.amount, priority: d.priority ? 1 : 0, notes: (d.notes || '').trim()
+  };
+  let it = d.id ? byId(d.id) : null;
+  if (it) Object.assign(it, data, { updatedAt: Date.now() });
+  else { it = Object.assign({ id: uid(), done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now() }, data); state.items.unshift(it); }
+  rememberPeople(it); save();
+  closeSheet($('#formSheet')); render();
+  if (!$('#detailSheet').open && detailId === it.id) detailId = null;
+  toast((d.id ? 'Guardado' : 'Anotado') + (it.date ? ' · ' + whenLabel(it) : ''), it.date && !it.done ? [{ label: 'Al Calendario', cal: it }] : []);
 }
 
 /* ---------- ajustes ---------- */
 function renderTopicEditor() {
-  $('#topicEditor').innerHTML = state.topics.map(t => `<div class="trow${t.hidden ? ' is-hidden' : ''}" data-id="${esc(t.id)}">
-    <input type="color" value="${esc(t.color)}" data-f="color" aria-label="Color de ${esc(t.name)}">
-    <select data-f="icon" aria-label="Ícono de ${esc(t.name)}">${TOPIC_ICONS.map(i => `<option value="${i}"${i === t.icon ? ' selected' : ''}>${ICON_LABELS[i] || i}</option>`).join('')}</select>
-    <input type="text" value="${esc(t.name)}" data-f="name" aria-label="Nombre del tema" maxlength="40">
-    <button type="button" class="icon-btn" data-act="t-hide" aria-label="${t.hidden ? 'Mostrar' : 'Ocultar'}" title="${t.hidden ? 'Mostrar' : 'Ocultar'}">${icon(t.hidden ? 'eyeOff' : 'eye')}</button>
-    ${t.id === 'otros' ? '<span></span>' : `<button type="button" class="icon-btn" data-act="t-del" aria-label="Eliminar tema" title="Eliminar tema">${icon('trash')}</button>`}
-  </div>`).join('');
+  const box = $('#topicEditor'); if (!box) return;
+  box.innerHTML = state.topics.map(t => `<div class="trow${t.hidden ? ' is-hidden' : ''}" data-id="${esc(t.id)}">` +
+    `<input type="color" value="${esc(t.color)}" data-f="color" aria-label="Color de ${esc(t.name)}">` +
+    `<input type="text" value="${esc(t.name)}" data-f="name" aria-label="Nombre del tema" maxlength="40">` +
+    `<button type="button" class="icon-btn" data-act="t-hide" aria-label="${t.hidden ? 'Mostrar' : 'Ocultar'} ${esc(t.name)}" aria-pressed="${!!t.hidden}">${icon(t.hidden ? 'eyeOff' : 'eye')}</button>` +
+    (t.id === 'otros' ? '<span></span>' : `<button type="button" class="icon-btn" data-act="t-del" aria-label="Eliminar ${esc(t.name)}">${icon('trash')}</button>`) +
+    `<select data-f="icon" aria-label="Ícono de ${esc(t.name)}">${TOPIC_ICONS.map(i => `<option value="${i}"${i === t.icon ? ' selected' : ''}>${ICON_LABELS[i] || i}</option>`).join('')}</select>` +
+    '</div>').join('');
 }
-function openSettings() {
-  const s = state.settings;
-  f('s_name').value = s.name || ''; f('s_email').value = s.email || '';
-  fillSelect(f('s_alertTimed'), ALERTS_TIMED, String(s.alertTimed)); fillSelect(f('s_alertAllDay'), ALERTS_ALLDAY, String(s.alertAllDay));
-  fillSelect(f('s_meetingDuration'), DURATIONS.map(m => [String(m), durLabel(m)]), String(s.meetingDuration));
-  f('s_theme').value = s.theme || 'auto';
+function renderSettings() {
+  const s = state.settings, sel = (id, pairs, v) => `<select id="${id}">${pairs.map(p => `<option value="${esc(p[0])}"${String(v) === p[0] ? ' selected' : ''}>${esc(p[1])}</option>`).join('')}</select>`;
+  $('#settingsBody').innerHTML =
+    `<details class="set"><summary>Tu nombre y mail ${icon('chevR')}</summary><div class="set__body">` +
+      `<p class="set__note">Aparecen en las invitaciones que mandás.</p>` +
+      `<label class="field" for="s_name"><span class="field__l">Nombre</span><input id="s_name" type="text" autocomplete="name" value="${esc(s.name)}"></label>` +
+      `<label class="field" for="s_email"><span class="field__l">Mail</span><input id="s_email" type="email" autocomplete="email" value="${esc(s.email)}"></label></div></details>` +
+    `<details class="set"><summary>Avisos ${icon('chevR')}</summary><div class="set__body">` +
+      `<label class="field" for="s_alertTimed"><span class="field__l">Si tiene hora</span>${sel('s_alertTimed', ALERTS_TIMED.slice(1), s.alertTimed)}</label>` +
+      `<label class="field" for="s_alertAllDay"><span class="field__l">Si es todo el día</span>${sel('s_alertAllDay', ALERTS_ALLDAY.slice(1), s.alertAllDay)}</label>` +
+      `<label class="field" for="s_meetingDuration"><span class="field__l">Duración de las reuniones</span>${sel('s_meetingDuration', DURATIONS.map(m => [String(m), durLabel(m)]), s.meetingDuration)}</label></div></details>` +
+    `<details class="set"><summary>Temas ${icon('chevR')}</summary><div class="set__body"><div class="tedit" id="topicEditor"></div>` +
+      `<button type="button" class="btn btn--secondary btn--block" data-act="s-add-topic">${icon('plus')}Agregar tema</button></div></details>` +
+    `<details class="set"><summary>Copia de seguridad ${icon('chevR')}</summary><div class="set__body">` +
+      `<p class="set__note">Tus pendientes se guardan solo en este teléfono. Bajá una copia cada tanto.</p>` +
+      `<button type="button" class="btn btn--secondary btn--block" data-act="s-backup">Bajar copia</button>` +
+      `<button type="button" class="btn btn--secondary btn--block" data-act="s-restore">Restaurar una copia</button></div></details>` +
+    `<div class="set set--row"><span id="themeLabel">Apariencia</span><div class="seg3" role="radiogroup" aria-labelledby="themeLabel">` +
+      [['auto', 'Auto'], ['light', 'Clara'], ['dark', 'Oscura']].map(o => `<button type="button" role="radio" aria-checked="${(s.theme || 'auto') === o[0]}" data-act="s-theme" data-value="${o[0]}">${o[1]}</button>`).join('') + '</div></div>' +
+    `<button type="button" class="set set--btn" data-act="s-export">${icon('calendar')}Mandar todo al Calendario</button>` +
+    `<button type="button" class="set set--btn set--danger" data-act="s-clear">${icon('trash')}Borrar las hechas</button>` +
+    `<details class="set"><summary>Ayuda ${icon('chevR')}</summary><div class="set__body set__note">` +
+      `<p>Para tenerlo como app: en Safari tocá Compartir y «Agregar a inicio».</p>` +
+      `<p>Al escribir podés decir el día y la hora, por ejemplo «mañana 10 hs» o «el viernes». Lo entiendo solo.</p>` +
+      `<p>«Agregar al Calendario» abre el evento en el Calendario del iPhone. Ahí tocá «Añadir».</p></div></details>`;
   renderTopicEditor();
-  const dlg = $('#settings'); if (!dlg.open) dlg.showModal();
 }
 function exportJson() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'pendientes-respaldo-' + todayStr() + '.json'; document.body.appendChild(a); a.click(); a.remove();
+  a.href = url; a.download = 'pendientes-copia-' + todayStr() + '.json'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function importJson(file) {
@@ -640,172 +762,218 @@ function importJson(file) {
       if (inc.settings) state.settings = Object.assign({}, state.settings, inc.settings);
       (inc.people || []).forEach(p => { if (state.people.indexOf(p) < 0) state.people.push(p); });
       (inc.places || []).forEach(p => { if (state.places.indexOf(p) < 0) state.places.push(p); });
-      save(); applyTheme(); renderAll(); renderTopicEditor();
-      toast('Respaldo restaurado: ' + added + ' nuevos, ' + updated + ' actualizados');
-    } catch (e) { toast('Ese archivo no es un respaldo de Pendientes'); }
+      save(); applyTheme(); render(); renderSettings();
+      toast('Copia restaurada: ' + plural(added, 'nuevo', 'nuevos') + ', ' + plural(updated, 'actualizado', 'actualizados'));
+    } catch (e) { toast('Ese archivo no es una copia de Pendientes'); }
   };
   r.readAsText(file);
 }
-
-/* ---------- tema visual ---------- */
 function applyTheme() {
   const t = state.settings.theme || 'auto';
   if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
-  const b = $('#btnTheme');
-  b.innerHTML = icon(t === 'auto' ? 'auto' : t === 'light' ? 'sun' : 'moon');
-  b.setAttribute('aria-label', 'Apariencia: ' + (t === 'auto' ? 'automática' : t === 'light' ? 'clara' : 'oscura'));
   const dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const meta = $('#metaTheme'); if (meta) meta.content = dark ? '#0E1013' : '#F2F3F6';
+  const meta = $('#metaTheme'); if (meta) meta.content = dark ? '#0F1114' : '#F4F5F7';
+}
+
+/* ---------- aviso flotante (queda por encima de las hojas abiertas) ---------- */
+const toastEl = $('#toast');
+const canPopover = typeof toastEl.showPopover === 'function';
+if (canPopover) { toastEl.hidden = false; toastEl.setAttribute('popover', 'manual'); }
+let toastTimer = null;
+function hideToast() { if (canPopover) { try { toastEl.hidePopover(); } catch (e) {} } else toastEl.hidden = true; }
+function toast(msg, actions) {
+  actions = actions || [];
+  toastEl.innerHTML = `<span class="toast__msg">${esc(msg)}</span>` + (actions.length ? `<span class="toast__acts">${actions.map((a, i) => {
+    if (a.cal && ui.apiOk) return `<a href="${esc(links(a.cal).ios)}"${icsAttrs(a.cal)}>${esc(a.label)}</a>`;
+    return `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
+  }).join('')}</span>` : '');
+  if (canPopover) { try { hideToast(); toastEl.showPopover(); } catch (e) {} } else toastEl.hidden = false;
+  toastEl.onclick = e => {
+    const b = e.target.closest('[data-ti]');
+    if (b) { const a = actions[+b.dataset.ti]; if (a.cal) downloadIcs([a.cal], slug(a.cal.title)); else if (a.fn) a.fn(); }
+    if (e.target.closest('a,button')) hideToast();
+  };
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, actions.length ? 7000 : 3200);
 }
 
 /* ---------- eventos ---------- */
 function bind() {
-  $('#btnSearch').innerHTML = icon('search'); $('#btnSettings').innerHTML = icon('gear');
-  $('#btnMore').innerHTML = icon('sliders'); $('#btnAdd').innerHTML = icon('arrowUp');
-  $('#sheetClose').innerHTML = icon('x'); $('#settingsClose').innerHTML = icon('x');
+  $$('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon); });
 
   document.addEventListener('click', e => {
-    const act = e.target.closest('[data-act]');
-    const li = e.target.closest('.item');
-    if (act) {
-      const a = act.dataset.act;
-      if (a === 'toggle' && li) { toggleDone(li.dataset.id); return; }
-      if (a === 'open' && li) { openSheet(li.dataset.id); return; }
-      if (a === 'cal' && li) { const it = byId(li.dataset.id); if (it) downloadIcs([it], slug(it.title)); return; }
-      if (a === 'add-topic') { ui.composerTopic = act.dataset.topic; renderComposerTopic(); renderPreview(); $('#quickInput').focus(); return; }
-      if (a === 'clear-filter') { ui.filter = null; renderAll(); return; }
-      if (a === 'example') { $('#quickInput').value = act.textContent; renderPreview(); $('#quickInput').focus(); return; }
-      if (a === 'samples') { loadSamples(); return; }
-      if (a === 'ics') { const d = readForm(); d.id = ui.editing || uid(); downloadIcs([d], slug(d.title || 'evento')); return; }
-      if (a === 'copy') { copyText(links(Object.assign(readForm(), { id: ui.editing || 'x' })).text); return; }
-      if (a === 'share') { const d = Object.assign(readForm(), { id: ui.editing || 'x' }); navigator.share({ title: d.title, text: links(d).text }).catch(() => {}); return; }
+    const goEl = e.target.closest('[data-go]');
+    if (goEl) { const v = goEl.dataset.go; go(v, v === 'tema' ? goEl.dataset.topic : null); return; }
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    const act = a.dataset.act, row = a.closest('.row');
+    switch (act) {
+      case 'toggle': {
+        if (!row || row.classList.contains('is-checking')) return;
+        const it = byId(row.dataset.id); if (!it) return;
+        if (!it.done && !reduced()) { row.classList.add('is-checking'); setTimeout(() => toggleDone(it.id), 260); } else toggleDone(it.id);
+        return;
+      }
+      case 'open': if (row) openDetail(row.dataset.id); return;
+      case 'samples': loadSamples(); return;
+      case 'new-in': openForm({ topic: a.dataset.topic }); return;
+      case 'agenda-all': ui.agendaAll = true; render(); return;
+      /* ficha */
+      case 'd-done': { const id = detailId; closeSheet($('#detailSheet')); toggleDone(id); return; }
+      case 'd-ics': { const it = byId(detailId); if (it) downloadIcs([it], slug(it.title)); return; }
+      case 'd-invite': { const p = $('#invitePanel'), open = p.hidden; p.hidden = !open; a.setAttribute('aria-expanded', String(open)); if (open) p.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return; }
+      case 'd-share': { const it = byId(detailId); if (it) navigator.share({ title: it.title, text: links(it).text }).catch(() => {}); return; }
+      case 'd-copy': { const it = byId(detailId); if (it) copyText(links(it).text); return; }
+      case 'd-edit': { const it = byId(detailId); closeSheet($('#detailSheet')); if (it) openForm(editDraft(it)); return; }
+      case 'd-delete': { const id = detailId; closeSheet($('#detailSheet')); removeItem(id); return; }
+      /* formulario */
+      case 'f-topic': draft.topic = a.dataset.topic; draft.topicAuto = false; advance(); return;
+      case 'f-date': {
+        const v = a.dataset.value;
+        if (v === 'custom') { draft.custom = 'fecha'; renderForm(); const i = $('#f_date'); if (i) { i.focus(); try { i.showPicker && i.showPicker(); } catch (er) {} } return; }
+        setDate(v || null); advance(); return;
+      }
+      case 'f-date-ok': { const v = $('#f_date').value; if (!v) { formError('Elegí un día'); return; } setDate(v); advance(); return; }
+      case 'f-time': {
+        const v = a.dataset.value;
+        if (v === 'custom') { draft.custom = 'hora'; renderForm(); const i = $('#f_time'); if (i) { i.focus(); try { i.showPicker && i.showPicker(); } catch (er) {} } return; }
+        setTimeVal(v || null); advance(); return;
+      }
+      case 'f-time-ok': { const v = ($('#f_time').value || '').slice(0, 5); if (!v) { formError('Elegí una hora'); return; } setTimeVal(v); advance(); return; }
+      case 'f-alert': draft.alert = a.dataset.value === '' ? null : Number(a.dataset.value); advance(); return;
+      case 'f-change': {
+        draft.step = a.dataset.step; draft.custom = null; renderForm();
+        if (draft.step === 'que') { const i = $('#f_title'); if (i) { i.focus(); i.select(); } }
+        else { const l = $('#formBody .q .q__label'); if (l) { try { l.focus({ preventScroll: true }); } catch (er) {} l.scrollIntoView({ block: 'nearest' }); } }
+        return;
+      }
+      case 'f-more': draft.more = !draft.more; renderForm(); if (draft.more) $('#moreBox').scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return;
+      /* ajustes */
+      case 's-theme': state.settings.theme = a.dataset.value; save(); applyTheme(); $$('[data-act="s-theme"]').forEach(b => b.setAttribute('aria-checked', String(b === a))); return;
+      case 's-add-topic': {
+        const t = { id: 't' + Date.now().toString(36), name: 'Nuevo tema', color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
+        state.topics.splice(state.topics.length - 1, 0, t); save(); renderTopicEditor(); render();
+        const inp = $(`#topicEditor .trow[data-id="${t.id}"] [data-f="name"]`); if (inp) { inp.focus(); inp.select(); }
+        return;
+      }
+      case 't-hide': { const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (t) { t.hidden = !t.hidden; save(); renderTopicEditor(); render(); } return; }
+      case 't-del': {
+        const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (!t) return;
+        if (a.dataset.confirm !== '1') { a.dataset.confirm = '1'; a.innerHTML = '<span style="font-size:.8125rem;font-weight:700">¿Seguro?</span>'; setTimeout(() => { if (a.isConnected) { a.dataset.confirm = ''; a.innerHTML = icon('trash'); } }, 3000); return; }
+        const n = state.items.filter(it => it.topic === t.id).length;
+        state.items.forEach(it => { if (it.topic === t.id) it.topic = 'otros'; });
+        state.topics = state.topics.filter(x => x.id !== t.id);
+        if (ui.view === 'tema' && ui.topicId === t.id) goBack();
+        save(); renderTopicEditor(); render(); toast('Tema eliminado' + (n ? '. Sus pendientes pasaron a Otros' : ''));
+        return;
+      }
+      case 's-backup': exportJson(); return;
+      case 's-restore': $('#importFile').click(); return;
+      case 's-export': {
+        const its = state.items.filter(it => !it.done && it.date);
+        if (!its.length) { toast('No hay pendientes con fecha'); return; }
+        downloadIcs(its, 'pendientes'); return;
+      }
+      case 's-clear': {
+        const gone = state.items.filter(it => it.done); if (!gone.length) { toast('No hay hechas para borrar'); return; }
+        state.items = state.items.filter(it => !it.done); save(); render();
+        toast('Borré ' + plural(gone.length, 'hecha', 'hechas'), [{ label: 'Deshacer', fn: () => { state.items = state.items.concat(gone); save(); render(); } }]);
+        return;
+      }
     }
-    const kpi = e.target.closest('.kpi');
-    if (kpi) { ui.filter = ui.filter === kpi.dataset.filter ? null : kpi.dataset.filter; ui.view = 'agenda'; renderAll(); return; }
-    const tab = e.target.closest('.seg [role="tab"]');
-    if (tab) { ui.view = tab.dataset.view; renderAll(); return; }
-    const topt = e.target.closest('#topicMenu [data-topic]');
-    if (topt) { ui.composerTopic = topt.dataset.topic; renderComposerTopic(); renderPreview(); toggleTopicMenu(false); $('#quickInput').focus(); return; }
-    if (!e.target.closest('#topicMenu') && !e.target.closest('#composerTopic')) toggleTopicMenu(false);
-  });
-  document.addEventListener('keydown', e => {
-    const body = e.target.closest('.item__body');
-    if (body && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSheet(body.closest('.item').dataset.id); return; }
-    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || $('#sheet').open || $('#settings').open;
-    if (typing) { if (e.key === 'Escape' && e.target.id === 'quickInput') e.target.blur(); return; }
-    if (e.key === '/' || e.key === 'n') { e.preventDefault(); $('#quickInput').focus(); }
-    else if (e.key === '1') { ui.view = 'temas'; renderAll(); }
-    else if (e.key === '2') { ui.view = 'agenda'; renderAll(); }
   });
 
-  $('#btnSearch').addEventListener('click', () => {
-    const bar = $('#searchBar'), on = bar.hidden; bar.hidden = !on; $('#btnSearch').setAttribute('aria-pressed', String(on));
-    if (on) $('#searchInput').focus(); else { $('#searchInput').value = ''; ui.query = ''; renderAll(); }
-  });
-  $('#searchInput').addEventListener('input', e => { ui.query = e.target.value.trim(); renderAll(); });
-  $('#btnTheme').addEventListener('click', () => { const order = ['auto', 'light', 'dark']; state.settings.theme = order[(order.indexOf(state.settings.theme || 'auto') + 1) % 3]; save(); applyTheme(); });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
-  $('#btnSettings').addEventListener('click', openSettings);
-  document.addEventListener('change', e => { if (e.target.id === 'showDone') { ui.showDone = e.target.checked; renderAll(); } });
-
-  /* carga rápida */
-  $('#quickForm').addEventListener('submit', e => { e.preventDefault(); submitQuick(); });
-  $('#quickInput').addEventListener('input', () => { clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 60); });
-  $('#composerTopic').addEventListener('click', () => toggleTopicMenu());
-  $('#btnMore').addEventListener('click', () => {
-    const text = $('#quickInput').value.trim();
-    if (!text) { openSheet(null); return; }
-    const p = Parser.parse(text, { topics: state.topics }), it = buildFromParse(p, text);
-    delete it.id; openSheet(it); $('#quickInput').value = ''; renderPreview();
+  $('#btnBack').addEventListener('click', goBack);
+  $('#btnSettings').addEventListener('click', () => { renderSettings(); const dlg = $('#settingsSheet'); openSheet(dlg); dlg.querySelector('.sheet__body').scrollTop = 0; });
+  $('#btnNew').addEventListener('click', () => openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}));
+  window.addEventListener('popstate', e => {
+    const s = e.state && e.state.v ? e.state : parseHash();
+    ui.view = s.v; ui.topicId = s.id || null; ui.depth = e.state && e.state.d ? e.state.d : 0; ui.agendaAll = false;
+    render(); window.scrollTo(0, 0);
   });
 
-  /* hoja */
-  const sheet = $('#sheet');
-  $('#itemForm').addEventListener('submit', e => { e.preventDefault(); saveSheet(); });
-  $('#sheetClose').addEventListener('click', () => sheet.close());
-  sheet.addEventListener('click', e => { if (e.target === sheet) sheet.close(); });
-  $('#btnDelete').addEventListener('click', () => { if (ui.editing) { const id = ui.editing; sheet.close(); removeItem(id); } });
-  $('#btnDone').addEventListener('click', () => { if (ui.editing) { const id = ui.editing; sheet.close(); toggleDone(id); } });
-  $('#f_topic').addEventListener('click', e => { const b = e.target.closest('[data-topic]'); if (!b) return; $$('#f_topic [role="radio"]').forEach(x => x.setAttribute('aria-checked', String(x === b))); renderCalActions(); });
-  $('#f_kind').addEventListener('click', e => { const b = e.target.closest('[data-kind]'); if (!b) return; $$('#f_kind [role="radio"]').forEach(x => x.setAttribute('aria-checked', String(x === b))); if (b.dataset.kind === 'reunion') f('f_duration').value = String(state.settings.meetingDuration); renderCalActions(); });
-  $('#quickDates').addEventListener('click', e => { const b = e.target.closest('[data-date]'); if (!b) return; f('f_date').value = b.dataset.date; renderQuickChips(); syncAlertOptions(); renderCalActions(); });
-  $('#quickTimes').addEventListener('click', e => { const b = e.target.closest('[data-time]'); if (!b) return; f('f_time').value = b.dataset.time; if (b.dataset.time && !f('f_date').value) { f('f_date').value = todayStr(); } renderQuickChips(); syncAlertOptions(); renderCalActions(); });
-  f('f_date').addEventListener('change', () => { renderQuickChips(); syncAlertOptions(); renderCalActions(); });
-  f('f_time').addEventListener('change', () => { if (f('f_time').value && !f('f_date').value) f('f_date').value = todayStr(); renderQuickChips(); syncAlertOptions(); renderCalActions(); });
-  let calTimer = null;
-  $('#itemForm').addEventListener('input', e => { if (/^f_(title|invitees|location|notes|duration|repeat|alert|alert2|amount)$/.test(e.target.id)) { clearTimeout(calTimer); calTimer = setTimeout(renderCalActions, 200); } });
-  $('#itemForm').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); saveSheet(); } });
-
-  /* ajustes */
-  const st = $('#settings');
-  $('#settingsForm').addEventListener('submit', e => { e.preventDefault(); st.close(); });
-  $('#settingsClose').addEventListener('click', () => st.close());
-  st.addEventListener('click', e => { if (e.target === st) st.close(); });
-  st.addEventListener('close', () => { save(); renderAll(); });
-  ['s_name', 's_email', 's_alertTimed', 's_alertAllDay', 's_meetingDuration', 's_theme'].forEach(id => {
-    f(id).addEventListener('change', e => {
-      const v = e.target.value;
-      if (id === 's_name') state.settings.name = v.trim();
-      else if (id === 's_email') state.settings.email = v.trim();
-      else if (id === 's_theme') { state.settings.theme = v; applyTheme(); }
-      else state.settings[id.slice(2)] = Number(v);
-      save();
+  /* hojas: cerrar con la X, tocando afuera o con Escape; el foco vuelve a donde estaba */
+  $$('dialog.sheet').forEach(dlg => {
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); if (e.target.closest('[data-close]')) dlg.close(); });
+    dlg.addEventListener('close', () => {
+      if (dlg.id === 'settingsSheet') render();
+      if (!$$('dialog[open]').length && dlg._opener && dlg._opener.isConnected) { try { dlg._opener.focus({ preventScroll: true }); } catch (e) {} }
     });
   });
-  $('#topicEditor').addEventListener('input', e => {
-    const row = e.target.closest('.trow'); if (!row) return;
-    const t = state.topics.find(x => x.id === row.dataset.id); if (!t) return;
-    const fld = e.target.dataset.f; if (!fld) return;
-    t[fld] = fld === 'name' ? e.target.value.trim() || t.name : e.target.value; save();
+
+  /* formulario */
+  $('#itemForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if (draft.step === 'que') { if (!commitTitle()) { formError('Escribí qué hay que hacer'); return; } advance(); return; }
+    saveForm();
   });
-  $('#topicEditor').addEventListener('click', e => {
-    const b = e.target.closest('[data-act]'); if (!b) return;
-    const row = b.closest('.trow'), t = state.topics.find(x => x.id === row.dataset.id); if (!t) return;
-    if (b.dataset.act === 't-hide') { t.hidden = !t.hidden; save(); renderTopicEditor(); }
-    if (b.dataset.act === 't-del') {
-      if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:12px;font-weight:700">¿Sí?</span>'; setTimeout(() => { b.dataset.confirm = ''; b.innerHTML = icon('trash'); }, 3000); return; }
-      const n = state.items.filter(it => it.topic === t.id).length;
-      state.items.forEach(it => { if (it.topic === t.id) it.topic = 'otros'; });
-      state.topics = state.topics.filter(x => x.id !== t.id);
-      if (ui.composerTopic === t.id) { ui.composerTopic = 'auto'; renderComposerTopic(); }
-      save(); renderTopicEditor(); toast('Tema eliminado' + (n ? '. ' + n + ' pendientes pasaron a Otros' : ''));
-    }
+  $('#formSheet').addEventListener('input', e => {
+    const id = e.target.id;
+    if (id === 'f_title') { updateTitleUi(); return; }
+    if (id === 'f_invitees') draft.invitees = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+    else if (id === 'f_location') draft.location = e.target.value.trim();
+    else if (id === 'f_amount') { const raw = e.target.value.replace(/[^\d.,]/g, ''), n = raw ? Parser.parseAmount(raw) : null; draft.amount = n === null || isNaN(n) ? null : n; }
+    else if (id === 'f_notes') draft.notes = e.target.value;
   });
-  $('#btnAddTopic').addEventListener('click', () => {
-    const t = { id: 't' + Date.now().toString(36), name: 'Nuevo tema', color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
-    state.topics.splice(state.topics.length - 1, 0, t); save(); renderTopicEditor();
-    const inp = $(`#topicEditor .trow[data-id="${t.id}"] [data-f="name"]`); if (inp) { inp.focus(); inp.select(); }
+  $('#formSheet').addEventListener('change', e => {
+    const id = e.target.id;
+    if (id === 'f_repeat') draft.repeat = e.target.value;
+    else if (id === 'f_duration') draft.duration = Number(e.target.value);
+    else if (id === 'f_alert2') draft.alert2 = e.target.value === '' ? null : Number(e.target.value);
+    else if (id === 'f_priority') draft.priority = e.target.checked ? 1 : 0;
   });
-  $('#btnExportIcs').addEventListener('click', () => {
-    const its = state.items.filter(it => !it.done && it.date);
-    if (!its.length) { toast('No hay pendientes con fecha para mandar'); return; }
-    downloadIcs(its, 'pendientes'); toast(its.length + ' eventos listos para el calendario');
-  });
-  $('#btnExportJson').addEventListener('click', exportJson);
-  $('#importFile').addEventListener('change', e => { if (e.target.files[0]) importJson(e.target.files[0]); e.target.value = ''; });
-  $('#btnClearDone').addEventListener('click', () => {
-    const gone = state.items.filter(it => it.done); if (!gone.length) { toast('No hay hechas para borrar'); return; }
-    state.items = state.items.filter(it => !it.done); save(); renderAll();
-    toast('Borré ' + gone.length + ' hechas', [{ label: 'Deshacer', fn: () => { state.items = state.items.concat(gone); save(); renderAll(); } }]);
+  $('#formSheet').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const id = e.target.id;
+    if (id === 'f_title') { e.preventDefault(); if (!commitTitle()) { formError('Escribí qué hay que hacer'); return; } advance(); }
+    else if (id === 'f_date') { e.preventDefault(); $('[data-act="f-date-ok"]').click(); }
+    else if (id === 'f_time') { e.preventDefault(); $('[data-act="f-time-ok"]').click(); }
   });
 
-  /* en el iPhone, la barra de carga sube con el teclado */
+  /* ajustes */
+  $('#settingsSheet').addEventListener('change', e => {
+    const id = e.target.id, v = e.target.value;
+    if (id === 's_name') state.settings.name = v.trim();
+    else if (id === 's_email') state.settings.email = v.trim();
+    else if (id === 's_alertTimed' || id === 's_alertAllDay' || id === 's_meetingDuration') state.settings[id.slice(2)] = Number(v);
+    else return;
+    save();
+  });
+  $('#settingsSheet').addEventListener('input', e => {
+    const r = e.target.closest('.trow'); if (!r) return;
+    const t = state.topics.find(x => x.id === r.dataset.id), f = e.target.dataset.f; if (!t || !f) return;
+    t[f] = f === 'name' ? (e.target.value.trim() || t.name) : e.target.value; save();
+  });
+  $('#importFile').addEventListener('change', e => { if (e.target.files[0]) importJson(e.target.files[0]); e.target.value = ''; });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+  /* atajos en la compu: N para nuevo */
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || $$('dialog[open]').length || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}); }
+  });
+
+  /* con el teclado abierto en el iPhone, las hojas suben para no quedar tapadas */
   if (window.visualViewport) {
-    const vv = window.visualViewport, comp = $('#composer');
-    const follow = () => { const off = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)); comp.style.setProperty('--kb', off + 'px'); };
+    const vv = window.visualViewport;
+    const follow = () => {
+      const root = document.documentElement.style, off = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      root.setProperty('--kb', off + 'px'); root.setProperty('--vvt', Math.max(0, Math.round(vv.offsetTop)) + 'px');
+    };
     vv.addEventListener('resize', follow); vv.addEventListener('scroll', follow);
   }
 
-  /* el reloj avanza: lo vencido cambia de color sin recargar */
-  setInterval(() => { if (!document.hidden) renderAll(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
+  /* el reloj avanza: lo atrasado cambia de color sin recargar */
+  setInterval(() => { if (!document.hidden) render(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
 }
 
 /* ---------- arranque ---------- */
 function init() {
-  applyTheme(); bind(); renderComposerTopic(); renderPreview(); renderAll();
+  const s = parseHash();
+  ui.view = s.v; ui.topicId = s.id; ui.depth = 0;
+  try { history.replaceState({ v: s.v, id: s.id, d: 0 }, '', location.href); } catch (e) {}
+  applyTheme(); bind(); render();
   if (/^https?:$/.test(location.protocol)) {
-    fetch('/api/ics?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.apiOk = !!(j && j.ok); if (ui.apiOk) renderAll(); }).catch(() => {});
+    fetch('/api/ics?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.apiOk = !!(j && j.ok); if (ui.apiOk) { render(); if ($('#detailSheet').open) renderDetail(); } }).catch(() => {});
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
