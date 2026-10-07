@@ -63,8 +63,8 @@ pendientes/api/ics.js       función de Vercel: sirve un evento como text/calend
 
 **Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
 con **Root Directory = `pendientes`** (preset Other, sin build command). Así queda en una dirección
-propia y `pendientes/api/ics.js` se publica como `/api/ics`. El `.vercelignore` de la raíz hace que
-la landing no publique esta carpeta.
+propia y `pendientes/api/ics.js` se publica como `/api/ics`. El `vercel.json` de la raíz hace que la
+landing redirija `/pendientes/` a esa dirección.
 
 **Calendario.** Cada pendiente con fecha tiene «Agregar al iPhone»: en Vercel es un link a
 `/api/ics?...` que Safari abre con la vista nativa de Calendario (un toque y «Añadir»), con la

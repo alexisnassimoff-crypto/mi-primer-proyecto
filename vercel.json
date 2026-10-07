@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/pendientes", "destination": "https://pendientes-ale.vercel.app/", "permanent": false },
+    { "source": "/pendientes/(.*)", "destination": "https://pendientes-ale.vercel.app/$1", "permanent": false }
+  ]
+}
