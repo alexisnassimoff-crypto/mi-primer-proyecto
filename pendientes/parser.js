@@ -111,9 +111,19 @@
     function setDate(d) { if (!dateObj && d) dateObj = d; }
     function setTime(h, m) { h = Number(h); m = Number(m || 0); if (timeObj || h > 23 || m > 59) return false; timeObj = { h: h, m: m }; return true; }
 
-    /* 1. invitados: mails sueltos y @nombre */
-    take(/(^|\s)([\w.+-]+@[\w-]+(?:\.[\w-]+)+)(?=[\s,;]|$)/g, function (m, pre, mail) { r.invitees.push(mail); return pre; });
-    take(/(^|\s)@([^\s@,;]+)/g, function (m, pre, name) { r.invitees.push(name.replace(/[.,;:]+$/, '')); return pre; });
+    /* 1. invitados: mails sueltos y @nombre.
+       Si la mención es parte de la frase ("Cena con @juli y @ana"), el nombre queda en el título. */
+    var CONECTOR = /(?:^|\s)(con|y|e|a|al|para|de|del)$/i;
+    var enFrase = function (str, offset) { return CONECTOR.test(str.slice(0, offset).replace(/\s+$/, '')); };
+    take(/(^|\s)@?([\w.+-]+@[\w-]+(?:\.[\w-]+)+)(?=[\s,;]|$)/g, function (m, pre, mail, offset, str) {
+      r.invitees.push(mail);
+      return enFrase(str, offset) ? pre + mail : pre;
+    });
+    take(/(^|\s)@([^\s@,;]+)/g, function (m, pre, name, offset, str) {
+      name = name.replace(/[.,;:]+$/, '');
+      r.invitees.push(name);
+      return enFrase(str, offset) ? pre + name.charAt(0).toUpperCase() + name.slice(1) : pre;
+    });
 
     /* 2. #tema */
     take(/(^|\s)#([^\s#,;]+)/g, function (m, pre, tag) {

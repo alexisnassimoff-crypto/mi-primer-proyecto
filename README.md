@@ -46,7 +46,7 @@ Recordar sacar la basura todos los lunes !0
 | Tema | `#central`, `#casa`, `#gastos`… (si no se indica, lo deduce del texto) |
 | Alerta | `!15m`, `!1h`, `!1d`, `!0` (en el momento), `!no`; se puede poner una segunda |
 | Duración | `~45m`, `dura 2h`, `(1h)` |
-| Invitados | `@matias`, o un mail suelto |
+| Invitados | `@matias`, o un mail suelto; si va dentro de la frase («Cena con @juli y @ana») el nombre queda en el título |
 | Monto | `$185.000`, `5 lucas`, `3000 pesos` |
 | Otros | `urgente` (prioridad), `todos los lunes` / `cada mes` (repetición), `recordar …` (recordatorio) |
 
