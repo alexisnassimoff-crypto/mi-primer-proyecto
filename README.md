@@ -9,6 +9,8 @@ css/styles.css        diseño (tokens de color al inicio del archivo)
 css/fonts.css         tipografías auto-hospedadas
 js/main.js            interacciones + armado de los links de WhatsApp
 assets/               imágenes, íconos y tipografías
+pendientes/           dashboard personal de pendientes (ver más abajo)
+api/ics.js            función de Vercel que sirve eventos .ics para el dashboard
 ```
 
 ## Verlo localmente
@@ -20,6 +22,59 @@ python3 -m http.server 8000
 
 > Conviene levantar un servidor en vez de abrir `index.html` con doble clic: por
 > seguridad, los navegadores bloquean las tipografías cuando se usa `file://`.
+
+---
+
+## Pendientes — dashboard personal (`/pendientes/`)
+
+App aparte, en la misma web, para organizar pendientes por tema (Central, Familia, La casa,
+Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al calendario del
+iPhone con alerta e invitados. Pensada para el teléfono: la carga rápida está abajo, al alcance
+del pulgar, y entiende castellano:
+
+```
+Llamar a Matías mañana 10:00 #central !30m
+Pagar expensas el 10 $185.000
+Cena con Juli viernes a la noche
+Reunión con Miguel el martes de 10 a 11:30 en la oficina miguel@mail.com
+Recordar sacar la basura todos los lunes !0
+```
+
+| Qué | Cómo se escribe |
+|---|---|
+| Fecha | `hoy`, `mañana`, `pasado mañana`, `el viernes`, `próximo lunes`, `15/10`, `3 nov`, `en 3 días`, `semana que viene`, `el 20` |
+| Hora | `10:00`, `9hs`, `a las 3 de la tarde`, `a la noche`, `de 10 a 11:30`, `en 2 horas` |
+| Tema | `#central`, `#casa`, `#gastos`… (si no se indica, lo deduce del texto) |
+| Alerta | `!15m`, `!1h`, `!1d`, `!0` (en el momento), `!no`; se puede poner una segunda |
+| Duración | `~45m`, `dura 2h`, `(1h)` |
+| Invitados | `@matias`, o un mail suelto |
+| Monto | `$185.000`, `5 lucas`, `3000 pesos` |
+| Otros | `urgente` (prioridad), `todos los lunes` / `cada mes` (repetición), `recordar …` (recordatorio) |
+
+```
+pendientes/index.html       estructura
+pendientes/app.css          diseño (tokens de color al inicio, claro y oscuro)
+pendientes/app.js           la app: tablero, agenda, hoja de edición, ajustes
+pendientes/parser.js        carga rápida en castellano
+pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
+pendientes/sw.js            abre sin conexión
+api/ics.js                  función de Vercel: sirve un evento como text/calendar
+```
+
+**Calendario.** Cada pendiente con fecha tiene «Agregar al iPhone»: en Vercel es un link a
+`/api/ics?...` que Safari abre con la vista nativa de Calendario (un toque y «Añadir»), con la
+alerta (`VALARM`), los invitados con mail (`ATTENDEE`), la repetición (`RRULE`) y el lugar. Si el
+API no existe (otro hosting o servidor local) se descarga el `.ics`. También hay link a Google
+Calendar (manda la invitación formal si hay mails), invitación por WhatsApp o Mail con el detalle
+y un link para que la otra persona lo agregue a su calendario, y «Mandar toda la agenda al
+calendario» en Ajustes, que importa todos los pendientes con fecha de una vez.
+
+**Datos.** Todo se guarda en `localStorage` del dispositivo; no hay cuenta ni servidor. En Ajustes
+hay respaldo (`.json`) y restauración. Para tenerla como app en el iPhone: Safari → Compartir →
+«Agregar a inicio».
+
+**Verlo localmente:** el mismo `python3 -m http.server 8000` de arriba y abrir
+`http://localhost:8000/pendientes/`. Para probar el API hace falta `vercel dev` (o el deploy).
 
 ---
 
