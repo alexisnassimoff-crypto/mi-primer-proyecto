@@ -26,10 +26,23 @@ python3 -m http.server 8000
 
 ## Pendientes — dashboard personal (carpeta `pendientes/`)
 
-App aparte, con su propia dirección, para organizar pendientes por tema (Central, Familia, La casa,
-Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al calendario del
-iPhone con alerta e invitados. Pensada para el teléfono: la carga rápida está abajo, al alcance
-del pulgar, y entiende castellano:
+App aparte, con su propia dirección, para organizar pendientes por tema (Central, Familia,
+La casa, Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al
+calendario del iPhone con aviso e invitados.
+
+Pensada para el teléfono y para no marear:
+
+- **Inicio** muestra solo lo de hoy (y lo atrasado) y los temas como botones grandes. Cada tema se
+  abre en su propia pantalla; **Agenda** ordena todo por día.
+- **Nuevo** pregunta de a una cosa: qué, tema, cuándo, hora y aviso. Lo demás (repetir, con quién,
+  dónde, monto, importante, notas) queda guardado en «Más opciones». Se puede guardar en cualquier
+  paso.
+- Cada pendiente abre una **ficha** con acciones claras: marcar hecho, agregar al Calendario,
+  invitar, editar y eliminar.
+- Accesible: botones grandes con texto, contraste AA en claro y oscuro, la letra sigue el tamaño
+  elegido en el iPhone y el gesto de volver funciona.
+
+Si en la frase ya decís el día, la hora o el aviso, los entiende y se saltea esas preguntas:
 
 ```
 Llamar a Matías mañana 10:00 #central !30m
@@ -46,19 +59,21 @@ Recordar sacar la basura todos los lunes !0
 | Tema | `#central`, `#casa`, `#gastos`… (si no se indica, lo deduce del texto) |
 | Alerta | `!15m`, `!1h`, `!1d`, `!0` (en el momento), `!no`; se puede poner una segunda |
 | Duración | `~45m`, `dura 2h`, `(1h)` |
-| Invitados | `@matias`, o un mail suelto |
+| Invitados | `@matias`, o un mail suelto; si va dentro de la frase («Cena con @juli y @ana») el nombre queda en el título |
 | Monto | `$185.000`, `5 lucas`, `3000 pesos` |
 | Otros | `urgente` (prioridad), `todos los lunes` / `cada mes` (repetición), `recordar …` (recordatorio) |
 
 ```
 pendientes/index.html       estructura
 pendientes/app.css          diseño (tokens de color al inicio, claro y oscuro)
-pendientes/app.js           la app: tablero, agenda, hoja de edición, ajustes
-pendientes/parser.js        carga rápida en castellano
+pendientes/app.js           la app: inicio, temas, agenda, ficha, formulario paso a paso y ajustes
+pendientes/parser.js        entiende frases en castellano (fechas, horas, avisos, montos)
 pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
 pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)
 pendientes/api/ics.js       función de Vercel: sirve un evento como text/calendar
+pendientes/api/datos.js     función de Vercel: lee y guarda en Airtable (el único que conoce el token)
+pendientes/vercel.json      le da hasta 30 s a la función de Airtable
 ```
 
 **Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
@@ -74,9 +89,27 @@ Calendar (manda la invitación formal si hay mails), invitación por WhatsApp o 
 y un link para que la otra persona lo agregue a su calendario, y «Mandar toda la agenda al
 calendario» en Ajustes, que importa todos los pendientes con fecha de una vez.
 
-**Datos.** Todo se guarda en `localStorage` del dispositivo; no hay cuenta ni servidor. En Ajustes
-hay respaldo (`.json`) y restauración. Para tenerla como app en el iPhone: Safari → Compartir →
-«Agregar a inicio».
+**Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
+conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base
+«Pendientes» (tablas *Pendientes*, *Temas* y *Ajustes*) y se trae lo que cambió en otros equipos.
+Lo que se edita o se agrega directo en Airtable también llega a la app (un tema nuevo escrito ahí se
+crea solo), y borrar en la app marca «Eliminado» en vez de borrar la fila: nada se pierde. En
+Ajustes también hay copia local (`.json`) y restauración. Para tenerla como app en el iPhone:
+Safari → Compartir → «Agregar a inicio».
+
+**Configurar el respaldo en Airtable** (una sola vez):
+
+1. En https://airtable.com/create/tokens crear un token con los permisos `data.records:read` y
+   `data.records:write`, con acceso solo a la base «Pendientes».
+2. En Vercel, proyecto `pendientes-ale` → Settings → Environment Variables, agregar
+   `AIRTABLE_TOKEN` (el token) y `PENDIENTES_CLAVE` (una clave a elección, de 8 caracteres o más).
+3. Volver a publicar (un merge o «Redeploy»).
+4. En cada equipo: Ajustes → Respaldo en Airtable → escribir la clave → Conectar. La primera vez
+   sube todo lo que había en ese equipo.
+
+La base está en `applYsT94l8k9pbu4`; para usar otra con la misma estructura, definir
+`AIRTABLE_BASE_ID`. Las tablas y columnas se leen por su id, así que se pueden renombrar en Airtable
+sin romper nada.
 
 **Verlo localmente:** el mismo `python3 -m http.server 8000` de arriba y abrir
 `http://localhost:8000/pendientes/`. Para probar el API hace falta `cd pendientes && vercel dev`
