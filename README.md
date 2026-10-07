@@ -72,6 +72,8 @@ pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
 pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)
 pendientes/api/ics.js       función de Vercel: sirve un evento como text/calendar
+pendientes/api/datos.js     función de Vercel: lee y guarda en Airtable (el único que conoce el token)
+pendientes/vercel.json      le da hasta 30 s a la función de Airtable
 ```
 
 **Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
@@ -87,9 +89,27 @@ Calendar (manda la invitación formal si hay mails), invitación por WhatsApp o 
 y un link para que la otra persona lo agregue a su calendario, y «Mandar toda la agenda al
 calendario» en Ajustes, que importa todos los pendientes con fecha de una vez.
 
-**Datos.** Todo se guarda en `localStorage` del dispositivo; no hay cuenta ni servidor. En Ajustes
-hay respaldo (`.json`) y restauración. Para tenerla como app en el iPhone: Safari → Compartir →
-«Agregar a inicio».
+**Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
+conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base
+«Pendientes» (tablas *Pendientes*, *Temas* y *Ajustes*) y se trae lo que cambió en otros equipos.
+Lo que se edita o se agrega directo en Airtable también llega a la app (un tema nuevo escrito ahí se
+crea solo), y borrar en la app marca «Eliminado» en vez de borrar la fila: nada se pierde. En
+Ajustes también hay copia local (`.json`) y restauración. Para tenerla como app en el iPhone:
+Safari → Compartir → «Agregar a inicio».
+
+**Configurar el respaldo en Airtable** (una sola vez):
+
+1. En https://airtable.com/create/tokens crear un token con los permisos `data.records:read` y
+   `data.records:write`, con acceso solo a la base «Pendientes».
+2. En Vercel, proyecto `pendientes-ale` → Settings → Environment Variables, agregar
+   `AIRTABLE_TOKEN` (el token) y `PENDIENTES_CLAVE` (una clave a elección, de 8 caracteres o más).
+3. Volver a publicar (un merge o «Redeploy»).
+4. En cada equipo: Ajustes → Respaldo en Airtable → escribir la clave → Conectar. La primera vez
+   sube todo lo que había en ese equipo.
+
+La base está en `applYsT94l8k9pbu4`; para usar otra con la misma estructura, definir
+`AIRTABLE_BASE_ID`. Las tablas y columnas se leen por su id, así que se pueden renombrar en Airtable
+sin romper nada.
 
 **Verlo localmente:** el mismo `python3 -m http.server 8000` de arriba y abrir
 `http://localhost:8000/pendientes/`. Para probar el API hace falta `cd pendientes && vercel dev`

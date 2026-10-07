@@ -62,6 +62,9 @@ const ICONS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   eye: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  cloudOk: '<path d="m17 15-5.5 5.5L9 18"/><path d="M5 17.743A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.742"/>',
+  cloudOff: '<path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/>',
   /* íconos de temas */
   tag: '<path d="M3.5 11.5V4.5h7l9 9-7 7z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
   briefcase: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/>',
@@ -124,14 +127,19 @@ function load() {
   /* los temas de fábrica reciben alias y palabras clave al día; lo que editaste se respeta */
   s.topics = mine.map(t => { const d = DEFAULT_TOPICS.find(x => x.id === t.id); return d ? Object.assign({}, t, { aliases: d.aliases, keywords: d.keywords }) : t; });
   if (!s.topics.some(t => t.id === 'otros')) s.topics.push(clone(DEFAULT_TOPICS[DEFAULT_TOPICS.length - 1]));
+  /* respaldo en Airtable: borrados pendientes de avisar y marcas de versión */
+  s.tombs = Array.isArray(s.tombs) ? s.tombs : [];
+  s.topicTombs = Array.isArray(s.topicTombs) ? s.topicTombs : [];
+  ['topicsAt', 'topicsSy', 'settingsAt', 'settingsSy'].forEach(k => { s[k] = Number(s[k]) || 0; });
+  s.items.forEach(it => { if (!it.updatedAt) it.updatedAt = it.createdAt || Date.now(); });
   return s;
 }
 let state = load();
 let saveTimer = null;
-function save() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { toast('No se pudo guardar en este navegador'); } }, 40);
-}
+function writeLocal() { try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { toast('No se pudo guardar en este navegador'); } }
+function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(writeLocal, 40); }
+/* cada cambio se guarda en el equipo y, si está conectado, se sube a Airtable */
+function save() { persist(); schedulePush(); }
 const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false };
 
 /* ---------- pendientes ---------- */
@@ -274,16 +282,21 @@ function toggleDone(id) {
   const it = byId(id); if (!it) return;
   if (!it.done && it.repeat && it.repeat !== 'none' && it.date) {
     const prev = it.date; it.date = nextOccurrence(it.date, it.repeat); it.updatedAt = Date.now(); save(); render();
-    toast('Hecho. Vuelve ' + whenLabel(it).toLowerCase(), [{ label: 'Deshacer', fn: () => { it.date = prev; save(); render(); } }]);
+    toast('Hecho. Vuelve ' + whenLabel(it).toLowerCase(), [{ label: 'Deshacer', fn: () => { it.date = prev; it.updatedAt = Date.now(); save(); render(); } }]);
     return;
   }
   it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); render();
-  toast(it.done ? 'Hecho' : 'Volvió a pendientes', [{ label: 'Deshacer', fn: () => { it.done = !it.done; it.doneAt = it.done ? Date.now() : null; save(); render(); } }]);
+  toast(it.done ? 'Hecho' : 'Volvió a pendientes', [{ label: 'Deshacer', fn: () => { it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); render(); } }]);
 }
 function removeItem(id) {
   const idx = state.items.findIndex(x => x.id === id); if (idx < 0) return;
-  const it = state.items[idx]; state.items.splice(idx, 1); save(); render();
-  toast('Eliminado', [{ label: 'Deshacer', fn: () => { state.items.splice(Math.min(idx, state.items.length), 0, it); save(); render(); } }]);
+  const it = state.items[idx]; state.items.splice(idx, 1);
+  if (it._sy || it._rid) state.tombs.push({ id: it.id, rid: it._rid || null, at: Date.now() });
+  save(); render();
+  toast('Eliminado', [{ label: 'Deshacer', fn: () => {
+    state.tombs = state.tombs.filter(t => t.id !== it.id); it.updatedAt = Date.now();
+    state.items.splice(Math.min(idx, state.items.length), 0, it); save(); render();
+  } }]);
 }
 function loadSamples() {
   const t = fromYmd(todayStr()), dow = t.getDay();
@@ -720,6 +733,8 @@ function renderTopicEditor() {
 function renderSettings() {
   const s = state.settings, sel = (id, pairs, v) => `<select id="${id}">${pairs.map(p => `<option value="${esc(p[0])}"${String(v) === p[0] ? ' selected' : ''}>${esc(p[1])}</option>`).join('')}</select>`;
   $('#settingsBody').innerHTML =
+    `<details class="set" id="setSync"${sync.on ? '' : ' open'}><summary><span>Respaldo en Airtable</span><span class="set__end"><small id="syncSum"></small>${icon('chevR')}</span></summary>` +
+      `<div class="set__body" id="syncBox"></div></details>` +
     `<details class="set"><summary>Tu nombre y mail ${icon('chevR')}</summary><div class="set__body">` +
       `<p class="set__note">Aparecen en las invitaciones que mandás.</p>` +
       `<label class="field" for="s_name"><span class="field__l">Nombre</span><input id="s_name" type="text" autocomplete="name" value="${esc(s.name)}"></label>` +
@@ -731,7 +746,7 @@ function renderSettings() {
     `<details class="set"><summary>Temas ${icon('chevR')}</summary><div class="set__body"><div class="tedit" id="topicEditor"></div>` +
       `<button type="button" class="btn btn--secondary btn--block" data-act="s-add-topic">${icon('plus')}Agregar tema</button></div></details>` +
     `<details class="set"><summary>Copia de seguridad ${icon('chevR')}</summary><div class="set__body">` +
-      `<p class="set__note">Tus pendientes se guardan solo en este teléfono. Bajá una copia cada tanto.</p>` +
+      `<p class="set__note">${sync.on ? 'Además de Airtable, podés bajar una copia a este equipo.' : 'Sin Airtable, tus pendientes se guardan solo en este equipo. Bajá una copia cada tanto.'}</p>` +
       `<button type="button" class="btn btn--secondary btn--block" data-act="s-backup">Bajar copia</button>` +
       `<button type="button" class="btn btn--secondary btn--block" data-act="s-restore">Restaurar una copia</button></div></details>` +
     `<div class="set set--row"><span id="themeLabel">Apariencia</span><div class="seg3" role="radiogroup" aria-labelledby="themeLabel">` +
@@ -743,7 +758,9 @@ function renderSettings() {
       `<p>Al escribir podés decir el día y la hora, por ejemplo «mañana 10 hs» o «el viernes». Lo entiendo solo.</p>` +
       `<p>«Agregar al Calendario» abre el evento en el Calendario del iPhone. Ahí tocá «Añadir».</p></div></details>`;
   renderTopicEditor();
+  renderSyncUi();
 }
+function openSettings() { renderSettings(); const dlg = $('#settingsSheet'); openSheet(dlg); dlg.querySelector('.sheet__body').scrollTop = 0; }
 function exportJson() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob), a = document.createElement('a');
@@ -757,9 +774,14 @@ function importJson(file) {
       const inc = JSON.parse(r.result);
       if (!inc || !Array.isArray(inc.items)) throw new Error('formato');
       let added = 0, updated = 0;
-      inc.items.forEach(x => { if (!x || !x.id) return; const cur = byId(x.id); if (!cur) { state.items.push(x); added++; } else if ((x.updatedAt || 0) > (cur.updatedAt || 0)) { Object.assign(cur, x); updated++; } });
-      (inc.topics || []).forEach(t => { if (t && t.id && !state.topics.some(x => x.id === t.id)) state.topics.splice(state.topics.length - 1, 0, t); });
-      if (inc.settings) state.settings = Object.assign({}, state.settings, inc.settings);
+      inc.items.forEach(x => {
+        if (!x || !x.id) return;
+        x = Object.assign({}, x); delete x._rid; delete x._sy; delete x._h;
+        const cur = byId(x.id);
+        if (!cur) { state.items.push(x); added++; } else if ((x.updatedAt || 0) > (cur.updatedAt || 0)) { Object.assign(cur, x); updated++; }
+      });
+      (inc.topics || []).forEach(t => { if (t && t.id && !state.topics.some(x => x.id === t.id)) { state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = Date.now(); } });
+      if (inc.settings) { state.settings = Object.assign({}, state.settings, inc.settings); state.settingsAt = Date.now(); }
       (inc.people || []).forEach(p => { if (state.people.indexOf(p) < 0) state.people.push(p); });
       (inc.places || []).forEach(p => { if (state.places.indexOf(p) < 0) state.places.push(p); });
       save(); applyTheme(); render(); renderSettings();
@@ -794,6 +816,343 @@ function toast(msg, actions) {
     if (e.target.closest('a,button')) hideToast();
   };
   clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, actions.length ? 7000 : 3200);
+}
+
+/* ---------- respaldo en Airtable ----------
+   La app funciona igual sin conexión: guarda en el equipo y, si hay una clave
+   cargada, sube los cambios a Airtable por /api/datos y trae lo que cambió en
+   otros equipos o directo en Airtable. Borrar marca «Eliminado» allá: nada se pierde. */
+const AT = {
+  P: { title: 'fldVqlQXUIo36pwsU', topic: 'flds27Xib9Jbp7dkU', date: 'fldRngZ81kaRtQKbG', time: 'fldHSu8o5XCImjjcK', alert: 'flduyt78y4M9AbxiI', done: 'fldfOXlWFqvpWhikD',
+    priority: 'fldPjnQxvnBFlxTXM', invitees: 'fldmlYSz5CcdNSr8z', location: 'fldFoBIyvvMgp1xwj', amount: 'fldvptWi7fY15llDM', repeat: 'fldiCbBIA4OqVyWPE', alert2: 'fldYGiyBaNtcRsQzx',
+    duration: 'fldv4jtCFzWcoIBC8', kind: 'fldCoQgl4RQLh0vPK', notes: 'fldFF42PIs7dskId2', doneAt: 'fldAsjiJoqruDIYSR', deleted: 'fldDxv1f2ywstDGBF', id: 'fldnfppQNHeaSDQBV',
+    createdAt: 'fldCfbOGQLxyHCzAI', updatedAt: 'fldK4xIXixg7WKSKM' },
+  T: { name: 'fldqaHlO4Mr9JRzFp', color: 'fldWEsqfWfJqYwxzQ', icon: 'fldUCZN31ZBKBzAzI', order: 'fldUkwzJBobHikxlD', hidden: 'fldJyJI023qSEBWn0', deleted: 'fldZwU0l5YdPmDSnn', id: 'fldX75YeraK8JBpdR', updatedAt: 'fldQi2sW6mD3EJlZx' },
+  A: { key: 'fldstgTm03EQOalcw', value: 'fldxCu4LteLCoAW1W', updatedAt: 'fldDu7pTNb9iNeThq' }
+};
+const REPEAT_AT = { daily: 'Todos los días', weekly: 'Todas las semanas', monthly: 'Todos los meses', yearly: 'Todos los años' };
+const KIND_AT = { tarea: 'Tarea', reunion: 'Reunión', recordatorio: 'Recordatorio' };
+const HASH_KEYS = ['title', 'topic', 'date', 'time', 'alert', 'alert2', 'done', 'priority', 'invitees', 'location', 'amount', 'repeat', 'duration', 'kind', 'notes'];
+const NUM_WORDS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, diez: 10, quince: 15, veinte: 20, treinta: 30 };
+const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia';
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
+const iso = ms => (ms ? new Date(ms).toISOString() : null);
+const sync = { on: !!lsGet(CLAVE_KEY), busy: false, again: null, last: Number(lsGet(LAST_KEY)) || 0, pulled: 0, err: null, timer: null };
+
+/* Huella de lo que importa de un registro: si cambia, alguien lo editó allá */
+function recHash(f) { return HASH_KEYS.map(k => { const v = f[AT.P[k]]; return v === undefined || v === null || v === false || v === '' ? '' : String(v); }).join('\u0001'); }
+/* «15 min antes», «1 hora antes», «El día anterior a las 9»… → minutos como los guarda la app */
+function parseAlertText(s, timed) {
+  const t = Parser.plain(String(s == null ? '' : s)).replace(/\s+/g, ' ').trim();
+  if (!t) return undefined;
+  if (/^(sin aviso|no|no avisar|ninguno|nada|-)$/.test(t)) return null;
+  const ad = ALERTS_ALLDAY.find(o => o[0] !== '' && Parser.plain(o[1]) === t);
+  if (ad) { const v = Number(ad[0]); return timed ? ({ '900': 1440, '2340': 2880, '9540': 10080 })[String(v)] : v; }
+  if (/en el momento|a la hora/.test(t)) return timed ? 0 : -540;
+  if (/^(ese|el mismo) dia/.test(t)) return timed ? undefined : -540;
+  if (/(dia anterior|el dia antes)/.test(t) && !/\d/.test(t)) return timed ? 1440 : 900;
+  if (/despues/.test(t)) return undefined;
+  const m = /(\d+(?:[.,]\d+)?|un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|diez|quince|veinte|treinta)\s*(m|min|mins|minuto|minutos|h|hs|hora|horas|d|dia|dias|semana|semanas)\b/.exec(t);
+  const n = m ? (isNaN(m[1].replace(',', '.')) ? NUM_WORDS[m[1]] : Number(m[1].replace(',', '.'))) : (/^\d+$/.test(t) ? Number(t) : NaN);
+  if (isNaN(n)) return undefined;
+  const u = m ? m[2] : 'min';
+  const mins = Math.round(/^m/.test(u) ? n : /^h/.test(u) ? n * 60 : /^d/.test(u) ? n * 1440 : n * 10080);
+  return timed ? mins : toAllDayAlert(mins);
+}
+/* Tema por nombre; si escribiste uno nuevo en Airtable, se crea */
+function topicIdFromName(name) {
+  const raw = String(name || '').trim(), n = Parser.plain(raw);
+  if (!n) return 'otros';
+  const t = state.topics.find(x => Parser.plain(x.name) === n) || state.topics.find(x => (x.aliases || []).some(a => Parser.plain(a) === n)) || state.topics.find(x => x.id === n);
+  if (t) return t.id;
+  const nt = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: raw.slice(0, 40), color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
+  const otros = state.topics.findIndex(x => x.id === 'otros');
+  state.topics.splice(otros < 0 ? state.topics.length : otros, 0, nt);
+  state.topicsAt = Date.now();
+  return nt.id;
+}
+function itemFields(it) {
+  const P = AT.P, f = {}, dated = !!it.date, timed = dated && !!it.time;
+  f[P.title] = it.title || 'Sin título';
+  f[P.topic] = topicOf(it.topic).name;
+  f[P.date] = dated ? it.date : null;
+  f[P.time] = timed ? it.time : '';
+  f[P.alert] = dated ? alertLabelFor(it.alert, !timed) : '';
+  f[P.alert2] = dated && it.alert2 !== null && it.alert2 !== undefined ? alertLabelFor(it.alert2, !timed) : '';
+  f[P.done] = !!it.done;
+  f[P.priority] = !!it.priority;
+  f[P.invitees] = (it.invitees || []).join(', ');
+  f[P.location] = it.location || '';
+  f[P.amount] = typeof it.amount === 'number' && isFinite(it.amount) ? it.amount : null;
+  f[P.repeat] = dated && REPEAT_AT[it.repeat] ? REPEAT_AT[it.repeat] : null;
+  f[P.duration] = timed && it.duration ? Number(it.duration) : null;
+  f[P.kind] = KIND_AT[it.kind] || 'Tarea';
+  f[P.notes] = it.notes || '';
+  f[P.doneAt] = it.done && it.doneAt ? iso(it.doneAt) : null;
+  f[P.deleted] = false;
+  f[P.id] = it.id;
+  f[P.createdAt] = iso(it.createdAt || Date.now());
+  f[P.updatedAt] = iso(it.updatedAt || Date.now());
+  return f;
+}
+function itemFromRecord(r, base) {
+  const P = AT.P, f = r.fields || {};
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(f[P.date] || '')) ? f[P.date] : null;
+  const tm = /^(\d{1,2})[:.](\d{2})/.exec(String(f[P.time] || '').trim());
+  const time = date && tm && +tm[1] < 24 && +tm[2] < 60 ? pad(+tm[1]) + ':' + tm[2] : null;
+  let alert = date ? parseAlertText(f[P.alert], !!time) : null;
+  if (alert === undefined) alert = defaultAlertFor(date, time);
+  let alert2 = date ? parseAlertText(f[P.alert2], !!time) : null;
+  if (alert2 === undefined) alert2 = null;
+  const amount = typeof f[P.amount] === 'number' ? f[P.amount] : (f[P.amount] ? Parser.parseAmount(String(f[P.amount])) : null);
+  return Object.assign({}, base || {}, {
+    id: f[P.id] || (base && base.id) || uid(),
+    title: String(f[P.title] || '').trim() || 'Sin título',
+    topic: topicIdFromName(f[P.topic]),
+    kind: Object.keys(KIND_AT).find(k => KIND_AT[k] === f[P.kind]) || 'tarea',
+    date, time,
+    duration: time ? (Number(f[P.duration]) || null) : null,
+    alert, alert2,
+    repeat: date ? (Object.keys(REPEAT_AT).find(k => REPEAT_AT[k] === f[P.repeat]) || 'none') : 'none',
+    invitees: String(f[P.invitees] || '').split(',').map(x => x.trim()).filter(Boolean),
+    location: String(f[P.location] || '').trim(),
+    amount: amount === null || isNaN(amount) ? null : amount,
+    priority: f[P.priority] ? 1 : 0,
+    notes: String(f[P.notes] || ''),
+    done: !!f[P.done],
+    doneAt: f[P.done] ? (Date.parse(f[P.doneAt]) || (base && base.doneAt) || Date.now()) : null,
+    createdAt: Date.parse(f[P.createdAt]) || Date.parse(r.creado) || (base && base.createdAt) || Date.now(),
+    updatedAt: Date.parse(f[P.updatedAt]) || (base && base.updatedAt) || 0,
+    _rid: r.rid
+  });
+}
+function topicFields(t, i, at) {
+  const T = AT.T, f = {};
+  f[T.name] = t.name; f[T.color] = t.color; f[T.icon] = t.icon; f[T.order] = i; f[T.hidden] = !!t.hidden; f[T.deleted] = false; f[T.id] = t.id; f[T.updatedAt] = iso(at || Date.now());
+  return f;
+}
+const topicsSig = list => JSON.stringify(list.map(t => [t.id, t.name, t.color, t.icon, !!t.hidden]));
+function mergeTopics(rows) {
+  const T = AT.T;
+  state._topicRids = state._topicRids || {};
+  rows.forEach(r => { if (r.fields[T.id]) state._topicRids[r.fields[T.id]] = r.rid; });
+  const live = rows.filter(r => r.fields[T.id] && !r.fields[T.deleted]).sort((a, b) => (a.fields[T.order] || 0) - (b.fields[T.order] || 0));
+  if (!live.length) { if ((state.topicsAt || 0) <= (state.topicsSy || 0)) state.topicsAt = Date.now(); return false; } /* allá no hay: van los de acá */
+  if ((state.topicsAt || 0) > (state.topicsSy || 0) && state.topicsSy) return false;                       /* cambios de acá sin subir: ganan */
+  const rawSig = topicsSig(live.map(r => ({ id: r.fields[T.id], name: r.fields[T.name], color: r.fields[T.color], icon: r.fields[T.icon], hidden: r.fields[T.hidden] })));
+  const remote = live.map(r => {
+    const f = r.fields, id = f[T.id], d = DEFAULT_TOPICS.find(x => x.id === id), cur = state.topics.find(x => x.id === id);
+    return { id, name: String(f[T.name] || '').trim() || (cur && cur.name) || 'Tema', color: /^#[0-9a-f]{6}$/i.test(f[T.color] || '') ? f[T.color] : (cur && cur.color) || '#6B7280',
+      icon: ICONS[f[T.icon]] ? f[T.icon] : (cur && cur.icon) || 'tag', hidden: !!f[T.hidden], aliases: d ? d.aliases : (cur && cur.aliases) || [], keywords: d ? d.keywords : (cur && cur.keywords) || '' };
+  });
+  if (!remote.some(t => t.id === 'otros')) remote.push(clone(DEFAULT_TOPICS[DEFAULT_TOPICS.length - 1]));
+  const now = Math.max(Date.now(), state.topicsAt || 0);
+  const changed = topicsSig(remote) !== topicsSig(state.topics);
+  if (changed) state.topics = remote;
+  state.topicsSy = now;
+  state.topicsAt = topicsSig(remote) !== rawSig ? now + 1 : now; /* hubo que completar o corregir algo: se vuelve a subir */
+  return changed;
+}
+function mergeSettings(rows) {
+  const A = AT.A, row = rows.find(r => r.fields[A.key] === 'ajustes');
+  if (!row) { if ((state.settingsAt || 0) <= (state.settingsSy || 0)) state.settingsAt = Date.now(); return false; }
+  state._settingsRid = row.rid;
+  const at = Date.parse(row.fields[A.updatedAt]) || 0;
+  if ((state.settingsAt || 0) > (state.settingsSy || 0) && state.settingsSy) return false;
+  if (at <= (state.settingsSy || 0)) return false;
+  let v = null;
+  try { v = JSON.parse(row.fields[A.value] || '{}'); } catch (e) { v = null; }
+  if (!v || typeof v !== 'object') return false;
+  ['name', 'email'].forEach(k => { if (typeof v[k] === 'string') state.settings[k] = v[k]; });
+  ['alertTimed', 'alertAllDay', 'meetingDuration'].forEach(k => { if (typeof v[k] === 'number' && isFinite(v[k])) state.settings[k] = v[k]; });
+  state.settingsAt = state.settingsSy = at;
+  return true;
+}
+function mergeItems(rows) {
+  const P = AT.P, seen = new Set(), tombs = new Set(state.tombs.map(t => t.id));
+  let changed = false;
+  rows.forEach(r => {
+    const f = r.fields || {}, id = f[P.id], h = recHash(f), deleted = !!f[P.deleted], rAt = Date.parse(f[P.updatedAt]) || 0;
+    if (!id) {
+      /* cargado directo en Airtable: entra a la app y se le escribe el ID */
+      if (deleted || !String(f[P.title] || '').trim()) return;
+      const it = itemFromRecord(r); it.updatedAt = Date.now(); it._sy = 0; it._h = h;
+      state.items.push(it); seen.add(it.id); changed = true;
+      return;
+    }
+    seen.add(id);
+    if (tombs.has(id)) return;
+    const local = byId(id);
+    if (!local) {
+      if (deleted) return;
+      const it = itemFromRecord(r); it._sy = it.updatedAt; it._h = h;
+      state.items.push(it); changed = true;
+      return;
+    }
+    local._rid = r.rid;
+    const dirty = !local._sy || (local.updatedAt || 0) > local._sy;
+    if (deleted) {
+      if (!dirty || rAt >= (local.updatedAt || 0)) { state.items = state.items.filter(x => x.id !== id); changed = true; }
+      return;
+    }
+    if (h === local._h) return;
+    if (!dirty || rAt > (local.updatedAt || 0)) {
+      const it = itemFromRecord(r, local);
+      it.updatedAt = Math.max(rAt, local.updatedAt || 0); it._sy = it.updatedAt; it._h = h;
+      state.items[state.items.indexOf(local)] = it;
+      changed = true;
+    }
+  });
+  /* estaban guardados en Airtable y ya no están: los borraron allá */
+  state.items.slice().forEach(it => {
+    if (!it._sy || seen.has(it.id)) return;
+    if ((it.updatedAt || 0) > it._sy) { delete it._rid; it._sy = 0; }
+    else { state.items = state.items.filter(x => x !== it); changed = true; }
+  });
+  return changed;
+}
+function mergeRemote(data) {
+  let changed = mergeTopics(data.temas || []);
+  changed = mergeSettings(data.ajustes || []) || changed;
+  changed = mergeItems(data.pendientes || []) || changed;
+  return changed;
+}
+async function api(method, body, keepalive) {
+  let r, j = null;
+  const payload = body ? JSON.stringify(body) : undefined;
+  try {
+    r = await fetch('/api/datos', { method, cache: 'no-store', keepalive: !!(keepalive && payload && payload.length < 60000),
+      headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: payload });
+  } catch (e) { const er = new Error('red'); er.code = 'red'; throw er; }
+  try { j = await r.json(); } catch (e) { j = null; }
+  if (!r.ok || !j) { const er = new Error('api'); er.code = (j && j.error) || (r.status === 404 ? 'sin-api' : 'red'); throw er; }
+  return j;
+}
+async function pushDirty(keepalive) {
+  const P = AT.P, T = AT.T, A = AT.A;
+  const items = state.items.filter(it => !it._sy || (it.updatedAt || 0) > it._sy);
+  const tombs = state.tombs.slice();
+  const topicsAt = state.topicsAt || 0, settingsAt = state.settingsAt || 0;
+  const topicsDirty = topicsAt > (state.topicsSy || 0) || state.topicTombs.length > 0;
+  const settingsDirty = settingsAt > (state.settingsSy || 0);
+  if (!items.length && !tombs.length && !topicsDirty && !settingsDirty) return false;
+  const rows = items.map(it => ({ id: it.id, at: it.updatedAt || 0, row: { rid: it._rid || undefined, fields: itemFields(it) } }))
+    .concat(tombs.map(t => { const f = {}; f[P.id] = t.id; f[P.deleted] = true; f[P.updatedAt] = iso(t.at); return { id: t.id, tomb: true, row: { rid: t.rid || undefined, fields: f } }; }));
+  const temas = [], ajustes = [];
+  if (topicsDirty) {
+    state.topics.forEach((t, i) => temas.push({ rid: state._topicRids && state._topicRids[t.id], fields: topicFields(t, i, topicsAt) }));
+    state.topicTombs.forEach(id => { const f = {}; f[T.id] = id; f[T.deleted] = true; f[T.updatedAt] = iso(topicsAt || Date.now()); temas.push({ rid: state._topicRids && state._topicRids[id], fields: f }); });
+  }
+  if (settingsDirty) {
+    const s = state.settings, f = {};
+    f[A.key] = 'ajustes';
+    f[A.value] = JSON.stringify({ name: s.name, email: s.email, alertTimed: Number(s.alertTimed), alertAllDay: Number(s.alertAllDay), meetingDuration: Number(s.meetingDuration) });
+    f[A.updatedAt] = iso(settingsAt);
+    ajustes.push({ rid: state._settingsRid, fields: f });
+  }
+  const CHUNK = 80;
+  for (let i = 0; i < Math.max(rows.length, 1); i += CHUNK) {
+    const part = rows.slice(i, i + CHUNK), sent = {};
+    part.forEach(x => { if (!x.tomb) sent[x.id] = x.at; });
+    const res = await api('POST', i === 0 ? { temas, ajustes, pendientes: part.map(x => x.row) } : { pendientes: part.map(x => x.row) }, keepalive);
+    (res.pendientes || []).forEach(r => {
+      const f = r.fields || {}, id = f[P.id]; if (!id) return;
+      if (f[P.deleted]) { state.tombs = state.tombs.filter(t => t.id !== id); return; }
+      const it = byId(id); if (!it) return;
+      it._rid = r.rid; it._h = recHash(f);
+      if (sent[id] !== undefined) it._sy = Math.max(it._sy || 0, sent[id]);
+    });
+    if (i === 0) {
+      if (topicsDirty) {
+        state.topicsSy = topicsAt; state.topicTombs = []; state._topicRids = state._topicRids || {};
+        (res.temas || []).forEach(r => { const id = r.fields && r.fields[T.id]; if (id) state._topicRids[id] = r.rid; });
+      }
+      if (settingsDirty) { state.settingsSy = settingsAt; const r = (res.ajustes || [])[0]; if (r) state._settingsRid = r.rid; }
+    }
+    persist();
+  }
+  return true;
+}
+async function runSync(full, keepalive) {
+  if (!sync.on) return;
+  if (sync.busy) { if (full || !sync.again) sync.again = full ? 'full' : 'push'; return; }
+  sync.busy = true; renderSyncUi();
+  try {
+    if (full) {
+      const data = await api('GET');
+      sync.pulled = Date.now();
+      if (mergeRemote(data)) { persist(); render(); if ($('#detailSheet').open) renderDetail(); }
+    }
+    await pushDirty(keepalive);
+    sync.last = Date.now(); lsSet(LAST_KEY, String(sync.last)); sync.err = null;
+  } catch (e) {
+    sync.err = e && e.code ? e.code : 'red';
+    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); }
+  } finally {
+    sync.busy = false; renderSyncUi();
+    const again = sync.again; sync.again = null;
+    if (again && sync.on) setTimeout(() => runSync(again === 'full'), 400);
+  }
+}
+function schedulePush() {
+  if (!sync.on) return;
+  clearTimeout(sync.timer);
+  sync.timer = setTimeout(() => { sync.timer = null; runSync(false); }, 1500);
+}
+function syncErrorText(code) {
+  return ({
+    'clave': 'La clave no coincide.',
+    'sin-configurar': 'Falta terminar la configuración en Vercel.',
+    'token': 'Airtable no acepta el token. Revisá que tenga permiso sobre la base Pendientes.',
+    'base': 'No encuentro la base Pendientes en Airtable.',
+    'campos': 'Cambió la estructura de la base y no puedo guardar.',
+    'limite': 'Airtable pidió una pausa. Vuelvo a intentar en un rato.',
+    'sin-api': 'Esta dirección no tiene la conexión con Airtable.'
+  })[code] || 'Sin conexión. Guardo apenas vuelva.';
+}
+function agoText(ms) {
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 60) return 'hace un momento';
+  if (s < 3600) return 'hace ' + Math.round(s / 60) + ' min';
+  if (s < 86400) return 'hace ' + Math.round(s / 3600) + ' h';
+  const d = new Date(ms);
+  return 'el ' + d.getDate() + '/' + (d.getMonth() + 1) + ' a las ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+const syncState = () => (!sync.on ? 'off' : sync.busy ? 'busy' : sync.err ? 'err' : 'ok');
+function syncBoxHtml() {
+  if (!sync.on) {
+    return `<p class="set__note">Guardá todo en tu Airtable: no se pierde nada y lo ves igual en el teléfono y en la compu.</p>` +
+      `<label class="field" for="s_clave"><span class="field__l">Clave</span><input id="s_clave" type="password" autocomplete="current-password" enterkeyhint="go"></label>` +
+      (sync.err ? `<p class="form-err" role="alert">${esc(syncErrorText(sync.err))}</p>` : '') +
+      `<button type="button" class="btn btn--primary btn--block" data-act="s-connect">Conectar</button>`;
+  }
+  const st = syncState();
+  const msg = st === 'busy' ? 'Guardando en Airtable…' : st === 'err' ? syncErrorText(sync.err) : sync.last ? 'Todo guardado en Airtable ' + agoText(sync.last) + '.' : 'Conectado a Airtable.';
+  return `<p class="sync-status is-${st}" role="status">${icon(st === 'err' ? 'cloudOff' : st === 'ok' ? 'cloudOk' : 'cloud')}<span>${esc(msg)}</span></p>` +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="s-sync"${st === 'busy' ? ' disabled' : ''}>Sincronizar ahora</button>` +
+    `<button type="button" class="btn btn--danger btn--block" data-act="s-disconnect">Desconectar este equipo</button>`;
+}
+function renderSyncUi() {
+  const st = syncState(), b = $('#btnSync');
+  if (b) {
+    b.hidden = st === 'off';
+    b.className = 'icon-btn sync-btn is-' + st;
+    const label = st === 'err' ? 'Respaldo en Airtable: ' + syncErrorText(sync.err) : st === 'busy' ? 'Guardando en Airtable' : 'Respaldo en Airtable al día';
+    b.innerHTML = icon(st === 'err' ? 'cloudOff' : st === 'ok' ? 'cloudOk' : 'cloud');
+    b.setAttribute('aria-label', label); b.title = label;
+  }
+  const box = $('#syncBox');
+  if (box && !(document.activeElement && document.activeElement.id === 's_clave')) box.innerHTML = syncBoxHtml();
+  const sum = $('#syncSum');
+  if (sum) sum.textContent = st === 'off' ? 'Sin conectar' : st === 'busy' ? 'Guardando…' : st === 'err' ? 'Revisar' : 'Al día';
+}
+function connectSync() {
+  const inp = $('#s_clave'), v = inp ? inp.value.trim() : '';
+  if (!v) { if (inp) inp.focus(); return; }
+  if (inp) inp.blur();
+  lsSet(CLAVE_KEY, v); sync.on = true; sync.err = null; renderSyncUi();
+  return runSync(true).then(() => { if (sync.on && !sync.err) toast('Conectado: tus pendientes quedan guardados en Airtable'); });
 }
 
 /* ---------- eventos ---------- */
@@ -850,21 +1209,25 @@ function bind() {
       case 's-theme': state.settings.theme = a.dataset.value; save(); applyTheme(); $$('[data-act="s-theme"]').forEach(b => b.setAttribute('aria-checked', String(b === a))); return;
       case 's-add-topic': {
         const t = { id: 't' + Date.now().toString(36), name: 'Nuevo tema', color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
-        state.topics.splice(state.topics.length - 1, 0, t); save(); renderTopicEditor(); render();
+        state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = Date.now(); save(); renderTopicEditor(); render();
         const inp = $(`#topicEditor .trow[data-id="${t.id}"] [data-f="name"]`); if (inp) { inp.focus(); inp.select(); }
         return;
       }
-      case 't-hide': { const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (t) { t.hidden = !t.hidden; save(); renderTopicEditor(); render(); } return; }
+      case 't-hide': { const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (t) { t.hidden = !t.hidden; state.topicsAt = Date.now(); save(); renderTopicEditor(); render(); } return; }
       case 't-del': {
         const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (!t) return;
         if (a.dataset.confirm !== '1') { a.dataset.confirm = '1'; a.innerHTML = '<span style="font-size:.8125rem;font-weight:700">¿Seguro?</span>'; setTimeout(() => { if (a.isConnected) { a.dataset.confirm = ''; a.innerHTML = icon('trash'); } }, 3000); return; }
         const n = state.items.filter(it => it.topic === t.id).length;
-        state.items.forEach(it => { if (it.topic === t.id) it.topic = 'otros'; });
+        state.items.forEach(it => { if (it.topic === t.id) { it.topic = 'otros'; it.updatedAt = Date.now(); } });
         state.topics = state.topics.filter(x => x.id !== t.id);
+        state.topicsAt = Date.now(); state.topicTombs.push(t.id);
         if (ui.view === 'tema' && ui.topicId === t.id) goBack();
         save(); renderTopicEditor(); render(); toast('Tema eliminado' + (n ? '. Sus pendientes pasaron a Otros' : ''));
         return;
       }
+      case 's-connect': connectSync(); return;
+      case 's-sync': runSync(true); return;
+      case 's-disconnect': lsSet(CLAVE_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); toast('Este equipo ya no guarda en Airtable'); return;
       case 's-backup': exportJson(); return;
       case 's-restore': $('#importFile').click(); return;
       case 's-export': {
@@ -874,15 +1237,21 @@ function bind() {
       }
       case 's-clear': {
         const gone = state.items.filter(it => it.done); if (!gone.length) { toast('No hay hechas para borrar'); return; }
-        state.items = state.items.filter(it => !it.done); save(); render();
-        toast('Borré ' + plural(gone.length, 'hecha', 'hechas'), [{ label: 'Deshacer', fn: () => { state.items = state.items.concat(gone); save(); render(); } }]);
+        state.items = state.items.filter(it => !it.done);
+        const at = Date.now(); gone.forEach(it => { if (it._sy || it._rid) state.tombs.push({ id: it.id, rid: it._rid || null, at }); });
+        save(); render();
+        toast('Borré ' + plural(gone.length, 'hecha', 'hechas'), [{ label: 'Deshacer', fn: () => {
+          state.tombs = state.tombs.filter(t => !gone.some(g => g.id === t.id)); gone.forEach(g => { g.updatedAt = Date.now(); });
+          state.items = state.items.concat(gone); save(); render();
+        } }]);
         return;
       }
     }
   });
 
   $('#btnBack').addEventListener('click', goBack);
-  $('#btnSettings').addEventListener('click', () => { renderSettings(); const dlg = $('#settingsSheet'); openSheet(dlg); dlg.querySelector('.sheet__body').scrollTop = 0; });
+  $('#btnSettings').addEventListener('click', openSettings);
+  $('#btnSync').addEventListener('click', () => { openSettings(); const d = $('#setSync'); if (d) d.open = true; });
   $('#btnNew').addEventListener('click', () => openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}));
   window.addEventListener('popstate', e => {
     const s = e.state && e.state.v ? e.state : parseHash();
@@ -935,13 +1304,18 @@ function bind() {
     else if (id === 's_email') state.settings.email = v.trim();
     else if (id === 's_alertTimed' || id === 's_alertAllDay' || id === 's_meetingDuration') state.settings[id.slice(2)] = Number(v);
     else return;
+    state.settingsAt = Date.now();
     save();
   });
   $('#settingsSheet').addEventListener('input', e => {
     const r = e.target.closest('.trow'); if (!r) return;
     const t = state.topics.find(x => x.id === r.dataset.id), f = e.target.dataset.f; if (!t || !f) return;
-    t[f] = f === 'name' ? (e.target.value.trim() || t.name) : e.target.value; save();
+    t[f] = f === 'name' ? (e.target.value.trim() || t.name) : e.target.value;
+    state.topicsAt = Date.now();
+    if (f === 'name') state.items.forEach(it => { if (it.topic === t.id) it.updatedAt = Date.now(); }); /* en Airtable el tema va por nombre */
+    save();
   });
+  $('#settingsSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 's_clave') { e.preventDefault(); connectSync(); } });
   $('#importFile').addEventListener('change', e => { if (e.target.files[0]) importJson(e.target.files[0]); e.target.value = ''; });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
@@ -962,8 +1336,17 @@ function bind() {
   }
 
   /* el reloj avanza: lo atrasado cambia de color sin recargar */
-  setInterval(() => { if (!document.hidden) render(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  setInterval(() => {
+    if (document.hidden) return;
+    render();
+    if (sync.on && Date.now() - sync.pulled > 180000) runSync(true);
+  }, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { render(); if (sync.on && Date.now() - sync.pulled > 20000) runSync(true); return; }
+    /* al salir de la app, lo que quedó sin subir se manda enseguida */
+    if (sync.on && sync.timer) { clearTimeout(sync.timer); sync.timer = null; runSync(false, true); }
+  });
+  window.addEventListener('online', () => { if (sync.on) runSync(true); });
 }
 
 /* ---------- arranque ---------- */
@@ -971,8 +1354,9 @@ function init() {
   const s = parseHash();
   ui.view = s.v; ui.topicId = s.id; ui.depth = 0;
   try { history.replaceState({ v: s.v, id: s.id, d: 0 }, '', location.href); } catch (e) {}
-  applyTheme(); bind(); render();
+  applyTheme(); bind(); render(); renderSyncUi();
   if (/^https?:$/.test(location.protocol)) {
+    if (sync.on) runSync(true);
     fetch('/api/ics?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.apiOk = !!(j && j.ok); if (ui.apiOk) { render(); if ($('#detailSheet').open) renderDetail(); } }).catch(() => {});
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   }

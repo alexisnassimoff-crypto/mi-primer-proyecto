@@ -278,6 +278,16 @@ main{padding-top:14px}
 .set>summary .ico{color:var(--ink-3);transition:transform .15s}
 .set[open]>summary .ico{transform:rotate(90deg)}
 .set__body{display:grid;gap:14px;padding:2px 0 20px}
+.set__end{display:inline-flex;align-items:center;gap:8px}
+.set__end small{font-size:.875rem;font-weight:500;color:var(--ink-3)}
+.sync-status{display:flex;align-items:flex-start;gap:10px;font-weight:600;line-height:1.35}
+.sync-status .ico{flex:none;margin-top:1px}
+.sync-status.is-ok .ico{color:var(--ok)}
+.sync-status.is-err{color:var(--danger)}
+.sync-btn.is-ok{color:var(--ok)}
+.sync-btn.is-err{color:var(--danger)}
+.sync-btn.is-busy .ico{animation:syncPulse .9s ease-in-out infinite alternate}
+@keyframes syncPulse{from{opacity:.3}to{opacity:1}}
 .set__note{color:var(--ink-2);font-size:.9375rem}
 .set__note p+p{margin-top:8px}
 .set--row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px;font-size:1.0625rem;font-weight:600}
