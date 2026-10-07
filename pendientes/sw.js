@@ -1,8 +1,8 @@
 /* Pendientes — service worker: la app abre sin conexión.
    Red primero (para recibir actualizaciones), caché como respaldo. */
-var VERSION = 'pendientes-v1';
+var VERSION = 'pendientes-v2';
 var CORE = ['./', 'index.html', 'app.css', 'app.js', 'parser.js', 'ics.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png',
-  '../assets/fonts/instrument-serif-latin.woff2', '../assets/fonts/instrument-serif-italic-latin.woff2', '../assets/fonts/inter-latin.woff2'];
+  'fonts/instrument-serif-latin.woff2', 'fonts/instrument-serif-italic-latin.woff2', 'fonts/inter-latin.woff2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(CORE).catch(function () {}); }).then(function () { return self.skipWaiting(); }));

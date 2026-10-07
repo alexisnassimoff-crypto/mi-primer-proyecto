@@ -1,6 +1,8 @@
 /* ============================================================
    /api/ics — sirve un evento como archivo iCalendar (.ics)
    Función serverless de Vercel (zero-config, sin dependencias).
+   El dashboard es su propio proyecto en Vercel con Root Directory = pendientes,
+   por eso esta carpeta api/ vive adentro de pendientes/.
 
    En iPhone, Safari abre un text/calendar servido "inline" con la
    vista nativa de Calendario y el botón "Añadir": un toque y listo.
@@ -11,7 +13,7 @@
    POST /api/ics  (form: ics=<texto .ics>, f=<nombre>) -> devuelve ese .ics inline
         (lo usa "Exportar agenda" para importar muchos eventos de una vez)
    ============================================================ */
-var ICS = require('../pendientes/ics.js');
+var ICS = require('../ics.js');
 
 function safeName(s) {
   return String(s || 'evento').normalize('NFD').replace(/[̀-ͯ]/g, '')

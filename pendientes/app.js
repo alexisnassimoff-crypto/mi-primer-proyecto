@@ -217,9 +217,12 @@ function renderSegExtra() {
   el.innerHTML = (ui.filter ? `<button type="button" class="chip is-on" data-act="clear-filter">${names[ui.filter]} ${icon('x')}</button>` : '') +
     `<label><input type="checkbox" id="showDone"${ui.showDone ? ' checked' : ''}> Hechas</label>`;
 }
+/* En el iPhone el link al .ics va en la misma pestaña: Safari muestra la hoja nativa de Calendario.
+   En una pestaña nueva queda la pantalla en blanco. En otros dispositivos se descarga el archivo. */
+function icsAttrs(it) { return isIOS() ? '' : ` download="${esc(slug(it.title || 'evento'))}.ics"`; }
 function calLink(it, cls, label) {
   const inner = icon('calendar') + (label ? `<span>${label}</span>` : '');
-  if (ui.apiOk) return `<a class="${cls}" href="${esc(links(it).ios)}" target="_blank" rel="noopener" aria-label="Agregar al calendario" title="Agregar al calendario">${inner}</a>`;
+  if (ui.apiOk) return `<a class="${cls}" href="${esc(links(it).ios)}"${icsAttrs(it)} aria-label="Agregar al calendario" title="Agregar al calendario">${inner}</a>`;
   return `<button type="button" class="${cls}" data-act="cal" aria-label="Agregar al calendario" title="Agregar al calendario">${inner}</button>`;
 }
 function itemRow(it, opts) {
@@ -351,7 +354,7 @@ function downloadIcs(items, name) {
   if (isIOS()) toast('Se descargó el .ics: abrilo desde Descargas y tocá «Añadir todo».');
 }
 function postIcs(text, name) {
-  const f = document.createElement('form'); f.method = 'POST'; f.action = '/api/ics'; f.target = '_blank'; f.hidden = true;
+  const f = document.createElement('form'); f.method = 'POST'; f.action = '/api/ics'; f.target = isIOS() ? '_self' : '_blank'; f.hidden = true;
   const t = document.createElement('textarea'); t.name = 'ics'; t.value = text;
   const n = document.createElement('input'); n.type = 'hidden'; n.name = 'f'; n.value = name;
   f.appendChild(t); f.appendChild(n); document.body.appendChild(f); f.submit(); setTimeout(() => f.remove(), 1000);
@@ -368,7 +371,7 @@ function fallbackCopy(text, done) {
 function calActionsHtml(it) {
   if (!it.date) return '<p class="cal-hint">Ponele fecha para mandarlo al calendario o invitar a alguien.</p>';
   const L = links(it), iosLabel = isIOS() ? 'Agregar al iPhone' : 'Calendario (.ics)';
-  const first = L.ios ? `<a class="cal-btn cal-btn--primary" href="${esc(L.ios)}" target="_blank" rel="noopener">${icon('calendar')}${iosLabel}</a>`
+  const first = L.ios ? `<a class="cal-btn cal-btn--primary" href="${esc(L.ios)}"${icsAttrs(it)}>${icon('calendar')}${iosLabel}</a>`
     : `<button type="button" class="cal-btn cal-btn--primary" data-act="ics">${icon('calendar')}${iosLabel}</button>`;
   return first +
     `<a class="cal-btn" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Google</a>` +
@@ -452,7 +455,7 @@ let toastTimer = null;
 function toast(msg, actions) {
   const el = $('#toast');
   el.innerHTML = `<span class="toast__msg">${esc(msg)}</span>` + (actions && actions.length ? `<span class="toast__acts">${actions.map((a, i) => {
-    if (a.cal) return ui.apiOk ? `<a href="${esc(links(a.cal).ios)}" target="_blank" rel="noopener">${esc(a.label)}</a>` : `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
+    if (a.cal) return ui.apiOk ? `<a href="${esc(links(a.cal).ios)}"${icsAttrs(a.cal)}>${esc(a.label)}</a>` : `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
     return `<button type="button" data-ti="${i}">${esc(a.label)}</button>`;
   }).join('')}</span>` : '');
   el.hidden = false;

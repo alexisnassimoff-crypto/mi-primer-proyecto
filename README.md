@@ -9,8 +9,7 @@ css/styles.css        diseño (tokens de color al inicio del archivo)
 css/fonts.css         tipografías auto-hospedadas
 js/main.js            interacciones + armado de los links de WhatsApp
 assets/               imágenes, íconos y tipografías
-pendientes/           dashboard personal de pendientes (ver más abajo)
-api/ics.js            función de Vercel que sirve eventos .ics para el dashboard
+pendientes/           dashboard personal de pendientes: otro proyecto de Vercel (ver más abajo)
 ```
 
 ## Verlo localmente
@@ -25,9 +24,9 @@ python3 -m http.server 8000
 
 ---
 
-## Pendientes — dashboard personal (`/pendientes/`)
+## Pendientes — dashboard personal (carpeta `pendientes/`)
 
-App aparte, en la misma web, para organizar pendientes por tema (Central, Familia, La casa,
+App aparte, con su propia dirección, para organizar pendientes por tema (Central, Familia, La casa,
 Harper, Relación con Juli, Gastos de la casa, Compras de la casa) y mandarlos al calendario del
 iPhone con alerta e invitados. Pensada para el teléfono: la carga rápida está abajo, al alcance
 del pulgar, y entiende castellano:
@@ -58,8 +57,14 @@ pendientes/app.js           la app: tablero, agenda, hoja de edición, ajustes
 pendientes/parser.js        carga rápida en castellano
 pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
-api/ics.js                  función de Vercel: sirve un evento como text/calendar
+pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)
+pendientes/api/ics.js       función de Vercel: sirve un evento como text/calendar
 ```
+
+**Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
+con **Root Directory = `pendientes`** (preset Other, sin build command). Así queda en una dirección
+propia y `pendientes/api/ics.js` se publica como `/api/ics`. El `vercel.json` de la raíz hace que la
+landing redirija `/pendientes/` a esa dirección.
 
 **Calendario.** Cada pendiente con fecha tiene «Agregar al iPhone»: en Vercel es un link a
 `/api/ics?...` que Safari abre con la vista nativa de Calendario (un toque y «Añadir»), con la
@@ -74,7 +79,8 @@ hay respaldo (`.json`) y restauración. Para tenerla como app en el iPhone: Safa
 «Agregar a inicio».
 
 **Verlo localmente:** el mismo `python3 -m http.server 8000` de arriba y abrir
-`http://localhost:8000/pendientes/`. Para probar el API hace falta `vercel dev` (o el deploy).
+`http://localhost:8000/pendientes/`. Para probar el API hace falta `cd pendientes && vercel dev`
+(o el deploy).
 
 ---
 
