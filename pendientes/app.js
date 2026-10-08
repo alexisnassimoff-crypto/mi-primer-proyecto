@@ -441,6 +441,7 @@ function closeSheet(dlg) { if (dlg && dlg.open) dlg.close(); }
 /* ---------- ficha de un pendiente ---------- */
 let detailId = null;
 function calBtn(it) {
+  if (subscribed()) return ''; /* ya va solo al Calendario */
   if (ui.apiOk) return `<a class="btn btn--secondary btn--block" href="${esc(links(it).ios)}"${icsAttrs(it)}>${icon('calendar')}Agregar al Calendario</a>`;
   return `<button type="button" class="btn btn--secondary btn--block" data-act="d-ics">${icon('calendar')}Agregar al Calendario</button>`;
 }
@@ -699,7 +700,8 @@ function saveForm() {
   rememberPeople(it); save();
   closeSheet($('#formSheet')); render();
   if (!$('#detailSheet').open && detailId === it.id) detailId = null;
-  toast((d.id ? 'Guardado' : 'Anotado') + (it.date ? ' · ' + whenLabel(it) : ''), it.date && !it.done ? [{ label: 'Al Calendario', cal: it }] : []);
+  const auto = !!it.date && !it.done && subscribed();
+  toast((d.id ? 'Guardado' : 'Anotado') + (it.date ? ' · ' + whenLabel(it) : '') + (auto ? ' · va solo al Calendario' : ''), it.date && !it.done && !auto ? [{ label: 'Al Calendario', cal: it }] : []);
 }
 
 /* ---------- ajustes ---------- */
@@ -817,7 +819,7 @@ const AT = {
 const REPEAT_AT = { daily: 'Todos los días', weekly: 'Todas las semanas', monthly: 'Todos los meses', yearly: 'Todos los años' };
 const KIND_AT = { tarea: 'Tarea', reunion: 'Reunión', recordatorio: 'Recordatorio' };
 const HASH_KEYS = ['title', 'topic', 'date', 'time', 'alert', 'alert2', 'done', 'priority', 'invitees', 'location', 'amount', 'repeat', 'duration', 'kind', 'notes'];
-const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia', CAL_KEY = 'pendientes.calendario';
+const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia', CAL_KEY = 'pendientes.calendario', CALSEEN_KEY = 'pendientes.calVisto';
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
 const iso = ms => (ms ? new Date(ms).toISOString() : null);
@@ -1056,13 +1058,14 @@ async function runSync(full, keepalive) {
       const data = await api('GET');
       sync.pulled = Date.now();
       if (data.calendario && data.calendario !== lsGet(CAL_KEY)) { lsSet(CAL_KEY, data.calendario); renderCalUi(); }
+      noteCalendarVisit(data.ajustes || []);
       if (mergeRemote(data)) { persist(); render(); if ($('#detailSheet').open) renderDetail(); }
     }
     await pushDirty(keepalive);
     sync.last = Date.now(); lsSet(LAST_KEY, String(sync.last)); sync.err = null;
   } catch (e) {
     sync.err = e && e.code ? e.code : 'red';
-    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); renderCalUi(); }
+    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); renderCalUi(); }
   } finally {
     sync.busy = false; renderSyncUi();
     const again = sync.again; sync.again = null;
@@ -1139,6 +1142,18 @@ const calItems = () => state.items.filter(it => !it.done && it.date).sort(sortPe
 const calSig = items => items.map(it => it.id + ':' + (it.updatedAt || 0)).join(',') + '|' + (state.topicsAt || 0);
 const feedPath = () => (lsGet(CAL_KEY) ? '/api/calendario?k=' + encodeURIComponent(lsGet(CAL_KEY)) : '');
 const feedUrl = scheme => (feedPath() ? scheme + '://' + location.host + feedPath() : '');
+/* el servidor anota cuándo lo pidió la suscripción (Ajustes, fila «calendario»):
+   si fue en los últimos 10 días, el Calendario está suscripto y todo va solo */
+const calSeen = () => Number(lsGet(CALSEEN_KEY)) || 0;
+const subscribed = () => sync.on && !!feedPath() && Date.now() - calSeen() < 10 * 86400000;
+function noteCalendarVisit(rows) {
+  const r = rows.find(x => x.fields && x.fields[AT.A.key] === 'calendario');
+  let seen = 0;
+  try { seen = Date.parse(JSON.parse(r.fields[AT.A.value]).visto) || 0; } catch (e) { seen = 0; }
+  if (!seen || seen === calSeen()) return;
+  lsSet(CALSEEN_KEY, String(seen)); renderCalUi();
+  if ($('#detailSheet').open) renderDetail();
+}
 function b64url(bytes) {
   let bin = '';
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -1174,6 +1189,12 @@ function prepareCalAll() {
   allTarget(items).then(url => { if (url && n === calPrep && a.isConnected) { a.setAttribute('href', url); a.dataset.sig = sig; } }).catch(() => {});
 }
 function calBoxHtml() {
+  if (subscribed()) {
+    return `<p class="sync-status is-ok" role="status">${icon('check')}<span>Suscripto. Tu Calendario se actualizó ${esc(agoText(calSeen()))}.</span></p>` +
+      `<p class="set__note">Lo que anotes con fecha aparece solo, con sus avisos. Si no suenan, en la suscripción apagá «Eliminar alarmas».</p>` +
+      `<a class="btn btn--secondary btn--block" href="${esc(feedUrl('webcal'))}">Suscribirme de nuevo</a>` +
+      `<button type="button" class="btn btn--secondary btn--block" data-act="s-cal-copy">${icon('copy')}Copiar el link</button>`;
+  }
   const on = sync.on && !!feedPath();
   const all = `<a class="btn btn--${on ? 'secondary' : 'primary'} btn--block" id="calAll" href="#" data-act="s-cal-all">${on ? 'Agregar todo una sola vez' : icon('calendar') + 'Mandar todo al Calendario'}</a>`;
   if (!on) return all + `<p class="set__note">En Calendario tocá «Añadir todo». ${sync.on ? 'Para que se agreguen solos, tocá «Sincronizar ahora» en el respaldo.' : 'Si conectás Airtable, se agregan solos.'}</p>`;
@@ -1260,7 +1281,7 @@ function bind() {
       }
       case 's-connect': connectSync(); return;
       case 's-sync': runSync(true); return;
-      case 's-disconnect': lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); renderCalUi(); toast('Este equipo ya no guarda en Airtable'); return;
+      case 's-disconnect': lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); renderCalUi(); toast('Este equipo ya no guarda en Airtable'); return;
       case 's-backup': exportJson(); return;
       case 's-restore': $('#importFile').click(); return;
       case 's-cal-all': {

@@ -105,7 +105,10 @@ En Ajustes → **Calendario del iPhone**:
   suscribirse. Si los avisos no suenan, en la suscripción apagar «Eliminar alarmas». Las horas se
   pasan a UTC con la zona horaria que la app guarda en *Ajustes* (Argentina si no hay). La respuesta
   queda 10 minutos en la red de Vercel, así el Calendario puede pedirla seguido sin gastar las
-  llamadas a Airtable.
+  llamadas a Airtable. Cuando la pide la suscripción (no un navegador), se anota en *Ajustes*, fila
+  «calendario» (como mucho cada 30 minutos). Con eso la app muestra «Suscripto» y deja de ofrecer
+  agregar pendientes a mano, para que no queden repetidos. Si pasan 10 días sin que la pida,
+  vuelve a ofrecerlo.
 
 **Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
 conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base
