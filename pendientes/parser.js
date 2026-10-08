@@ -152,6 +152,7 @@
     /* 6. monto: $5000, $ 5.000, 5000$, 5000 pesos, 5 lucas, $5k, usd 100 */
     take(/(^|\s)(?:\$|ars|usd|u\$s|us\$|dolares|dólares)\s?(\d[\d.,]*)\s?(k|lucas)?(?=[\s,;]|$)/gi, function (m, pre, n, k) { var v = parseAmount(n); if (v == null) return false; r.amount = k ? v * 1000 : v; return pre; });
     take(/(^|\s)(\d[\d.,]*)\s?(\$|pesos|mangos|lucas|luca|k)(?=[\s,;.]|$)/gi, function (m, pre, n, k) { var v = parseAmount(n); if (v == null) return false; r.amount = /^(lucas|luca|k)$/i.test(k) ? v * 1000 : v; return pre; });
+    take(/(^|\s)(\d{1,3}(?:[.,]\d)?)\s?mil(?:\s?pesos)?(?=[\s,;.]|$)/gi, function (m, pre, n) { var v = parseAmount(n); if (v == null) return false; r.amount = Math.round(v * 1000); return pre; });
 
     /* 7. rango horario: de 10 a 11:30 */
     take(/(^|\s)(?:de|desde)\s+(?:las?\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(?:hs|h)?\s+(?:a|hasta)\s+(?:las?\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(hs|h|am|pm)?(?:\s+de\s+la\s+(ma[ñn]ana|tarde|noche))?(?=[\s,;.]|$)/gi,

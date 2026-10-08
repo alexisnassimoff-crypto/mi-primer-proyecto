@@ -55,6 +55,7 @@ const ICONS = {
   flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   camera: '<path d="M4 8.5a2 2 0 0 1 2-2h2l1.5-2h5l1.5 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/>',
+  mic: '<rect x="9" y="3" width="6" height="11.5" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3M8.5 21h7"/>',
   share: '<path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M5.5 11.5v7a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-7"/>',
   copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/>',
   mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M3.5 7.5l8.5 6 8.5-6"/>',
@@ -641,6 +642,7 @@ function question(step, isNew) {
     return `<section class="${cls}"><label class="q__label" for="f_title">¿Qué hay que hacer?</label>` +
       `<input class="q__input" id="f_title" type="text" value="${esc(d.title)}" placeholder="Ej.: Llamar a Matías mañana 10 hs" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">` +
       `<div class="understood" id="understood" aria-live="polite"></div>` +
+      (!d.id && micSupported() ? `<button type="button" class="linkbtn" data-act="f-mic">${icon('mic')}Decirlo con la voz</button>` : '') +
       (!d.id && ui.apiOk && sync.on ? `<button type="button" class="linkbtn" data-act="f-factura">${icon('camera')}Leer una factura con la cámara</button><input id="facturaFile" type="file" accept="image/*" capture="environment" hidden>` : '') +
       '</section>';
   }
@@ -1424,6 +1426,42 @@ function renderSiriUi() {
   box.innerHTML = siriBoxHtml();
 }
 
+/* ---------- dictar un pendiente ----------
+   «Oye Siri, abrí Pendientes», tocás el micrófono y hablás. Usa el dictado del teléfono
+   (Safari lo trae); lo entendido va al formulario ya leído, y con «Guardar» queda. */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const mic = { rec: null, text: '', err: '' };
+const micSupported = () => !!SR;
+function startMic() {
+  const dlg = $('#micSheet');
+  if (!SR) { toast('Este navegador no tiene dictado. Abrí Pendientes en Safari.'); return; }
+  mic.text = ''; mic.err = '';
+  const txt = $('#micText'); txt.textContent = 'Decí qué hay que hacer, con el día y la hora si querés. Por ejemplo: «pagar la luz el viernes, 35 mil».'; txt.classList.remove('is-text');
+  openSheet(dlg);
+  let rec;
+  try { rec = new SR(); } catch (e) { closeSheet(dlg); toast('No pude usar el micrófono.'); return; }
+  mic.rec = rec; rec.lang = 'es-AR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  rec.onresult = e => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += (e.results[i][0] && e.results[i][0].transcript) || '';
+    mic.text = t.replace(/\s+/g, ' ').trim();
+    if (mic.text) { txt.textContent = mic.text; txt.classList.add('is-text'); }
+  };
+  rec.onerror = e => { mic.err = (e && e.error) || 'error'; };
+  rec.onend = () => { if (mic.rec !== rec) return; mic.rec = null; $('#micRing').classList.remove('is-on'); finishMic(); };
+  try { rec.start(); $('#micRing').classList.add('is-on'); }
+  catch (e) { mic.rec = null; closeSheet(dlg); toast('No pude usar el micrófono.'); }
+}
+function finishMic() {
+  const dlg = $('#micSheet'); if (!dlg.open) return;
+  const t = mic.text.trim();
+  closeSheet(dlg);
+  if (t) { openFormWith(t); return; }
+  toast(mic.err === 'not-allowed' || mic.err === 'service-not-allowed' ? 'Hay que permitir el micrófono: Ajustes del iPhone → Safari → Micrófono.'
+    : mic.err === 'network' ? 'El dictado necesita conexión. Probá de nuevo.'
+    : 'No escuché nada. Probá de nuevo, más cerca del micrófono.');
+}
+
 /* ---------- eventos ---------- */
 function bind() {
   $$('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon); });
@@ -1475,6 +1513,7 @@ function bind() {
       }
       case 'f-more': draft.more = !draft.more; renderForm(); if (draft.more) $('#moreBox').scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return;
       case 'f-factura': { const i = $('#facturaFile'); if (i) i.click(); return; }
+      case 'f-mic': closeSheet($('#formSheet')); startMic(); return;
       /* ficha: pasar para otro día */
       case 'd-move': {
         const it = byId(detailId); if (!it) return;
@@ -1551,6 +1590,10 @@ function bind() {
 
   $('#btnBack').addEventListener('click', goBack);
   $('#btnSettings').addEventListener('click', openSettings);
+  $('#btnMic').hidden = !micSupported();
+  $('#btnMic').addEventListener('click', startMic);
+  $('#micDone').addEventListener('click', () => { if (mic.rec) { try { mic.rec.stop(); } catch (e) { mic.rec = null; finishMic(); } } else finishMic(); });
+  $('#micSheet').addEventListener('close', () => { const r = mic.rec; mic.rec = null; if (r) { try { r.abort(); } catch (e) {} } $('#micRing').classList.remove('is-on'); });
   $('#btnSync').addEventListener('click', () => { openSettings(); const d = $('#setSync'); if (d) d.open = true; });
   $('#btnNew').addEventListener('click', () => openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}));
   window.addEventListener('popstate', e => {

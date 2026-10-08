@@ -23,6 +23,7 @@
     <button type="button" class="back" id="btnBack" hidden><span data-icon="chevL"></span>Inicio</button>
     <span class="top__spacer"></span>
     <button type="button" class="icon-btn sync-btn" id="btnSync" hidden></button>
+    <button type="button" class="icon-btn" id="btnMic" aria-label="Dictar un pendiente" hidden><span data-icon="mic"></span></button>
     <button type="button" class="icon-btn" id="btnSettings" aria-label="Ajustes"><span data-icon="gear"></span></button>
   </div>
   <h1 class="title" id="viewTitle" tabindex="-1">Hoy</h1>
@@ -63,6 +64,21 @@
       <button type="submit" class="btn btn--primary btn--block" id="btnSave">Guardar</button>
     </footer>
   </form>
+</dialog>
+
+<!-- Dictar: «Oye Siri, abrí Pendientes», micrófono y hablás -->
+<dialog class="sheet" id="micSheet" aria-labelledby="micTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="micTitle">Te escucho</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cancelar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body mic">
+      <div class="mic__ring" id="micRing"><span data-icon="mic"></span></div>
+      <p class="mic__text" id="micText" aria-live="polite"></p>
+      <div class="actions"><button type="button" class="btn btn--primary btn--block" id="micDone">Listo</button></div>
+    </div>
+  </div>
 </dialog>
 
 <!-- Ajustes -->
