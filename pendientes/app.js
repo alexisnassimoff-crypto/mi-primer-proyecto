@@ -562,7 +562,7 @@ function openDetail(id) {
 let draft = null, lastStep = null;
 const ORDER = ['que', 'tema', 'cuando', 'hora', 'aviso'];
 function newDraft(b) {
-  const d = Object.assign({ id: null, title: '', topic: null, topicAuto: false, date: undefined, time: undefined, alert: undefined, alertPending: undefined, alert2: null, duration: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, notes: '', kind: 'tarea', step: 'que', custom: null, more: false, paid: false }, b || {});
+  const d = Object.assign({ id: null, title: '', topic: null, topicAuto: false, date: undefined, time: undefined, alert: undefined, alertPending: undefined, alert2: null, duration: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, notes: '', kind: 'tarea', step: 'que', custom: null, more: false, paid: false, dictar: false }, b || {});
   d.invitees = (d.invitees || []).slice();
   if (!d.id) d.step = d.title ? nextStep(d) : 'que';
   return d;
@@ -642,7 +642,8 @@ function question(step, isNew) {
     return `<section class="${cls}"><label class="q__label" for="f_title">¿Qué hay que hacer?</label>` +
       `<input class="q__input" id="f_title" type="text" value="${esc(d.title)}" placeholder="Ej.: Llamar a Matías mañana 10 hs" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">` +
       `<div class="understood" id="understood" aria-live="polite"></div>` +
-      (!d.id && micSupported() ? `<button type="button" class="linkbtn" data-act="f-mic">${icon('mic')}Decirlo con la voz</button>` : '') +
+      (d.dictar ? `<p class="dictar" role="note">${icon('mic')}<span>Tocá el <b>micrófono del teclado</b> y decí qué hay que hacer. Después, «Siguiente».</span></p>`
+        : !d.id && micSupported() ? `<button type="button" class="linkbtn" data-act="f-mic">${icon('mic')}Decirlo con la voz</button>` : '') +
       (!d.id && ui.apiOk && sync.on ? `<button type="button" class="linkbtn" data-act="f-factura">${icon('camera')}Leer una factura con la cámara</button><input id="facturaFile" type="file" accept="image/*" capture="environment" hidden>` : '') +
       '</section>';
   }
@@ -1427,39 +1428,60 @@ function renderSiriUi() {
 }
 
 /* ---------- dictar un pendiente ----------
-   «Oye Siri, abrí Pendientes», tocás el micrófono y hablás. Usa el dictado del teléfono
-   (Safari lo trae); lo entendido va al formulario ya leído, y con «Guardar» queda. */
+   En el iPhone se dicta con el micrófono del teclado: es el dictado de Apple y anda siempre,
+   también con la app en la pantalla de inicio (ahí el iPhone no deja usar el dictado de la web).
+   El micrófono de arriba abre «Nuevo» con el teclado listo y la pista.
+   En otros equipos con dictado en el navegador, «Te escucho» escucha y arma el pendiente;
+   la X y «Listo» cierran siempre al instante, pase lo que pase con el dictado. */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-const mic = { rec: null, text: '', err: '' };
-const micSupported = () => !!SR;
+const mic = { rec: null, text: '', err: '', started: false, watch: null, quiet: null };
+const useKeyboardDictation = () => isIOS() || !SR;
+const micSupported = () => isIOS() || !!SR;
+function dictateWithKeyboard() { openForm({ dictar: true }); }
 function startMic() {
-  const dlg = $('#micSheet');
-  if (!SR) { toast('Este navegador no tiene dictado. Abrí Pendientes en Safari.'); return; }
-  mic.text = ''; mic.err = '';
-  const txt = $('#micText'); txt.textContent = 'Decí qué hay que hacer, con el día y la hora si querés. Por ejemplo: «pagar la luz el viernes, 35 mil».'; txt.classList.remove('is-text');
+  if (useKeyboardDictation()) { dictateWithKeyboard(); return; }
+  const dlg = $('#micSheet'), txt = $('#micText');
+  if (mic.rec) endMic('cancelar');
+  mic.text = ''; mic.err = ''; mic.started = false;
+  txt.textContent = 'Decí qué hay que hacer, con el día y la hora si querés. Por ejemplo: «pagar la luz el viernes, 35 mil».'; txt.classList.remove('is-text');
   openSheet(dlg);
   let rec;
-  try { rec = new SR(); } catch (e) { closeSheet(dlg); toast('No pude usar el micrófono.'); return; }
+  try { rec = new SR(); } catch (e) { endMic('fallo'); return; }
   mic.rec = rec; rec.lang = 'es-AR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  rec.onstart = rec.onaudiostart = () => { if (mic.rec === rec) mic.started = true; };
   rec.onresult = e => {
+    if (mic.rec !== rec) return;
     let t = '';
     for (let i = 0; i < e.results.length; i++) t += (e.results[i][0] && e.results[i][0].transcript) || '';
     mic.text = t.replace(/\s+/g, ' ').trim();
     if (mic.text) { txt.textContent = mic.text; txt.classList.add('is-text'); }
+    /* si después de hablar hay silencio, termina solo (hay navegadores que nunca avisan el final) */
+    clearTimeout(mic.quiet); mic.quiet = setTimeout(() => { if (mic.rec === rec) endMic('listo'); }, 2000);
   };
-  rec.onerror = e => { mic.err = (e && e.error) || 'error'; };
-  rec.onend = () => { if (mic.rec !== rec) return; mic.rec = null; $('#micRing').classList.remove('is-on'); finishMic(); };
-  try { rec.start(); $('#micRing').classList.add('is-on'); }
-  catch (e) { mic.rec = null; closeSheet(dlg); toast('No pude usar el micrófono.'); }
+  rec.onerror = e => {
+    if (mic.rec !== rec) return;
+    mic.err = (e && e.error) || 'error';
+    if (mic.err !== 'no-speech') endMic(/not-allowed|service-not-allowed|audio-capture/.test(mic.err) ? 'permiso' : 'fallo');
+  };
+  rec.onend = () => { if (mic.rec === rec) endMic('listo'); };
+  try { rec.start(); $('#micRing').classList.add('is-on'); } catch (e) { endMic('fallo'); return; }
+  /* si en 8 segundos no llegó nada, no se queda colgado */
+  mic.watch = setTimeout(() => { if (mic.rec === rec && !mic.text) endMic(mic.started ? 'nada' : 'fallo'); }, 8000);
 }
-function finishMic() {
-  const dlg = $('#micSheet'); if (!dlg.open) return;
-  const t = mic.text.trim();
-  closeSheet(dlg);
+/* Cierra «Te escucho» al instante. how: 'listo' (usa lo dicho), 'cancelar', 'nada', 'permiso' o 'fallo'. */
+function endMic(how) {
+  const dlg = $('#micSheet'), rec = mic.rec, t = mic.text.trim();
+  mic.rec = null; clearTimeout(mic.watch); clearTimeout(mic.quiet);
+  $('#micRing').classList.remove('is-on');
+  if (rec) setTimeout(() => { try { if (how === 'listo') rec.stop(); else rec.abort(); } catch (e) {} }, 0);
+  if (dlg.open) dlg.close();
+  if (how === 'cancelar') return;
   if (t) { openFormWith(t); return; }
-  toast(mic.err === 'not-allowed' || mic.err === 'service-not-allowed' ? 'Hay que permitir el micrófono: Ajustes del iPhone → Safari → Micrófono.'
-    : mic.err === 'network' ? 'El dictado necesita conexión. Probá de nuevo.'
-    : 'No escuché nada. Probá de nuevo, más cerca del micrófono.');
+  if (how === 'fallo' || how === 'permiso') {
+    toast(how === 'permiso' ? 'Falta el permiso del micrófono. Mientras tanto, usá el micrófono del teclado.' : 'El dictado no anduvo. Usá el micrófono del teclado.');
+    dictateWithKeyboard(); return;
+  }
+  toast('No escuché nada. Probá de nuevo, más cerca del micrófono.');
 }
 
 /* ---------- eventos ---------- */
@@ -1513,7 +1535,10 @@ function bind() {
       }
       case 'f-more': draft.more = !draft.more; renderForm(); if (draft.more) $('#moreBox').scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return;
       case 'f-factura': { const i = $('#facturaFile'); if (i) i.click(); return; }
-      case 'f-mic': closeSheet($('#formSheet')); startMic(); return;
+      case 'f-mic': {
+        if (useKeyboardDictation()) { draft.dictar = true; renderForm(); const i = $('#f_title'); if (i) i.focus(); return; }
+        closeSheet($('#formSheet')); startMic(); return;
+      }
       /* ficha: pasar para otro día */
       case 'd-move': {
         const it = byId(detailId); if (!it) return;
@@ -1592,8 +1617,9 @@ function bind() {
   $('#btnSettings').addEventListener('click', openSettings);
   $('#btnMic').hidden = !micSupported();
   $('#btnMic').addEventListener('click', startMic);
-  $('#micDone').addEventListener('click', () => { if (mic.rec) { try { mic.rec.stop(); } catch (e) { mic.rec = null; finishMic(); } } else finishMic(); });
-  $('#micSheet').addEventListener('close', () => { const r = mic.rec; mic.rec = null; if (r) { try { r.abort(); } catch (e) {} } $('#micRing').classList.remove('is-on'); });
+  $('#micDone').addEventListener('click', () => endMic('listo'));
+  $('#micSheet [data-close]').addEventListener('click', () => endMic('cancelar'));
+  $('#micSheet').addEventListener('close', () => { if (mic.rec) endMic('cancelar'); });
   $('#btnSync').addEventListener('click', () => { openSettings(); const d = $('#setSync'); if (d) d.open = true; });
   $('#btnNew').addEventListener('click', () => openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}));
   window.addEventListener('popstate', e => {

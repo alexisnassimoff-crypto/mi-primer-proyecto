@@ -5,10 +5,10 @@ cosa que queda de tu lado (la clave para leer facturas, 5 minutos) y es opcional
 
 ## 1. Dictar un pendiente (ya anda, no hay que armar nada)
 
-Arriba de la app hay un **micrófono**. «Oye Siri, abrí Pendientes», tocás el micrófono y hablás:
-*«pagar la luz el viernes, 35 mil»*. Lo entendido aparece en el formulario y con **Guardar** queda,
-con su aviso y en el Calendario. La primera vez el iPhone te pide permiso para usar el micrófono:
-tocá **Permitir**. Si lo negaste sin querer: Ajustes del iPhone → Safari → Micrófono → Permitir.
+Arriba de la app hay un **micrófono**. «Oye Siri, abrí Pendientes», tocás el micrófono y se abre
+Nuevo con el teclado. Tocá el **micrófono del teclado** (abajo a la derecha) y hablá: *«pagar la luz
+el viernes, 35 mil»*. Después **Siguiente** y **Guardar**: queda con su aviso y en el Calendario.
+Si no ves el micrófono en el teclado: Ajustes del iPhone → General → Teclado → **Dictado**.
 
 Para que Siri abra la app por su nombre, tiene que estar en la pantalla de inicio: en Safari,
 Compartir → **Agregar a inicio**.
