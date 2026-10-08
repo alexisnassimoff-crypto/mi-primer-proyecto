@@ -103,7 +103,9 @@ En Ajustes → **Calendario del iPhone**:
   desaparece, con sus avisos. La `k` sale de `PENDIENTES_CLAVE` (la entrega `/api/datos` a la app
   conectada) y solo sirve para leer el calendario; si se cambia la clave, hay que volver a
   suscribirse. Si los avisos no suenan, en la suscripción apagar «Eliminar alarmas». Las horas se
-  pasan a UTC con la zona horaria que la app guarda en *Ajustes* (Argentina si no hay).
+  pasan a UTC con la zona horaria que la app guarda en *Ajustes* (Argentina si no hay). La respuesta
+  queda 10 minutos en la red de Vercel, así el Calendario puede pedirla seguido sin gastar las
+  llamadas a Airtable.
 
 **Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
 conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base

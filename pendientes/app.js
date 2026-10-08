@@ -1159,7 +1159,7 @@ async function loteUrl(items) {
 async function allTarget(items) {
   if (!(ui.apiOk && isIOS())) return null;
   const url = await loteUrl(items).catch(() => null);
-  return url || (sync.on ? feedPath() : '') || null;
+  return url || (sync.on && feedPath() ? feedPath() + '&t=' + Date.now() : '') || null;
 }
 async function sendAllToCalendar(items) {
   const url = await allTarget(items);
