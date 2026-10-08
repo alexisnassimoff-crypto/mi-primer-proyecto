@@ -8,6 +8,8 @@
    GET  /api/calendario?k=LLAVE  -> text/calendar con los pendientes con fecha
    HEAD /api/calendario?k=LLAVE  -> solo confirma que la llave anda
    La llave la entrega GET /api/datos a la app conectada (ver _airtable.js).
+   La respuesta queda 10 minutos en la red de Vercel para no gastar llamadas de Airtable
+   (el plan gratis tiene un límite por mes y lo comparten todas las bases).
    ============================================================ */
 'use strict';
 const ICS = require('../ics.js');
@@ -114,6 +116,9 @@ module.exports = async function (req, res) {
     const aj = ajustesDe(ajustes);
     const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).sort((a, b) => a.start - b.start);
     calendario();
+    /* la red de Vercel lo guarda 10 minutos (y lo sigue dando mientras lo renueva):
+       así el Calendario puede pedirlo seguido sin gastar las llamadas de Airtable */
+    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
     return res.status(200).send(ICS.build({ events, name: 'Pendientes', refresh: 'PT15M', color: '#0E7490' }));
   } catch (e) {
     /* el calendario se queda con lo último que bajó y vuelve a probar más tarde */
