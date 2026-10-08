@@ -154,12 +154,16 @@
     return L;
   }
 
-  /* opts = { events: [ev], method: 'PUBLISH', name: 'Pendientes' } */
+  /* opts = { events: [ev], method: 'PUBLISH', name: 'Pendientes',
+              refresh: 'PT15M' (calendario suscrito: cada cuánto volver a pedirlo),
+              color: '#0E7490' (color con el que aparece en Calendario) } */
   function build(opts) {
     opts = opts || {};
     var events = opts.events || [];
     var out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Pendientes//Agenda personal//ES', 'CALSCALE:GREGORIAN', 'METHOD:' + (opts.method || 'PUBLISH')];
     if (opts.name) { out.push('X-WR-CALNAME:' + escapeText(opts.name)); }
+    if (/^P[0-9DTHMSW]+$/.test(opts.refresh || '')) { out.push('REFRESH-INTERVAL;VALUE=DURATION:' + opts.refresh, 'X-PUBLISHED-TTL:' + opts.refresh); }
+    if (/^#[0-9A-Fa-f]{6}$/.test(opts.color || '')) { out.push('X-APPLE-CALENDAR-COLOR:' + opts.color); }
     for (var i = 0; i < events.length; i++) out.push.apply(out, eventLines(events[i]));
     out.push('END:VCALENDAR');
     return out.map(fold).join('\r\n') + '\r\n';
