@@ -13,14 +13,14 @@
         → { ok, esFactura, empresa, concepto, monto, vencimiento (AAAA-MM-DD), periodo }
    GET  /api/factura?ping=1 → { ok, ia: true|false }  (si está la clave de IA)
 
-   Va con fetch directo a la API de Claude, sin el SDK: estas funciones no
-   tienen dependencias (no hay package.json) y así se publican sin build.
+   La app nueva usa /api/ia (lee también capturas y PDF); este queda para
+   las versiones que todavía estén guardadas en algún teléfono.
    ============================================================ */
 'use strict';
 const { esperar, configurado, claveOk } = require('./_airtable.js');
 const { ZONA, zonaValida, hoyEn } = require('./_zona.js');
+const { pedir } = require('./_claude.js');
 
-const MODELO = 'claude-opus-5-5';
 const MAX_IMAGEN = 5 * 1024 * 1024; /* base64 (la app manda ~300 KB) */
 
 const ESQUEMA = {
@@ -60,39 +60,18 @@ module.exports = async function (req, res) {
   if (imagen.length > MAX_IMAGEN) return res.status(413).json({ error: 'grande' });
   const tz = zonaValida(b.tz) ? b.tz : ZONA;
 
-  let r, j = null;
+  let d;
   try {
-    r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'server-side-fallback-2026-07-01'
-      },
-      body: JSON.stringify({
-        model: MODELO,
-        max_tokens: 1024,
-        fallbacks: 'default',
-        output_config: { effort: 'medium', format: { type: 'json_schema', schema: ESQUEMA } },
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: tipo, data: imagen } },
-          { type: 'text', text: instrucciones(hoyEn(tz)) }
-        ] }]
-      })
+    d = await pedir({
+      effort: 'medium', maxTokens: 1024, schema: ESQUEMA,
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: tipo, data: imagen } },
+        { type: 'text', text: instrucciones(hoyEn(tz)) }
+      ]
     });
-    try { j = await r.json(); } catch (e) { j = null; }
   } catch (e) {
-    return res.status(502).json({ error: 'ia-red' });
+    return res.status(502).json({ error: e.codigo || 'ia', detalle: e.detalle || '' });
   }
-  if (!r.ok || !j) {
-    const error = r.status === 401 || r.status === 403 ? 'ia-clave' : r.status === 429 || r.status === 529 ? 'ia-ocupada' : 'ia';
-    return res.status(502).json({ error, detalle: j && j.error ? String(j.error.message || j.error.type || '') : '' });
-  }
-  if (j.stop_reason === 'refusal' || j.stop_reason === 'max_tokens') return res.status(502).json({ error: 'ia' });
-  const texto = (j.content || []).filter(c => c && c.type === 'text').map(c => c.text).join('');
-  let d = null;
-  try { d = JSON.parse(texto); } catch (e) { d = null; }
   if (!d || typeof d !== 'object') return res.status(502).json({ error: 'ia' });
   const venc = typeof d.vencimiento === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.vencimiento) ? d.vencimiento : null;
   const monto = typeof d.monto === 'number' && isFinite(d.monto) && d.monto > 0 ? Math.round(d.monto * 100) / 100 : null;
