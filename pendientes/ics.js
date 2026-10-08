@@ -141,7 +141,7 @@
     });
     if (ev.priority === 1 || ev.priority === 'high') L.push('PRIORITY:1');
     L.push('STATUS:CONFIRMED');
-    L.push('TRANSP:' + (ev.allDay ? 'TRANSPARENT' : 'OPAQUE'));
+    L.push('TRANSP:' + (ev.allDay || ev.transparent ? 'TRANSPARENT' : 'OPAQUE'));
     (ev.alarms || []).forEach(function (min) {
       if (min == null || min === '' || isNaN(min)) return;
       L.push('BEGIN:VALARM');

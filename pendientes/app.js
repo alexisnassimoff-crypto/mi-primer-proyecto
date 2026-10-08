@@ -54,6 +54,7 @@ const ICONS = {
   note: '<path d="M6 3.5h8.5L18 7v13.5H6z"/><path d="M14 3.5V7.5h4M9 12h6M9 16h6"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  camera: '<path d="M4 8.5a2 2 0 0 1 2-2h2l1.5-2h5l1.5 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/>',
   share: '<path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M5.5 11.5v7a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-7"/>',
   copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/>',
   mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M3.5 7.5l8.5 6 8.5-6"/>',
@@ -89,29 +90,15 @@ const ICON_LABELS = { tag: 'Etiqueta', briefcase: 'Maletín', glasses: 'Anteojos
 const PALETTE = ['#0E7490', '#D97706', '#059669', '#7C3AED', '#E11D48', '#2563EB', '#65A30D', '#DB2777', '#0891B2', '#9333EA'];
 
 /* ---------- datos por defecto ---------- */
-const DEFAULT_TOPICS = [
-  { id: 'central', name: 'Central', color: '#0E7490', icon: 'glasses', aliases: ['trabajo', 'laburo', 'empresa', 'eyewear'],
-    keywords: 'central|matias|miguel|nicolas|nico|mauro|daniela|alberto|diego|optica|opticas|muestrario|valija|valijas|mercado ?libre|ml|estuche|estuches|anteojo|anteojos|lente|lentes|marco|marcos|pedido|pedidos|cliente|clientes|proveedor|proveedores|stock|kive|contenido|web|vercel|airtable|vendedor|vendedores|crm|comision|comisiones|importacion|aduana|despachante|catalogo|exhibidor' },
-  { id: 'familia', name: 'Familia', color: '#D97706', icon: 'people', aliases: ['fam', 'flia'],
-    keywords: 'mama|mami|papa|papi|hermana|hermano|abuela|abuelo|familia|familiar|primo|prima|tia|tio|sobrina|sobrino|cumple|cumpleanos|asado|suegra|suegro|cunada|cunado' },
-  { id: 'casa', name: 'La casa', color: '#059669', icon: 'home', aliases: ['hogar', 'depto'],
-    keywords: 'casa|depto|departamento|plomero|electricista|gasista|arreglar|arreglo|pintar|pintor|limpieza|limpiar|jardin|jardinero|pileta|aire|heladera|lavarropas|cerrajero|portero|consorcio|mudanza|cortina|cortinas|lampara|cocina|bano|balcon|terraza' },
-  { id: 'harper', name: 'Harper', color: '#7C3AED', icon: 'star', aliases: [], keywords: 'harper' },
-  { id: 'juli', name: 'Relación con Juli', color: '#E11D48', icon: 'heart', aliases: ['julieta', 'pareja', 'nosotros'], keywords: 'juli|julieta|aniversario|cita|cena romantica' },
-  { id: 'gastos', name: 'Gastos de la casa', color: '#2563EB', icon: 'wallet', aliases: ['gasto', 'pagos', 'pago', 'cuentas'],
-    keywords: 'pagar|pago|factura|expensas|cuota|cuotas|luz|gas|agua|internet|abl|impuesto|impuestos|seguro|prepaga|alquiler|tarjeta|vence|vencimiento|monotributo|afip|arca|edesur|edenor|metrogas|aysa|colegio|cuota del colegio|obra social|patente' },
-  { id: 'compras', name: 'Compras de la casa', color: '#65A30D', icon: 'cart', aliases: ['compra', 'super', 'lista'],
-    keywords: 'comprar|compra|compras|super|supermercado|verduleria|carniceria|panaderia|farmacia|chino|dietetica|panales|comida|mercado|leche|pan|huevos|carne|verdura|fruta|yerba|cafe|jabon|papel higienico|shampoo' },
-  { id: 'otros', name: 'Otros', color: '#6B7280', icon: 'tag', aliases: ['otro', 'varios'], keywords: '' }
-];
-const SUGGEST_ORDER = ['harper', 'juli', 'familia', 'compras', 'gastos', 'casa', 'central'];
+const DEFAULT_TOPICS = Temas.DEFAULT_TOPICS, SUGGEST_ORDER = Temas.SUGGEST_ORDER;
 const { ALERTS_TIMED, ALERTS_ALLDAY, alertLabelFor, toAllDayAlert, parseAlertText } = Avisos;
 const ASK_ALERT_TIMED = [['15', '15 min antes'], ['60', '1 hora antes'], ['1440', '1 día antes'], ['0', 'En el momento'], ['', 'No avisar']];
 const ASK_ALERT_ALLDAY = [['-540', 'Ese día a las 9'], ['900', 'El día anterior'], ['', 'No avisar']];
 const ASK_TIMES = [['09:00', '9:00'], ['12:00', '12:00'], ['15:00', '15:00'], ['18:00', '18:00'], ['20:00', '20:00'], ['custom', 'Otra hora']];
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 480];
 const REPEATS = [['none', 'No se repite'], ['daily', 'Todos los días'], ['weekly', 'Todas las semanas'], ['monthly', 'Todos los meses'], ['yearly', 'Todos los años']];
-const DEFAULT_SETTINGS = { name: '', email: '', alertTimed: 15, alertAllDay: -540, meetingDuration: 60, theme: 'auto' };
+const DEFAULT_SETTINGS = { name: '', email: '', alertTimed: 15, alertAllDay: -540, meetingDuration: 60, theme: 'auto', resumen: 8 };
+const RESUMEN_OPTS = [['0', 'No'], ['7', 'A las 7'], ['8', 'A las 8'], ['9', 'A las 9'], ['10', 'A las 10']];
 const DB_KEY = 'pendientes.v1';
 
 /* ---------- estado ---------- */
@@ -130,6 +117,9 @@ function load() {
   /* respaldo en Airtable: borrados pendientes de avisar y marcas de versión */
   s.tombs = Array.isArray(s.tombs) ? s.tombs : [];
   s.topicTombs = Array.isArray(s.topicTombs) ? s.topicTombs : [];
+  /* gastos: lo que pagaste (queda al marcar hecho un pendiente con monto) */
+  s.pagos = Array.isArray(s.pagos) ? s.pagos : [];
+  s.pagoTombs = Array.isArray(s.pagoTombs) ? s.pagoTombs : [];
   ['topicsAt', 'topicsSy', 'settingsAt', 'settingsSy'].forEach(k => { s[k] = Number(s[k]) || 0; });
   s.items.forEach(it => { if (!it.updatedAt) it.updatedAt = it.createdAt || Date.now(); });
   return s;
@@ -140,7 +130,7 @@ function writeLocal() { try { localStorage.setItem(DB_KEY, JSON.stringify(state)
 function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(writeLocal, 40); }
 /* cada cambio se guarda en el equipo y, si está conectado, se sube a Airtable */
 function save() { persist(); schedulePush(); }
-const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false };
+const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false, gastosMes: '' };
 
 /* ---------- pendientes ---------- */
 const byId = id => state.items.find(x => x.id === id);
@@ -264,12 +254,22 @@ function nextOccurrence(dateStr, repeat) {
 function toggleDone(id) {
   const it = byId(id); if (!it) return;
   if (!it.done && it.repeat && it.repeat !== 'none' && it.date) {
-    const prev = it.date; it.date = nextOccurrence(it.date, it.repeat); it.updatedAt = Date.now(); save(); render();
-    toast('Hecho. Vuelve ' + whenLabel(it).toLowerCase(), [{ label: 'Deshacer', fn: () => { it.date = prev; it.updatedAt = Date.now(); save(); render(); } }]);
+    const prev = it.date; it.date = nextOccurrence(it.date, it.repeat); it.updatedAt = Date.now();
+    const pay = registerPayment(it); save(); render();
+    toast('Hecho. Vuelve ' + whenLabel(it).toLowerCase() + (pay ? ' · ' + fmtMoney(pay.amount) + ' en gastos' : ''), [{ label: 'Deshacer', fn: () => { it.date = prev; it.updatedAt = Date.now(); if (pay) removePayment(pay.id); save(); render(); } }]);
     return;
   }
-  it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); render();
-  toast(it.done ? 'Hecho' : 'Volvió a pendientes', [{ label: 'Deshacer', fn: () => { it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now(); save(); render(); } }]);
+  it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now();
+  /* con monto: al hacerlo queda como pago; al volver a pendientes, el pago se va */
+  const pay = it.done ? registerPayment(it) : null;
+  const gone = !it.done ? state.pagos.find(p => p.item === it.id) : null;
+  if (gone) removePayment(gone.id);
+  save(); render();
+  toast(it.done ? 'Hecho' + (pay ? ' · ' + fmtMoney(pay.amount) + ' anotado en gastos' : '') : 'Volvió a pendientes', [{ label: 'Deshacer', fn: () => {
+    it.done = !it.done; it.doneAt = it.done ? Date.now() : null; it.updatedAt = Date.now();
+    if (pay) removePayment(pay.id); if (gone) restorePayment(gone);
+    save(); render();
+  } }]);
 }
 function removeItem(id) {
   const idx = state.items.findIndex(x => x.id === id); if (idx < 0) return;
@@ -281,6 +281,35 @@ function removeItem(id) {
     state.items.splice(Math.min(idx, state.items.length), 0, it); save(); render();
   } }]);
 }
+/* ---------- gastos: lo que pagaste ---------- */
+const curYm = () => todayStr().slice(0, 7);
+const ymAdd = (ym, n) => { const p = ym.split('-').map(Number); const d = new Date(p[0], p[1] - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); };
+const ymLabel = (ym, year) => { const p = ym.split('-').map(Number); const d = new Date(p[0], p[1] - 1, 1); return cap(F.moLong.format(d)) + (year || p[0] !== new Date().getFullYear() ? ' ' + p[0] : ''); };
+const sumOf = list => list.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+function registerPayment(it) {
+  if (!(typeof it.amount === 'number' && it.amount > 0)) return null;
+  const p = { id: uid(), title: it.title, amount: it.amount, date: todayStr(), topic: it.topic, item: it.id, at: Date.now() };
+  state.pagos.unshift(p);
+  return p;
+}
+function removePayment(id) {
+  const p = state.pagos.find(x => x.id === id); if (!p) return null;
+  state.pagos = state.pagos.filter(x => x.id !== id);
+  if (p._sy || p._rid) state.pagoTombs.push({ id: p.id, rid: p._rid || null, at: Date.now() });
+  return p;
+}
+function restorePayment(p) {
+  state.pagoTombs = state.pagoTombs.filter(t => t.id !== p.id);
+  p._sy = 0;
+  if (!state.pagos.some(x => x.id === p.id)) state.pagos.unshift(p);
+}
+/* lo pagado y lo que falta pagar en un mes (AAAA-MM) */
+function monthSums(ym) {
+  const paid = state.pagos.filter(p => String(p.date || '').slice(0, 7) === ym).sort((a, b) => (b.date < a.date ? -1 : b.date > a.date ? 1 : (b.at || 0) - (a.at || 0)));
+  const due = pending().filter(it => it.date && it.date.slice(0, 7) === ym && typeof it.amount === 'number' && it.amount > 0).sort(sortPending);
+  return { paid, due, paidTotal: sumOf(paid), dueTotal: sumOf(due) };
+}
+
 function loadSamples() {
   const t = fromYmd(todayStr()), dow = t.getDay();
   const fri = addDays(t, ((5 - dow + 7) % 7) || 7), sun = addDays(t, ((0 - dow + 7) % 7) || 7);
@@ -345,7 +374,31 @@ function viewInicio() {
       h += `<div class="card"><p class="empty">Nada para hoy.</p>${next ? `<p class="empty-k">Lo próximo</p><ul class="list">${rowHtml(next, { topic: true })}</ul>` : ''}</div>`;
     }
   }
+  const g = monthSums(curYm());
+  if (g.paid.length || g.due.length) {
+    h += `<button type="button" class="card money-tile" data-go="gastos"><span class="money-tile__k">Gastos de ${esc(ymLabel(curYm()).toLowerCase())}</span>` +
+      `<span class="money-tile__v">${g.paid.length ? 'Pagaste ' + esc(fmtMoney(g.paidTotal)) : 'Nada pagado todavía'}</span>` +
+      `<span class="money-tile__s">${g.due.length ? 'Falta pagar ' + esc(fmtMoney(g.dueTotal)) : 'Nada más por pagar'}</span>${icon('chevR')}</button>`;
+  }
   h += `<section class="section" aria-labelledby="hTemas"><h2 class="section__h" id="hTemas">Temas</h2><div class="tiles">${tilesHtml()}</div></section>`;
+  return h;
+}
+function viewGastos() {
+  const ym = ui.gastosMes || curYm(), g = monthSums(ym), prev = monthSums(ymAdd(ym, -1));
+  let cmp;
+  if (!g.paid.length) cmp = 'Todavía no pagaste nada este mes.';
+  else if (!prev.paid.length) cmp = 'Primer mes con gastos anotados.';
+  else { const d = g.paidTotal - prev.paidTotal; cmp = d === 0 ? 'Igual que en ' + ymLabel(ymAdd(ym, -1)).toLowerCase() + '.' : fmtMoney(Math.abs(d)) + (d > 0 ? ' más' : ' menos') + ' que en ' + ymLabel(ymAdd(ym, -1)).toLowerCase() + '.'; }
+  let h = `<nav class="months" aria-label="Mes"><button type="button" data-act="g-prev">${icon('chevL')}${esc(ymLabel(ymAdd(ym, -1)))}</button>` +
+    (ym < curYm() ? `<button type="button" data-act="g-next">${esc(ymLabel(ymAdd(ym, 1)))}${icon('chevR')}</button>` : '') + '</nav>';
+  h += `<div class="card money"><div class="money__row"><span>Pagado</span><span class="money__v">${esc(fmtMoney(g.paidTotal))}</span></div><p class="money__cmp">${esc(cmp)}</p>` +
+    `<div class="money__row"><span>Falta pagar</span><span class="money__v">${esc(fmtMoney(g.dueTotal))}</span></div></div>`;
+  if (g.due.length) h += `<section class="section"><h2 class="section__h">Falta pagar<span class="section__sub">${plural(g.due.length, 'pendiente', 'pendientes')}</span></h2><div class="card"><ul class="list">${g.due.map(it => rowHtml(it, { topic: true })).join('')}</ul></div></section>`;
+  h += `<section class="section"><h2 class="section__h">Pagado</h2><div class="card">` +
+    (g.paid.length ? `<ul class="list">${g.paid.map(p => { const t = topicOf(p.topic), d = fromYmd(p.date); return `<li class="pay" data-id="${esc(p.id)}"><span class="pay__d">${esc(short(F.wdShort.format(d)))} ${d.getDate()}</span>` +
+      `<span class="pay__t">${esc(p.title)}<small>${esc(t.name)}</small></span><span class="pay__a">${esc(fmtMoney(p.amount))}</span>` +
+      `<button type="button" class="icon-btn" data-act="g-del" aria-label="Borrar el pago ${esc(p.title)}">${icon('x')}</button></li>`; }).join('')}</ul>` : '') +
+    `<button type="button" class="addrow" data-act="g-new">${icon('plus')}Anotar un gasto ya pagado</button></div></section>`;
   return h;
 }
 function viewTema(id) {
@@ -353,7 +406,8 @@ function viewTema(id) {
   const p = pending().filter(it => it.topic === t.id).sort(sortPending);
   const done = state.items.filter(it => it.done && it.topic === t.id).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   let h = `<div class="card">${p.length ? `<ul class="list">${p.map(it => rowHtml(it)).join('')}</ul>` : ''}` +
-    `<button type="button" class="addrow" data-act="new-in" data-topic="${esc(t.id)}">${icon('plus')}Agregar en ${esc(t.name)}</button></div>`;
+    `<button type="button" class="addrow" data-act="new-in" data-topic="${esc(t.id)}">${icon('plus')}Agregar en ${esc(t.name)}</button>` +
+    (p.length > 1 ? `<button type="button" class="addrow" data-act="t-share" data-topic="${esc(t.id)}">${icon('share')}Mandar la lista</button>` : '') + '</div>';
   if (done.length) h += `<details class="fold section"><summary>Hechas · ${done.length} ${icon('chevD')}</summary><div class="card"><ul class="list">${done.slice(0, 30).map(it => rowHtml(it)).join('')}</ul></div></details>`;
   return h;
 }
@@ -386,12 +440,17 @@ function viewAgenda() {
 }
 function renderHeader() {
   const title = $('#viewTitle'), sub = $('#viewSub');
-  $('#btnBack').hidden = ui.view !== 'tema';
+  $('#btnBack').hidden = ui.view !== 'tema' && ui.view !== 'gastos';
   if (ui.view === 'tema') {
     const t = topicOf(ui.topicId), n = pending().filter(it => it.topic === t.id).length;
     title.innerHTML = `<span class="ticon" style="--tc:${esc(t.color)}">${icon(t.icon)}</span><span>${esc(t.name)}</span>`;
     sub.textContent = n ? plural(n, 'pendiente', 'pendientes') : 'Nada pendiente';
     document.title = t.name + ' · Pendientes';
+  } else if (ui.view === 'gastos') {
+    const ym = ui.gastosMes || curYm();
+    title.textContent = 'Gastos';
+    sub.textContent = ymLabel(ym, true);
+    document.title = 'Gastos · Pendientes';
   } else if (ui.view === 'agenda') {
     title.textContent = 'Agenda';
     const n = pending().filter(it => it.date).length;
@@ -408,13 +467,14 @@ function renderHeader() {
 }
 function render() {
   renderHeader();
-  $('#main').innerHTML = ui.view === 'agenda' ? viewAgenda() : ui.view === 'tema' ? viewTema(ui.topicId) : viewInicio();
+  $('#main').innerHTML = ui.view === 'agenda' ? viewAgenda() : ui.view === 'tema' ? viewTema(ui.topicId) : ui.view === 'gastos' ? viewGastos() : viewInicio();
 }
 
 /* ---------- navegación (el gesto de volver del iPhone funciona) ---------- */
 function parseHash() {
   const h = decodeURIComponent(location.hash.replace(/^#/, ''));
   if (h === 'agenda') return { v: 'agenda', id: null };
+  if (h === 'gastos') return { v: 'gastos', id: null };
   if (h.indexOf('tema-') === 0 && state.topics.some(t => t.id === h.slice(5))) return { v: 'tema', id: h.slice(5) };
   return { v: 'inicio', id: null };
 }
@@ -422,7 +482,7 @@ function urlFor(v, id) { return v === 'inicio' ? location.pathname + location.se
 function go(v, id) {
   id = id || null;
   if (v === ui.view && id === ui.topicId) { window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); return; }
-  ui.view = v; ui.topicId = id; ui.agendaAll = false; ui.depth += 1;
+  ui.view = v; ui.topicId = id; ui.agendaAll = false; ui.depth += 1; ui.gastosMes = curYm();
   history.pushState({ v, id, d: ui.depth }, '', urlFor(v, id));
   render(); window.scrollTo(0, 0);
   try { $('#viewTitle').focus({ preventScroll: true }); } catch (e) {}
@@ -453,6 +513,17 @@ function inviteHtml(it) {
   return first + `<a class="btn btn--secondary btn--block" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Invitar con Google Calendar</a>` +
     `<button type="button" class="btn btn--secondary btn--block" data-act="d-copy">${icon('copy')}Copiar el texto</button>`;
 }
+/* «Pasar a mañana», «Al lunes», «Una semana más»: un toque y listo */
+function moveOptions(it) {
+  if (it.done) return [];
+  const t = fromYmd(todayStr()), today = todayStr(), tom = ymd(addDays(t, 1)), mon = ymd(addDays(t, ((1 - t.getDay() + 7) % 7) || 7));
+  if (!it.date) return [['Para hoy', today], ['Para mañana', tom]];
+  const base = it.date > today ? fromYmd(it.date) : t, week = ymd(addDays(base, 7)), opts = [];
+  if (it.date !== tom) opts.push(['Pasar a mañana', tom]);
+  if (it.date !== mon && mon !== tom) opts.push(['Al lunes', mon]);
+  if (week !== tom && week !== mon) opts.push(['Una semana más', week]);
+  return opts;
+}
 function renderDetail() {
   const it = byId(detailId); if (!it) { closeSheet($('#detailSheet')); return; }
   const t = topicOf(it.topic), info = [];
@@ -468,8 +539,10 @@ function renderDetail() {
   if (it.notes) info.push(['note', esc(it.notes).replace(/\n/g, '<br>')]);
   $('#detailTopic').innerHTML = `<span class="det__topic" style="--tc:${esc(t.color)}"><span class="ticon ticon--sm">${icon(t.icon)}</span>${esc(t.name)}</span>`;
   const open = it.date && !it.done;
+  const moves = moveOptions(it);
   $('#detailBody').innerHTML = `<h2 class="det__title" id="detailTitle" tabindex="-1">${esc(it.title)}</h2>` +
     `<ul class="det__info">${info.map(r => `<li>${icon(r[0])}<span>${r[1]}</span></li>`).join('')}</ul>` +
+    (moves.length ? `<div class="chips chips--acts" role="group" aria-label="Pasar para otro día">${moves.map(m => `<button type="button" class="chip chip--btn" data-act="d-move" data-date="${esc(m[1])}">${icon('calendar')}${esc(m[0])}</button>`).join('')}</div>` : '') +
     `<div class="actions">` +
     `<button type="button" class="btn btn--primary btn--block" data-act="d-done">${icon('check')}${it.done ? 'Volver a pendientes' : 'Marcar como hecho'}</button>` +
     (open ? calBtn(it) : '') +
@@ -488,7 +561,7 @@ function openDetail(id) {
 let draft = null, lastStep = null;
 const ORDER = ['que', 'tema', 'cuando', 'hora', 'aviso'];
 function newDraft(b) {
-  const d = Object.assign({ id: null, title: '', topic: null, topicAuto: false, date: undefined, time: undefined, alert: undefined, alertPending: undefined, alert2: null, duration: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, notes: '', kind: 'tarea', step: 'que', custom: null, more: false }, b || {});
+  const d = Object.assign({ id: null, title: '', topic: null, topicAuto: false, date: undefined, time: undefined, alert: undefined, alertPending: undefined, alert2: null, duration: null, repeat: 'none', invitees: [], location: '', amount: null, priority: 0, notes: '', kind: 'tarea', step: 'que', custom: null, more: false, paid: false }, b || {});
   d.invitees = (d.invitees || []).slice();
   if (!d.id) d.step = d.title ? nextStep(d) : 'que';
   return d;
@@ -567,7 +640,9 @@ function question(step, isNew) {
   if (step === 'que') {
     return `<section class="${cls}"><label class="q__label" for="f_title">¿Qué hay que hacer?</label>` +
       `<input class="q__input" id="f_title" type="text" value="${esc(d.title)}" placeholder="Ej.: Llamar a Matías mañana 10 hs" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">` +
-      `<div class="understood" id="understood" aria-live="polite"></div></section>`;
+      `<div class="understood" id="understood" aria-live="polite"></div>` +
+      (!d.id && ui.apiOk && sync.on ? `<button type="button" class="linkbtn" data-act="f-factura">${icon('camera')}Leer una factura con la cámara</button><input id="facturaFile" type="file" accept="image/*" capture="environment" hidden>` : '') +
+      '</section>';
   }
   if (step === 'tema') {
     return `<section class="${cls}"><h3 class="q__label" tabindex="-1">¿De qué tema?</h3><div class="opts">` +
@@ -625,7 +700,7 @@ function moreHtml() {
 }
 function renderForm() {
   const d = draft, parts = [];
-  $('#formTitle').textContent = d.id ? 'Editar' : 'Nuevo pendiente';
+  $('#formTitle').textContent = d.id ? 'Editar' : d.paid ? 'Gasto ya pagado' : 'Nuevo pendiente';
   ORDER.forEach(step => {
     if ((step === 'hora' || step === 'aviso') && typeof d.date !== 'string') return;
     if (d.step === step) parts.push(question(step, lastStep !== step && !reduced()));
@@ -656,6 +731,64 @@ function updateTitleUi() {
   el.innerHTML = chips.length ? `<span class="understood__k">Entendí</span>${chips.join('')}` : '';
 }
 function formError(msg) { $('#formErr').textContent = msg; }
+
+/* ---------- leer una factura con la cámara ----------
+   La foto se achica acá (JPEG de hasta 1400 px) y va a /api/factura, que la lee con Claude.
+   Vuelve quién cobra, cuánto y cuándo vence: el formulario queda armado para guardar. */
+function shrinkImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      try {
+        const max = 1400, k = Math.min(1, max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+        const c = document.createElement('canvas'); c.width = Math.max(1, Math.round((img.naturalWidth || 1) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || 1) * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], type: 'image/jpeg' });
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen')); };
+    img.src = url;
+  });
+}
+function invoiceErrorText(code) {
+  return ({
+    'sin-ia': 'Falta la clave de IA en Vercel. Está en la guía.',
+    'ia-clave': 'La clave de IA no anda. Revisala en Vercel.',
+    'ia-ocupada': 'La IA está ocupada. Probá en un minuto.',
+    'ia-red': 'No llegué a la IA. Probá de nuevo.',
+    'clave': 'Conectá el respaldo en Airtable para usar esto.',
+    'grande': 'La foto es muy grande. Probá de nuevo.'
+  })[code] || 'No pude leer la factura. Probá con otra foto, más de cerca.';
+}
+function applyInvoice(j) {
+  const d = draft, who = j.empresa || j.concepto || 'la factura';
+  d.title = 'Pagar ' + who + (j.periodo ? ' ' + j.periodo : '');
+  d.topic = 'gastos'; d.topicAuto = false;
+  if (j.monto) d.amount = j.monto;
+  d.notes = [j.concepto ? 'Factura: ' + j.concepto : '', j.periodo ? 'Período: ' + j.periodo : ''].filter(Boolean).join('\n');
+  if (j.vencimiento) {
+    setDate(j.vencimiento); setTimeVal(null);
+    const dd = dayDiff(j.vencimiento); d.alert = dd >= 2 ? 2340 : dd >= 1 ? 900 : -540; d.alertPending = undefined; /* aviso dos días antes a las 9 */
+  } else { d.date = undefined; d.time = undefined; d.alert = undefined; }
+  d.more = !!j.monto; d.custom = null; d.step = nextStep(d);
+  renderForm();
+  toast(j.monto ? 'Leí la factura: ' + fmtMoney(j.monto) + (j.vencimiento ? ' · vence ' + whenLabel({ date: j.vencimiento }).toLowerCase() : ', sin vencimiento a la vista') : 'Leí la factura, pero no vi el monto. Completalo.');
+}
+async function readInvoice(file) {
+  const label = icon('camera') + 'Leer una factura con la cámara';
+  const busy = on => { const b = $('[data-act="f-factura"]'); if (b) { b.disabled = on; b.innerHTML = on ? icon('camera') + 'Leyendo la factura…' : label; } };
+  busy(true);
+  try {
+    const img = await shrinkImage(file);
+    const r = await fetch('/api/factura', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify({ imagen: img.data, tipo: img.type, tz: localTz() }) });
+    let j = null; try { j = await r.json(); } catch (e) { j = null; }
+    if (!r.ok || !j || !j.ok) { toast(invoiceErrorText(j && j.error)); return; }
+    if (!j.esFactura) { toast('No parece una factura. Probá con otra foto, más de cerca.'); return; }
+    if (draft && !draft.id) applyInvoice(j);
+  } catch (e) { toast('No pude leer la factura. Probá de nuevo.'); }
+  finally { busy(false); }
+}
 function advance() {
   draft.step = nextStep(draft); draft.custom = null;
   renderForm();
@@ -666,6 +799,13 @@ function advance() {
     const box = $('#formBody .q') || $('#formBody .more-toggle');
     if (box) box.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
   }
+}
+/* La app abierta con ?nuevo=texto (un atajo, un favorito): el formulario ya viene escrito y entendido */
+function openFormWith(text) {
+  openForm({});
+  const input = $('#f_title'); if (!input) return;
+  input.value = text; updateTitleUi();
+  if (commitTitle()) advance();
 }
 function openForm(base) {
   draft = newDraft(base); lastStep = null;
@@ -697,8 +837,11 @@ function saveForm() {
   let it = d.id ? byId(d.id) : null;
   if (it) Object.assign(it, data, { updatedAt: Date.now() });
   else { it = Object.assign({ id: uid(), done: false, doneAt: null, createdAt: Date.now(), updatedAt: Date.now() }, data); state.items.unshift(it); }
+  let pay = null;
+  if (d.paid && !it.done) { it.done = true; it.doneAt = Date.now(); pay = registerPayment(it); }
   rememberPeople(it); save();
   closeSheet($('#formSheet')); render();
+  if (d.paid) { toast(pay ? 'Anotado en gastos · ' + fmtMoney(pay.amount) : 'Anotado como hecho (sin monto no cuenta como gasto)'); return; }
   if (!$('#detailSheet').open && detailId === it.id) detailId = null;
   const auto = !!it.date && !it.done && subscribed();
   toast((d.id ? 'Guardado' : 'Anotado') + (it.date ? ' · ' + whenLabel(it) : '') + (auto ? ' · va solo al Calendario' : ''), it.date && !it.done && !auto ? [{ label: 'Al Calendario', cal: it }] : []);
@@ -721,6 +864,7 @@ function renderSettings() {
     `<details class="set" id="setSync"${sync.on ? '' : ' open'}><summary><span>Respaldo en Airtable</span><span class="set__end"><small id="syncSum"></small>${icon('chevR')}</span></summary>` +
       `<div class="set__body" id="syncBox"></div></details>` +
     `<details class="set" id="setCal"><summary>Calendario del iPhone ${icon('chevR')}</summary><div class="set__body" id="calBox"></div></details>` +
+    `<details class="set" id="setSiri"><summary>Anotar con Siri o desde WhatsApp ${icon('chevR')}</summary><div class="set__body" id="siriBox"></div></details>` +
     `<details class="set"><summary>Tu nombre y mail ${icon('chevR')}</summary><div class="set__body">` +
       `<p class="set__note">Aparecen en las invitaciones que mandás.</p>` +
       `<label class="field" for="s_name"><span class="field__l">Nombre</span><input id="s_name" type="text" autocomplete="name" value="${esc(s.name)}"></label>` +
@@ -745,6 +889,7 @@ function renderSettings() {
   renderTopicEditor();
   renderSyncUi();
   renderCalUi();
+  renderSiriUi();
 }
 function openSettings() { renderSettings(); const dlg = $('#settingsSheet'); openSheet(dlg); dlg.querySelector('.sheet__body').scrollTop = 0; }
 function exportJson() {
@@ -769,6 +914,7 @@ function importJson(file) {
       (inc.topics || []).forEach(t => { if (t && t.id && !state.topics.some(x => x.id === t.id)) { state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = later(state.topicsSy); } });
       if (inc.settings) { state.settings = Object.assign({}, state.settings, inc.settings); state.settingsAt = later(state.settingsSy); }
       (inc.people || []).forEach(p => { if (state.people.indexOf(p) < 0) state.people.push(p); });
+      (inc.pagos || []).forEach(p => { if (p && p.id && !state.pagos.some(x => x.id === p.id)) { p = Object.assign({}, p); delete p._rid; delete p._sy; state.pagos.push(p); } });
       (inc.places || []).forEach(p => { if (state.places.indexOf(p) < 0) state.places.push(p); });
       save(); applyTheme(); render(); renderSettings();
       toast('Copia restaurada: ' + plural(added, 'nuevo', 'nuevos') + ', ' + plural(updated, 'actualizado', 'actualizados'));
@@ -814,12 +960,13 @@ const AT = {
     duration: 'fldv4jtCFzWcoIBC8', kind: 'fldCoQgl4RQLh0vPK', notes: 'fldFF42PIs7dskId2', doneAt: 'fldAsjiJoqruDIYSR', deleted: 'fldDxv1f2ywstDGBF', id: 'fldnfppQNHeaSDQBV',
     createdAt: 'fldCfbOGQLxyHCzAI', updatedAt: 'fldK4xIXixg7WKSKM' },
   T: { name: 'fldqaHlO4Mr9JRzFp', color: 'fldWEsqfWfJqYwxzQ', icon: 'fldUCZN31ZBKBzAzI', order: 'fldUkwzJBobHikxlD', hidden: 'fldJyJI023qSEBWn0', deleted: 'fldZwU0l5YdPmDSnn', id: 'fldX75YeraK8JBpdR', updatedAt: 'fldQi2sW6mD3EJlZx' },
-  A: { key: 'fldstgTm03EQOalcw', value: 'fldxCu4LteLCoAW1W', updatedAt: 'fldDu7pTNb9iNeThq' }
+  A: { key: 'fldstgTm03EQOalcw', value: 'fldxCu4LteLCoAW1W', updatedAt: 'fldDu7pTNb9iNeThq' },
+  G: { title: 'fldNXxWuCDPirF2xn', amount: 'fld3ziTYrZXECGTeo', date: 'fldmDxclvVuzJOpeK', topic: 'fldGrAHGgN4RVW2kg', item: 'fldb9Rv4p47lo8QER', deleted: 'fldS5NFh9rQ6o04L7', id: 'fld8lEN7zS5AKXZ8T', createdAt: 'flduKjByy3tEZKoQC' }
 };
 const REPEAT_AT = { daily: 'Todos los días', weekly: 'Todas las semanas', monthly: 'Todos los meses', yearly: 'Todos los años' };
 const KIND_AT = { tarea: 'Tarea', reunion: 'Reunión', recordatorio: 'Recordatorio' };
 const HASH_KEYS = ['title', 'topic', 'date', 'time', 'alert', 'alert2', 'done', 'priority', 'invitees', 'location', 'amount', 'repeat', 'duration', 'kind', 'notes'];
-const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia', CAL_KEY = 'pendientes.calendario', CALSEEN_KEY = 'pendientes.calVisto';
+const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia', CAL_KEY = 'pendientes.calendario', CALSEEN_KEY = 'pendientes.calVisto', SIRI_KEY = 'pendientes.anotar';
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
 const iso = ms => (ms ? new Date(ms).toISOString() : null);
@@ -936,7 +1083,7 @@ function mergeSettings(rows) {
   const localDirty = (state.settingsAt || 0) > (state.settingsSy || 0) && state.settingsSy;
   if (!localDirty && at > (state.settingsSy || 0)) {
     ['name', 'email'].forEach(k => { if (typeof v[k] === 'string') state.settings[k] = v[k]; });
-    ['alertTimed', 'alertAllDay', 'meetingDuration'].forEach(k => { if (typeof v[k] === 'number' && isFinite(v[k])) state.settings[k] = v[k]; });
+    ['alertTimed', 'alertAllDay', 'meetingDuration', 'resumen'].forEach(k => { if (typeof v[k] === 'number' && isFinite(v[k])) state.settings[k] = v[k]; });
     state.settingsAt = state.settingsSy = at;
     changed = true;
   }
@@ -987,10 +1134,43 @@ function mergeItems(rows) {
   });
   return changed;
 }
+/* pagos: se crean acá y se suben; en Airtable se pueden corregir monto, fecha o nombre, o borrar */
+function pagoFields(p) {
+  const G = AT.G, f = {};
+  f[G.title] = p.title || 'Pago'; f[G.amount] = Number(p.amount) || 0; f[G.date] = p.date; f[G.topic] = topicOf(p.topic).name; f[G.item] = p.item || '';
+  f[G.deleted] = false; f[G.id] = p.id; f[G.createdAt] = iso(p.at || Date.now());
+  return f;
+}
+function pagoFromRecord(r) {
+  const G = AT.G, f = r.fields || {};
+  const amount = typeof f[G.amount] === 'number' ? f[G.amount] : Parser.parseAmount(String(f[G.amount] || ''));
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(f[G.date] || '')) ? f[G.date] : (Date.parse(f[G.createdAt]) ? ymd(new Date(Date.parse(f[G.createdAt]))) : todayStr());
+  if (!(amount > 0)) return null;
+  return { id: f[G.id], title: String(f[G.title] || '').trim() || 'Pago', amount, date, topic: topicIdFromName(f[G.topic]), item: String(f[G.item] || ''), at: Date.parse(f[G.createdAt]) || Date.parse(r.creado) || Date.now(), _rid: r.rid, _sy: 1 };
+}
+function mergePagos(rows) {
+  const G = AT.G, seen = new Set(), tombs = new Set(state.pagoTombs.map(t => t.id));
+  let changed = false;
+  rows.forEach(r => {
+    const f = r.fields || {}, id = f[G.id]; if (!id) return;
+    seen.add(id);
+    if (tombs.has(id)) return;
+    const local = state.pagos.find(p => p.id === id);
+    if (f[G.deleted]) { if (local && local._sy) { state.pagos = state.pagos.filter(p => p.id !== id); changed = true; } return; }
+    if (!local) { const p = pagoFromRecord(r); if (p) { state.pagos.push(p); changed = true; } return; }
+    local._rid = r.rid;
+    if (!local._sy) return; /* todavía no se subió: va tal cual */
+    const p = pagoFromRecord(r);
+    if (p && (p.amount !== local.amount || p.date !== local.date || p.title !== local.title)) { local.amount = p.amount; local.date = p.date; local.title = p.title; changed = true; }
+  });
+  state.pagos.slice().forEach(p => { if (p._sy && !seen.has(p.id)) { state.pagos = state.pagos.filter(x => x !== p); changed = true; } });
+  return changed;
+}
 function mergeRemote(data) {
   let changed = mergeTopics(data.temas || []);
   changed = mergeSettings(data.ajustes || []) || changed;
   changed = mergeItems(data.pendientes || []) || changed;
+  changed = mergePagos(data.pagos || []) || changed;
   return changed;
 }
 async function api(method, body, keepalive) {
@@ -1011,7 +1191,9 @@ async function pushDirty(keepalive) {
   const topicsAt = state.topicsAt || 0, settingsAt = state.settingsAt || 0;
   const topicsDirty = topicsAt > (state.topicsSy || 0) || state.topicTombs.length > 0;
   const settingsDirty = settingsAt > (state.settingsSy || 0);
-  if (!items.length && !tombs.length && !topicsDirty && !settingsDirty) return false;
+  const G = AT.G, pagos = state.pagos.filter(p => !p._sy).map(p => ({ rid: p._rid || undefined, fields: pagoFields(p) }))
+    .concat(state.pagoTombs.map(t => { const f = {}; f[G.id] = t.id; f[G.deleted] = true; return { rid: t.rid || undefined, fields: f }; }));
+  if (!items.length && !tombs.length && !topicsDirty && !settingsDirty && !pagos.length) return false;
   const rows = items.map(it => ({ id: it.id, at: it.updatedAt || 0, row: { rid: it._rid || undefined, fields: itemFields(it) } }))
     .concat(tombs.map(t => { const f = {}; f[P.id] = t.id; f[P.deleted] = true; f[P.updatedAt] = iso(t.at); return { id: t.id, tomb: true, row: { rid: t.rid || undefined, fields: f } }; }));
   const temas = [], ajustes = [];
@@ -1022,7 +1204,7 @@ async function pushDirty(keepalive) {
   if (settingsDirty) {
     const s = state.settings, f = {};
     f[A.key] = 'ajustes';
-    f[A.value] = JSON.stringify({ name: s.name, email: s.email, alertTimed: Number(s.alertTimed), alertAllDay: Number(s.alertAllDay), meetingDuration: Number(s.meetingDuration), tz: localTz() });
+    f[A.value] = JSON.stringify({ name: s.name, email: s.email, alertTimed: Number(s.alertTimed), alertAllDay: Number(s.alertAllDay), meetingDuration: Number(s.meetingDuration), resumen: Number(s.resumen) || 0, tz: localTz() });
     f[A.updatedAt] = iso(settingsAt);
     ajustes.push({ rid: state._settingsRid, fields: f });
   }
@@ -1030,7 +1212,7 @@ async function pushDirty(keepalive) {
   for (let i = 0; i < Math.max(rows.length, 1); i += CHUNK) {
     const part = rows.slice(i, i + CHUNK), sent = {};
     part.forEach(x => { if (!x.tomb) sent[x.id] = x.at; });
-    const res = await api('POST', i === 0 ? { temas, ajustes, pendientes: part.map(x => x.row) } : { pendientes: part.map(x => x.row) }, keepalive);
+    const res = await api('POST', i === 0 ? { temas, ajustes, pagos, pendientes: part.map(x => x.row) } : { pendientes: part.map(x => x.row) }, keepalive);
     (res.pendientes || []).forEach(r => {
       const f = r.fields || {}, id = f[P.id]; if (!id) return;
       if (f[P.deleted]) { state.tombs = state.tombs.filter(t => t.id !== id); return; }
@@ -1044,6 +1226,11 @@ async function pushDirty(keepalive) {
         (res.temas || []).forEach(r => { const id = r.fields && r.fields[T.id]; if (id) state._topicRids[id] = r.rid; });
       }
       if (settingsDirty) { state.settingsSy = settingsAt; const r = (res.ajustes || [])[0]; if (r) state._settingsRid = r.rid; }
+      (res.pagos || []).forEach(r => {
+        const f = r.fields || {}, id = f[G.id]; if (!id) return;
+        if (f[G.deleted]) { state.pagoTombs = state.pagoTombs.filter(t => t.id !== id); return; }
+        const p = state.pagos.find(x => x.id === id); if (p) { p._rid = r.rid; p._sy = 1; }
+      });
     }
     persist();
   }
@@ -1058,6 +1245,7 @@ async function runSync(full, keepalive) {
       const data = await api('GET');
       sync.pulled = Date.now();
       if (data.calendario && data.calendario !== lsGet(CAL_KEY)) { lsSet(CAL_KEY, data.calendario); renderCalUi(); }
+      if (data.anotar && data.anotar !== lsGet(SIRI_KEY)) { lsSet(SIRI_KEY, data.anotar); renderSiriUi(); }
       noteCalendarVisit(data.ajustes || []);
       if (mergeRemote(data)) { persist(); render(); if ($('#detailSheet').open) renderDetail(); }
     }
@@ -1065,7 +1253,7 @@ async function runSync(full, keepalive) {
     sync.last = Date.now(); lsSet(LAST_KEY, String(sync.last)); sync.err = null;
   } catch (e) {
     sync.err = e && e.code ? e.code : 'red';
-    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); renderCalUi(); }
+    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); lsSet(SIRI_KEY, ''); renderCalUi(); renderSiriUi(); }
   } finally {
     sync.busy = false; renderSyncUi();
     const again = sync.again; sync.again = null;
@@ -1188,10 +1376,14 @@ function prepareCalAll() {
   if (!items.length) return;
   allTarget(items).then(url => { if (url && n === calPrep && a.isConnected) { a.setAttribute('href', url); a.dataset.sig = sig; } }).catch(() => {});
 }
+/* «Resumen de la mañana»: un aviso en el Calendario a esa hora con lo del día y lo que vence en la semana */
+const resumenHtml = () => `<label class="field" for="s_resumen"><span class="field__l">Resumen de la mañana</span><select id="s_resumen">${RESUMEN_OPTS.map(o => `<option value="${o[0]}"${String(Number(state.settings.resumen) || 0) === o[0] ? ' selected' : ''}>${o[1]}</option>`).join('')}</select></label>` +
+  `<p class="set__note">A esa hora te llega un aviso con lo del día, lo atrasado y lo que vence en la semana.</p>`;
 function calBoxHtml() {
   if (subscribed()) {
     return `<p class="sync-status is-ok" role="status">${icon('check')}<span>Suscripto. Tu Calendario se actualizó ${esc(agoText(calSeen()))}.</span></p>` +
       `<p class="set__note">Lo que anotes con fecha aparece solo, con sus avisos. Si no suenan, en la suscripción apagá «Eliminar alarmas».</p>` +
+      resumenHtml() +
       `<a class="btn btn--secondary btn--block" href="${esc(feedUrl('webcal'))}">Suscribirme de nuevo</a>` +
       `<button type="button" class="btn btn--secondary btn--block" data-act="s-cal-copy">${icon('copy')}Copiar el link</button>`;
   }
@@ -1200,6 +1392,7 @@ function calBoxHtml() {
   if (!on) return all + `<p class="set__note">En Calendario tocá «Añadir todo». ${sync.on ? 'Para que se agreguen solos, tocá «Sincronizar ahora» en el respaldo.' : 'Si conectás Airtable, se agregan solos.'}</p>`;
   return `<a class="btn btn--primary btn--block" href="${esc(feedUrl('webcal'))}">${icon('calendar')}Suscribirme en el Calendario</a>` +
     `<p class="set__note">Te suscribís una vez y lo que anotes con fecha aparece solo, con sus avisos. Si no suenan, en la suscripción apagá «Eliminar alarmas».</p>` +
+    resumenHtml() +
     all +
     `<button type="button" class="btn btn--secondary btn--block" data-act="s-cal-copy">${icon('copy')}Copiar el link</button>`;
 }
@@ -1207,6 +1400,28 @@ function renderCalUi() {
   const box = $('#calBox'); if (!box) return;
   box.innerHTML = calBoxHtml();
   prepareCalAll();
+}
+
+/* ---------- anotar con Siri o desde WhatsApp ----------
+   Un atajo del iPhone manda la frase a /api/anotar con una llave propia; el servidor la
+   entiende como la app y la guarda en Airtable. Acá se da el link y los pasos para armarlo. */
+const siriUrl = () => (sync.on && lsGet(SIRI_KEY) ? location.protocol + '//' + location.host + '/api/anotar?k=' + encodeURIComponent(lsGet(SIRI_KEY)) : '');
+function siriBoxHtml() {
+  if (!siriUrl()) return `<p class="set__note">Con el respaldo en Airtable conectado, podés decirle a Siri «anotar pendiente» o mandar un mensaje de WhatsApp a Pendientes sin abrir la app.${sync.on ? ' Tocá «Sincronizar ahora» en el respaldo para activarlo.' : ''}</p>`;
+  return `<p class="set__note">Se arma una sola vez, en la app Atajos del iPhone. Después: «Oye Siri, anotar pendiente», o desde WhatsApp Compartir → «Anotar pendiente».</p>` +
+    `<button type="button" class="btn btn--primary btn--block" data-act="s-siri-copy">${icon('copy')}Copiar el link para el atajo</button>` +
+    `<details class="fold fold--sm"><summary>Cómo armar el atajo ${icon('chevD')}</summary><ol class="steps">` +
+    `<li>Abrí la app <b>Atajos</b> y tocá <b>+</b>.</li>` +
+    `<li>Tocá el nombre de arriba y ponele <b>Anotar pendiente</b>.</li>` +
+    `<li>Agregá la acción <b>Recibir entrada de la hoja de compartir</b>. En «Si no hay entrada» elegí <b>Pedir texto</b>, con la pregunta «¿Qué anoto?».</li>` +
+    `<li>Agregá la acción <b>Obtener contenido de URL</b>. Pegá el link que copiaste. Tocá la flecha: Método <b>POST</b>, Cuerpo de la solicitud <b>Formulario</b>, y agregá un campo <b>texto</b> con el valor <b>Entrada del atajo</b>.</li>` +
+    `<li>Agregá la acción <b>Mostrar resultado</b>.</li>` +
+    `<li>En los detalles del atajo prendé <b>Mostrar en la hoja de compartir</b>.</li></ol>` +
+    `<p class="set__note">Listo: decile a Siri «anotar pendiente» y contale qué. Te contesta «Anotado…».</p></details>`;
+}
+function renderSiriUi() {
+  const box = $('#siriBox'); if (!box) return;
+  box.innerHTML = siriBoxHtml();
 }
 
 /* ---------- eventos ---------- */
@@ -1259,6 +1474,24 @@ function bind() {
         return;
       }
       case 'f-more': draft.more = !draft.more; renderForm(); if (draft.more) $('#moreBox').scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return;
+      case 'f-factura': { const i = $('#facturaFile'); if (i) i.click(); return; }
+      /* ficha: pasar para otro día */
+      case 'd-move': {
+        const it = byId(detailId); if (!it) return;
+        const prev = { date: it.date, alert: it.alert, alert2: it.alert2, repeat: it.repeat };
+        it.date = a.dataset.date;
+        if (!prev.date) { it.alert = defaultAlertFor(it.date, it.time); it.alert2 = null; it.repeat = 'none'; }
+        it.updatedAt = Date.now(); closeSheet($('#detailSheet')); save(); render();
+        toast('Pasado a ' + whenLabel(it).toLowerCase(), [{ label: 'Deshacer', fn: () => { Object.assign(it, prev); it.updatedAt = Date.now(); save(); render(); } }]);
+        return;
+      }
+      /* tema: mandar la lista */
+      case 't-share': {
+        const t = topicOf(a.dataset.topic), its = pending().filter(it => it.topic === t.id).sort(sortPending);
+        const text = t.name + ':\n' + its.map(it => '• ' + it.title + (it.date ? ' (' + whenLabel(it) + ')' : '') + (typeof it.amount === 'number' ? ' ' + fmtMoney(it.amount) : '')).join('\n');
+        if (navigator.share) navigator.share({ title: t.name, text }).catch(() => {}); else copyText(text);
+        return;
+      }
       /* ajustes */
       case 's-theme': state.settings.theme = a.dataset.value; save(); applyTheme(); $$('[data-act="s-theme"]').forEach(b => b.setAttribute('aria-checked', String(b === a))); return;
       case 's-add-topic': {
@@ -1279,9 +1512,20 @@ function bind() {
         save(); renderTopicEditor(); render(); toast('Tema eliminado' + (n ? '. Sus pendientes pasaron a Otros' : ''));
         return;
       }
+      /* gastos */
+      case 'g-prev': ui.gastosMes = ymAdd(ui.gastosMes || curYm(), -1); render(); window.scrollTo(0, 0); return;
+      case 'g-next': ui.gastosMes = ymAdd(ui.gastosMes || curYm(), 1); render(); window.scrollTo(0, 0); return;
+      case 'g-new': openForm({ topic: 'gastos', paid: true, date: null, alert: null, more: true }); return;
+      case 'g-del': {
+        const li = a.closest('.pay'), p = li && removePayment(li.dataset.id); if (!p) return;
+        save(); render();
+        toast('Pago borrado', [{ label: 'Deshacer', fn: () => { restorePayment(p); save(); render(); } }]);
+        return;
+      }
       case 's-connect': connectSync(); return;
       case 's-sync': runSync(true); return;
-      case 's-disconnect': lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); renderCalUi(); toast('Este equipo ya no guarda en Airtable'); return;
+      case 's-disconnect': lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); lsSet(CALSEEN_KEY, ''); lsSet(SIRI_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); renderCalUi(); renderSiriUi(); toast('Este equipo ya no guarda en Airtable'); return;
+      case 's-siri-copy': { const u = siriUrl(); if (u) copyText(u); return; }
       case 's-backup': exportJson(); return;
       case 's-restore': $('#importFile').click(); return;
       case 's-cal-all': {
@@ -1311,7 +1555,7 @@ function bind() {
   $('#btnNew').addEventListener('click', () => openForm(ui.view === 'tema' ? { topic: ui.topicId } : {}));
   window.addEventListener('popstate', e => {
     const s = e.state && e.state.v ? e.state : parseHash();
-    ui.view = s.v; ui.topicId = s.id || null; ui.depth = e.state && e.state.d ? e.state.d : 0; ui.agendaAll = false;
+    ui.view = s.v; ui.topicId = s.id || null; ui.depth = e.state && e.state.d ? e.state.d : 0; ui.agendaAll = false; ui.gastosMes = curYm();
     render(); window.scrollTo(0, 0);
   });
 
@@ -1340,6 +1584,7 @@ function bind() {
   });
   $('#formSheet').addEventListener('change', e => {
     const id = e.target.id;
+    if (id === 'facturaFile') { const f = e.target.files && e.target.files[0]; if (f) readInvoice(f); e.target.value = ''; return; }
     if (id === 'f_repeat') draft.repeat = e.target.value;
     else if (id === 'f_duration') draft.duration = Number(e.target.value);
     else if (id === 'f_alert2') draft.alert2 = e.target.value === '' ? null : Number(e.target.value);
@@ -1358,7 +1603,7 @@ function bind() {
     const id = e.target.id, v = e.target.value;
     if (id === 's_name') state.settings.name = v.trim();
     else if (id === 's_email') state.settings.email = v.trim();
-    else if (id === 's_alertTimed' || id === 's_alertAllDay' || id === 's_meetingDuration') state.settings[id.slice(2)] = Number(v);
+    else if (id === 's_alertTimed' || id === 's_alertAllDay' || id === 's_meetingDuration' || id === 's_resumen') state.settings[id.slice(2)] = Number(v);
     else return;
     state.settingsAt = later(state.settingsSy);
     save();
@@ -1411,6 +1656,11 @@ function init() {
   ui.view = s.v; ui.topicId = s.id; ui.depth = 0;
   try { history.replaceState({ v: s.v, id: s.id, d: 0 }, '', location.href); } catch (e) {}
   applyTheme(); bind(); render(); renderSyncUi();
+  const nuevo = new URLSearchParams(location.search).get('nuevo');
+  if (nuevo && nuevo.trim()) {
+    try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {}
+    setTimeout(() => openFormWith(nuevo.trim().slice(0, 500)), 50);
+  }
   if (/^https?:$/.test(location.protocol)) {
     if (sync.on) runSync(true);
     fetch('/api/ics?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.apiOk = !!(j && j.ok); if (ui.apiOk) { render(); if ($('#detailSheet').open) renderDetail(); } }).catch(() => {});
