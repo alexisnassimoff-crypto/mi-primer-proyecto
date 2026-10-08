@@ -10,11 +10,13 @@
    La llave la entrega GET /api/datos a la app conectada (ver _airtable.js).
    La respuesta queda 10 minutos en la red de Vercel para no gastar llamadas de Airtable
    (el plan gratis tiene un límite por mes y lo comparten todas las bases).
+   Cuando lo pide la suscripción (no un navegador), se anota en Ajustes, fila «calendario»:
+   así la app sabe que el Calendario está suscripto y deja de ofrecer agregarlo a mano.
    ============================================================ */
 'use strict';
 const ICS = require('../ics.js');
 const Avisos = require('../avisos.js');
-const { CAMPOS, esperar, configurado, tokenOk, listar } = require('./_airtable.js');
+const { CAMPOS, TABLAS, esperar, configurado, tokenOk, listar, airtable } = require('./_airtable.js');
 
 const P = CAMPOS.pendientes, A = CAMPOS.ajustes;
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -94,6 +96,29 @@ function eventoDe(r, aj) {
   };
 }
 
+/* Quién pidió el calendario: el iPhone, la Mac o Google lo piden solos cada tanto.
+   Un navegador (Safari, Chrome) no es la suscripción: es «Agregar todo» o el link abierto a mano. */
+function cliente(ua) {
+  ua = String(ua || '');
+  if (!ua || /Mozilla/i.test(ua)) return '';
+  return /iOS|iPhone|iPad/i.test(ua) ? 'iPhone' : /macOS|Mac OS|CalendarAgent/i.test(ua) ? 'Mac' : /Google/i.test(ua) ? 'Google' : 'otro';
+}
+
+/* Anota cuándo lo pidió la suscripción. Como mucho una vez cada 30 minutos, para no gastar llamadas. */
+async function anotarVisita(filas, quien) {
+  const row = filas.find(r => r.fields && r.fields[A.key] === 'calendario');
+  if (row && Date.now() - (Date.parse(row.fields[A.updatedAt]) || 0) < 30 * 60000) return;
+  const ahora = new Date().toISOString(), fields = {};
+  fields[A.key] = 'calendario';
+  fields[A.value] = JSON.stringify({ visto: ahora, desde: quien });
+  fields[A.updatedAt] = ahora;
+  try {
+    await airtable(TABLAS.ajustes.id, 'PATCH', row
+      ? { typecast: true, records: [{ id: row.rid, fields }] }
+      : { typecast: true, performUpsert: { fieldsToMergeOn: [A.key] }, records: [{ fields }] });
+  } catch (e) { /* si no se pudo anotar, el calendario se entrega igual */ }
+}
+
 function texto(res, status, msg) {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   return res.status(status).send(msg);
@@ -115,6 +140,8 @@ module.exports = async function (req, res) {
     const [pendientes, ajustes] = await Promise.all([listar('pendientes'), listar('ajustes')]);
     const aj = ajustesDe(ajustes);
     const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).sort((a, b) => a.start - b.start);
+    const quien = 't' in q ? '' : cliente(req.headers && req.headers['user-agent']);
+    if (quien) await anotarVisita(ajustes, quien);
     calendario();
     /* la red de Vercel lo guarda 10 minutos (y lo sigue dando mientras lo renueva):
        así el Calendario puede pedirlo seguido sin gastar las llamadas de Airtable */
