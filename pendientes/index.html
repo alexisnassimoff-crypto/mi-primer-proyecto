@@ -81,6 +81,39 @@
   </div>
 </dialog>
 
+<!-- Varios pendientes de una (dichos de corrido, o leídos de una foto o un PDF): revisar y guardar -->
+<dialog class="sheet sheet--page" id="multiSheet" aria-labelledby="multiTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="multiTitle">Revisá y guardá</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="multiBody"></div>
+    <footer class="sheet__foot">
+      <button type="button" class="btn btn--primary btn--block" id="multiSave">Guardar</button>
+    </footer>
+  </div>
+</dialog>
+
+<!-- Preguntale a tu agenda -->
+<dialog class="sheet" id="askSheet" aria-labelledby="askTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="askTitle">Preguntale a tu agenda</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body ask">
+      <form class="ask__form" id="askForm" novalidate autocomplete="off">
+        <label class="sr" for="askInput">Tu pregunta</label>
+        <input class="q__input" id="askInput" type="text" placeholder="¿Cuánto gasté en la casa este mes?" enterkeyhint="send" autocomplete="off" autocapitalize="sentences">
+        <button type="submit" class="btn btn--primary btn--block">Preguntar</button>
+      </form>
+      <div class="chips chips--acts" id="askChips" role="group" aria-label="Preguntas de ejemplo"></div>
+      <div class="ask__answer" id="askAnswer" aria-live="polite"></div>
+    </div>
+  </div>
+</dialog>
+
 <!-- Ajustes -->
 <dialog class="sheet" id="settingsSheet" aria-labelledby="settingsTitle">
   <div class="sheet__in">

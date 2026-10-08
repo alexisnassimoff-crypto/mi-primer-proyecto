@@ -35,6 +35,9 @@ function ajustesDe(filas) {
     if (typeof v.tz === 'string' && zonaValida(v.tz)) out.tz = v.tz;
     if (typeof v.resumen === 'number' && isFinite(v.resumen)) out.resumen = Math.max(0, Math.min(23, Math.round(v.resumen)));
   }
+  /* el resumen inteligente del día (lo arma /api/resumen) */
+  const ia = filas.find(r => r.fields && r.fields[A.key] === 'resumen');
+  try { const w = ia ? JSON.parse(ia.fields[A.value] || '{}') : null; if (w && w.fecha && w.texto) out.ia = { fecha: String(w.fecha), texto: String(w.texto) }; } catch (e) { /* sin resumen */ }
   return out;
 }
 
@@ -63,6 +66,7 @@ function resumenes(pendientes, aj, hoy) {
     let title = delDia.length ? 'Hoy: ' + delDia.slice(0, 3).map(corto).join(', ') + (delDia.length > 3 ? ' y ' + (delDia.length - 3) + ' más' : '') : 'Hoy: nada anotado';
     if (esHoy && atrasados.length) title += ' · ' + atrasados.length + (atrasados.length === 1 ? ' atrasado' : ' atrasados');
     const desc = [];
+    if (esHoy && aj.ia && aj.ia.fecha === hoy) desc.push('✨ ' + aj.ia.texto);
     if (delDia.length) desc.push('Hoy:\n' + delDia.map(f => '• ' + linea(f)).join('\n'));
     if (esHoy && atrasados.length) desc.push('Atrasados:\n' + atrasados.slice(0, 8).map(f => '• ' + String(f[P.title]).trim() + ' (' + diaCorto(f[P.date]) + ')').join('\n') + (atrasados.length > 8 ? '\n• y ' + (atrasados.length - 8) + ' más' : ''));
     if (esHoy && semana.length) desc.push('Esta semana vencen ' + plata(total) + ':\n' + semana.slice(0, 8).map(f => '• ' + String(f[P.title]).trim() + ' ' + plata(f[P.amount]) + ' (' + diaCorto(f[P.date]) + ')').join('\n'));

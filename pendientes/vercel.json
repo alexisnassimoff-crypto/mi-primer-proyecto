@@ -11,6 +11,18 @@
     },
     "api/factura.js": {
       "maxDuration": 60
+    },
+    "api/ia.js": {
+      "maxDuration": 60
+    },
+    "api/resumen.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/resumen",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

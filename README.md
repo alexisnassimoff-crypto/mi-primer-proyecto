@@ -77,10 +77,13 @@ pendientes/api/ics.js       función de Vercel: sirve uno o varios eventos como 
 pendientes/api/datos.js     función de Vercel: lee y guarda en Airtable (el único que conoce el token)
 pendientes/api/calendario.js función de Vercel: el calendario suscrito, armado desde Airtable, con el resumen de la mañana
 pendientes/api/anotar.js    función de Vercel: anota un pendiente desde Siri o la hoja de compartir
-pendientes/api/factura.js   función de Vercel: lee una factura con una foto (Claude)
+pendientes/api/ia.js        función de Vercel: la IA (Claude): varias cosas de una, leer fotos y PDF, preguntas, mensajes
+pendientes/api/resumen.js   función de Vercel: el resumen inteligente del día (lo llama un cron a las 6 de Argentina)
+pendientes/api/factura.js   función de Vercel: lee una factura con una foto (la usan las versiones viejas de la app)
 pendientes/api/_airtable.js acceso a Airtable que comparten las funciones (no es una dirección)
 pendientes/api/_zona.js     zona horaria en el servidor (no es una dirección)
-pendientes/vercel.json      le da más tiempo a las funciones (30 s; 60 s a la factura)
+pendientes/api/_claude.js   el pedido a Claude que comparten las funciones de IA (no es una dirección)
+pendientes/vercel.json      le da más tiempo a las funciones (30 s; 60 s a las de IA) y el cron del resumen
 pendientes/GUIA.md          lo que queda de tu lado para activar cada cosa, paso a paso
 ```
 
@@ -141,11 +144,31 @@ $X · falta pagar $Y» y al tocarlo, la pantalla del mes: pagado, comparación c
 que falta pagar y la lista de pagos (se pueden borrar, con Deshacer). «Anotar un gasto ya pagado»
 crea el pendiente hecho y el pago de una vez. Volver un pendiente a pendientes saca su pago.
 
-**Foto de una factura.** En Nuevo, «Leer una factura con la cámara» achica la foto y la manda a
-`POST /api/factura` (pide la clave de la app), que se la da a Claude con un esquema JSON y devuelve
-quién cobra, qué es, el monto y el vencimiento. El formulario queda armado («Pagar Edenor octubre
-2026», tema Gastos, todo el día el vencimiento, aviso dos días antes a las 9, monto y notas). Hace
-falta `ANTHROPIC_API_KEY` en Vercel (ver `pendientes/GUIA.md`); sin ella el botón avisa.
+**IA (Claude).** Con `ANTHROPIC_API_KEY` en Vercel y el respaldo conectado, la app suma (todo pasa
+por `POST /api/ia`, que pide la clave de la app; sin IA o sin conexión no aparece nada de esto y la
+app anda igual):
+
+- **Varias cosas de una.** Si lo escrito o dictado en «¿Qué hay que hacer?» tiene dos o más verbos
+  y una coma o «y» («llamar al contador mañana a las 10, pagar el ABL 12 mil y comprar alimento»),
+  «Siguiente» se lo pide a Claude (`accion: 'armar'`), que devuelve cada pendiente con tema, fecha,
+  hora, monto, aviso, repetición, con quién, lugar y notas (esquema JSON). Si son varios se abre una
+  hoja para revisarlos y guardarlos de una (se pueden destildar); si es uno, queda en el formulario.
+  Si la IA falla, sigue el lector de siempre (`parser.js`).
+- **Leer una foto, captura o PDF** (`leer`): facturas y boletas («Pagar Edenor octubre 2026», todo
+  el día el vencimiento, aviso dos días antes a las 9), capturas de WhatsApp, circulares del
+  colegio, turnos. Las fotos se achican en el teléfono (JPEG de 1600 px); los PDF van tal cual,
+  hasta 3 MB.
+- **Preguntale a tu agenda** (`preguntar`): manda un resumen en texto de los pendientes, lo hecho en
+  los últimos 45 días, los pagos y los totales por mes, y muestra la respuesta.
+- **Mensaje de WhatsApp** (`mensaje`): en la ficha → Invitar → «Escribir el mensaje», con
+  indicaciones opcionales; queda editable, con link a WhatsApp y para copiar.
+- **Resumen del día**: `GET /api/resumen` lo arma una vez por día (cron de Vercel a las 9 UTC, o la
+  app al abrir después de las 5 si todavía no está) y lo guarda en *Ajustes*, fila «resumen». La app
+  lo muestra arriba en Inicio («Actualizar» lo rehace con `?forzar=1`) y el calendario suscrito lo
+  pone en el detalle del resumen de la mañana. Sin la clave de la app no devuelve el texto.
+
+Las funciones usan `fetch` directo a la API de Claude (sin SDK ni `package.json`), con salidas
+estructuradas y respaldo automático de modelo; el pedido compartido está en `api/_claude.js`.
 
 **Posponer y mandar la lista.** En la ficha: «Pasar a mañana», «Al lunes», «Una semana más» (o
 «Para hoy» / «Para mañana» si no tenía fecha), con Deshacer. En la pantalla de un tema con más de
@@ -166,7 +189,7 @@ Safari → Compartir → «Agregar a inicio».
    `data.records:write`, con acceso solo a la base «Pendientes».
 2. En Vercel, proyecto `pendientes-ale` → Settings → Environment Variables, agregar
    `AIRTABLE_TOKEN` (el token) y `PENDIENTES_CLAVE` (una clave a elección, de 8 caracteres o más).
-   Para leer facturas con una foto, también `ANTHROPIC_API_KEY`.
+   Para la IA (leer fotos y PDF, preguntas, mensajes, resumen del día), también `ANTHROPIC_API_KEY`.
 3. Volver a publicar (un merge o «Redeploy»).
 4. En cada equipo: Ajustes → Respaldo en Airtable → escribir la clave → Conectar. La primera vez
    sube todo lo que había en ese equipo.

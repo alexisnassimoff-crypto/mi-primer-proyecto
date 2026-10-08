@@ -131,7 +131,7 @@ function writeLocal() { try { localStorage.setItem(DB_KEY, JSON.stringify(state)
 function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(writeLocal, 40); }
 /* cada cambio se guarda en el equipo y, si está conectado, se sube a Airtable */
 function save() { persist(); schedulePush(); }
-const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false, gastosMes: '' };
+const ui = { view: 'inicio', topicId: null, depth: 0, apiOk: false, agendaAll: false, gastosMes: '', ia: false, briefTried: false };
 
 /* ---------- pendientes ---------- */
 const byId = id => state.items.find(x => x.id === id);
@@ -365,7 +365,9 @@ function viewInicio() {
   if (!state.items.length) {
     h += `<section class="card welcome"><h2>Empezá por acá</h2><p>Tocá <b>Nuevo</b> para anotar tu primer pendiente.</p><button type="button" class="btn btn--secondary" data-act="samples">Ver con ejemplos</button></section>`;
   } else {
-    const p = pending(), hoy = p.filter(it => it.date && dayDiff(it.date) <= 0).sort(sortPending);
+    const p = pending(), hoy = p.filter(it => it.date && dayDiff(it.date) <= 0).sort(sortPending), brief = aiOn() ? briefToday() : null;
+    if (brief) h += `<section class="card brief" aria-label="Resumen del día"><p class="brief__k">${icon('sparkle')}Para hoy</p><p class="brief__t">${esc(brief.texto).replace(/\n/g, '<br>')}</p>` +
+      `<button type="button" class="linkbtn brief__r" data-act="brief-refresh">Actualizar</button></section>`;
     if (hoy.length) {
       const show = hoy.slice(0, 6);
       h += `<div class="card"><ul class="list">${show.map(it => rowHtml(it, { topic: true })).join('')}</ul>` +
@@ -374,6 +376,7 @@ function viewInicio() {
       const next = p.filter(it => it.date && dayDiff(it.date) > 0).sort(sortPending)[0];
       h += `<div class="card"><p class="empty">Nada para hoy.</p>${next ? `<p class="empty-k">Lo próximo</p><ul class="list">${rowHtml(next, { topic: true })}</ul>` : ''}</div>`;
     }
+    if (aiOn()) h += `<button type="button" class="card ask-entry" data-act="ask-open">${icon('sparkle')}<span>Preguntale a tu agenda</span>${icon('chevR')}</button>`;
   }
   const g = monthSums(curYm());
   if (g.paid.length || g.due.length) {
@@ -508,10 +511,15 @@ function calBtn(it) {
 }
 function inviteHtml(it) {
   const L = links(it);
+  const ai = aiOn() ? `<div class="aimsg"><label class="field" for="aiMsgHint"><span class="field__l">Mensaje escrito por la IA</span><input id="aiMsgHint" type="text" placeholder="Opcional: para quién o qué decir" autocomplete="off"></label>` +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="d-aimsg">${icon('sparkle')}Escribir el mensaje</button>` +
+    `<div class="aimsg__out" id="aiMsgOut" hidden><textarea id="aiMsgText" rows="5" aria-label="Mensaje"></textarea>` +
+    `<a class="btn btn--primary btn--block" id="aiMsgWa" href="#" target="_blank" rel="noopener">${icon('whatsapp')}Mandar por WhatsApp</a>` +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="d-aimsg-copy">${icon('copy')}Copiar el mensaje</button></div></div>` : '';
   const first = navigator.share
     ? `<button type="button" class="btn btn--secondary btn--block" data-act="d-share">${icon('share')}Mandar por WhatsApp o Mail</button>`
     : `<a class="btn btn--secondary btn--block" href="${esc(L.wa)}" target="_blank" rel="noopener">${icon('whatsapp')}WhatsApp</a><a class="btn btn--secondary btn--block" href="${esc(L.mail)}">${icon('mail')}Mail</a>`;
-  return first + `<a class="btn btn--secondary btn--block" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Invitar con Google Calendar</a>` +
+  return ai + first + `<a class="btn btn--secondary btn--block" href="${esc(L.google)}" target="_blank" rel="noopener">${icon('google')}Invitar con Google Calendar</a>` +
     `<button type="button" class="btn btn--secondary btn--block" data-act="d-copy">${icon('copy')}Copiar el texto</button>`;
 }
 /* «Pasar a mañana», «Al lunes», «Una semana más»: un toque y listo */
@@ -644,7 +652,7 @@ function question(step, isNew) {
       `<div class="understood" id="understood" aria-live="polite"></div>` +
       (d.dictar ? `<p class="dictar" role="note">${icon('mic')}<span>Tocá el <b>micrófono del teclado</b> y decí qué hay que hacer. Después, «Siguiente».</span></p>`
         : !d.id && micSupported() ? `<button type="button" class="linkbtn" data-act="f-mic">${icon('mic')}Decirlo con la voz</button>` : '') +
-      (!d.id && ui.apiOk && sync.on ? `<button type="button" class="linkbtn" data-act="f-factura">${icon('camera')}Leer una factura con la cámara</button><input id="facturaFile" type="file" accept="image/*" capture="environment" hidden>` : '') +
+      (!d.id && aiOn() ? `<button type="button" class="linkbtn" data-act="f-leer">${icon('camera')}Leer una foto, captura o PDF</button><input id="leerFile" type="file" accept="image/*,application/pdf" hidden>` : '') +
       '</section>';
   }
   if (step === 'tema') {
@@ -734,64 +742,249 @@ function updateTitleUi() {
   el.innerHTML = chips.length ? `<span class="understood__k">Entendí</span>${chips.join('')}` : '';
 }
 function formError(msg) { $('#formErr').textContent = msg; }
+function setAiMsgLink() { const t = $('#aiMsgText'), w = $('#aiMsgWa'); if (t && w) w.href = 'https://wa.me/?text=' + encodeURIComponent(t.value); }
 
-/* ---------- leer una factura con la cámara ----------
-   La foto se achica acá (JPEG de hasta 1400 px) y va a /api/factura, que la lee con Claude.
-   Vuelve quién cobra, cuánto y cuándo vence: el formulario queda armado para guardar. */
-function shrinkImage(file) {
+/* ---------- IA (Claude) ----------
+   Con la clave de IA en Vercel: varias cosas dichas de una, leer fotos, capturas y PDF,
+   preguntarle a la agenda, escribir mensajes y el resumen del día. Todo pasa por /api/ia
+   con la clave de la app; sin IA (o sin conexión) la app anda igual que siempre. */
+const aiOn = () => !!(ui.ia && sync.on && navigator.onLine !== false);
+function iaErrorText(code) {
+  return ({
+    'sin-ia': 'Falta la clave de IA en Vercel.',
+    'ia-clave': 'La clave de IA no anda. Revisala en Vercel.',
+    'ia-ocupada': 'La IA está ocupada. Probá en un minuto.',
+    'ia-red': 'No llegué a la IA. Revisá la conexión.',
+    'ia-lenta': 'La IA tardó demasiado. Probá de nuevo.',
+    'clave': 'Conectá el respaldo en Airtable para usar esto.',
+    'grande': 'El archivo es muy grande. Probá con uno más chico.'
+  })[code] || 'No me salió. Probá de nuevo.';
+}
+async function iaPedir(accion, datos, ms) {
+  const ctrl = window.AbortController ? new AbortController() : null, timer = ctrl ? setTimeout(() => ctrl.abort(), ms || 60000) : null;
+  const temas = state.topics.filter(t => !t.hidden || t.id === 'otros').map(t => ({ id: t.id, nombre: t.name }));
+  try {
+    const r = await fetch('/api/ia', { method: 'POST', signal: ctrl ? ctrl.signal : undefined, cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) },
+      body: JSON.stringify(Object.assign({ accion, tz: localTz(), temas }, datos)) });
+    let j = null; try { j = await r.json(); } catch (e) { j = null; }
+    if (!r.ok || !j || !j.ok) { const er = new Error('ia'); er.codigo = (j && j.error) || (r.status === 413 ? 'grande' : 'ia'); throw er; }
+    return j;
+  } catch (e) {
+    if (!e.codigo) e.codigo = e.name === 'AbortError' ? 'ia-lenta' : 'ia-red';
+    throw e;
+  } finally { if (timer) clearTimeout(timer); }
+}
+/* fotos: se achican acá (JPEG de hasta 1600 px); los PDF van tal cual */
+function shrinkImage(file, max) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
       try {
-        const max = 1400, k = Math.min(1, max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+        const k = Math.min(1, (max || 1600) / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
         const c = document.createElement('canvas'); c.width = Math.max(1, Math.round((img.naturalWidth || 1) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || 1) * k));
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], type: 'image/jpeg' });
+        resolve({ data: c.toDataURL('image/jpeg', 0.85).split(',')[1], type: 'image/jpeg' });
       } catch (e) { reject(e); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen')); };
     img.src = url;
   });
 }
-function invoiceErrorText(code) {
-  return ({
-    'sin-ia': 'Falta la clave de IA en Vercel. Está en la guía.',
-    'ia-clave': 'La clave de IA no anda. Revisala en Vercel.',
-    'ia-ocupada': 'La IA está ocupada. Probá en un minuto.',
-    'ia-red': 'No llegué a la IA. Probá de nuevo.',
-    'clave': 'Conectá el respaldo en Airtable para usar esto.',
-    'grande': 'La foto es muy grande. Probá de nuevo.'
-  })[code] || 'No pude leer la factura. Probá con otra foto, más de cerca.';
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = () => reject(new Error('archivo'));
+    r.readAsDataURL(file);
+  });
 }
-function applyInvoice(j) {
-  const d = draft, who = j.empresa || j.concepto || 'la factura';
-  d.title = 'Pagar ' + who + (j.periodo ? ' ' + j.periodo : '');
-  d.topic = 'gastos'; d.topicAuto = false;
-  if (j.monto) d.amount = j.monto;
-  d.notes = [j.concepto ? 'Factura: ' + j.concepto : '', j.periodo ? 'Período: ' + j.periodo : ''].filter(Boolean).join('\n');
-  if (j.vencimiento) {
-    setDate(j.vencimiento); setTimeVal(null);
-    const dd = dayDiff(j.vencimiento); d.alert = dd >= 2 ? 2340 : dd >= 1 ? 900 : -540; d.alertPending = undefined; /* aviso dos días antes a las 9 */
-  } else { d.date = undefined; d.time = undefined; d.alert = undefined; }
-  d.more = !!j.monto; d.custom = null; d.step = nextStep(d);
+/* un pendiente que armó la IA → uno de la app, completo */
+function aiToItem(x) {
+  if (!x || !String(x.titulo || '').trim()) return null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(x.fecha || '')) ? x.fecha : null;
+  const time = date && /^\d{2}:\d{2}$/.test(String(x.hora || '')) ? x.hora : null;
+  const amount = typeof x.monto === 'number' && x.monto > 0 ? x.monto : null;
+  const topic = state.topics.some(t => t.id === x.tema) ? x.tema : (suggestTopic(String(x.titulo), { amount }) || 'otros');
+  const invitees = (Array.isArray(x.con) ? x.con : []).map(s => String(s).trim()).filter(Boolean).slice(0, 20);
+  const kind = invitees.length ? 'reunion' : 'tarea';
+  let alert = null;
+  if (date) {
+    const p = x.aviso ? parseAlertText(x.aviso, !!time) : undefined;
+    alert = p === undefined ? defaultAlertFor(date, time) : p;
+    if (!alertValid(alert, !!time)) alert = defaultAlertFor(date, time);
+  }
+  return {
+    title: cap(String(x.titulo).trim()).slice(0, 200), topic, kind, date, time,
+    duration: time ? (Number(x.duracion_min) > 0 ? Number(x.duracion_min) : kind === 'reunion' ? Number(state.settings.meetingDuration) : 60) : null,
+    alert, alert2: null, repeat: date ? ({ diario: 'daily', semanal: 'weekly', mensual: 'monthly', anual: 'yearly' })[x.repetir] || 'none' : 'none',
+    invitees, location: String(x.lugar || '').trim(), amount, priority: 0, notes: String(x.notas || '').trim()
+  };
+}
+/* uno solo: queda en el formulario, ya contestado, para revisar y guardar.
+   allDay: sin hora es «todo el día» (una factura); si no, se pregunta la hora. */
+function applyAiDraft(x, allDay) {
+  const it = aiToItem(x), d = draft; if (!it || !d) return null;
+  d.title = it.title; d.topic = it.topic; d.topicAuto = false; d.kind = it.kind;
+  if (it.date) {
+    setDate(it.date);
+    if (it.time || allDay) { setTimeVal(it.time); d.alert = it.alert; d.alertPending = undefined; }
+    else if (x.aviso) { const p = parseAlertText(x.aviso, true); if (p !== undefined) d.alertPending = p; }
+  }
+  if (it.amount !== null) d.amount = it.amount;
+  if (it.duration && it.time) d.duration = it.duration;
+  if (it.repeat !== 'none') d.repeat = it.repeat;
+  it.invitees.forEach(p => { if (d.invitees.indexOf(p) < 0) d.invitees.push(p); });
+  if (it.location) d.location = it.location;
+  if (it.notes) d.notes = it.notes;
+  d.more = !!(it.amount !== null || it.notes || it.location || it.invitees.length || it.repeat !== 'none');
+  d.custom = null; d.step = nextStep(d);
   renderForm();
-  toast(j.monto ? 'Leí la factura: ' + fmtMoney(j.monto) + (j.vencimiento ? ' · vence ' + whenLabel({ date: j.vencimiento }).toLowerCase() : ', sin vencimiento a la vista') : 'Leí la factura, pero no vi el monto. Completalo.');
+  const target = d.step === 'listo' ? $('#btnSave') : $('#formBody .q .q__label');
+  if (target) { try { target.focus({ preventScroll: true }); } catch (e) {} }
+  return it;
 }
-async function readInvoice(file) {
-  const label = icon('camera') + 'Leer una factura con la cámara';
-  const busy = on => { const b = $('[data-act="f-factura"]'); if (b) { b.disabled = on; b.innerHTML = on ? icon('camera') + 'Leyendo la factura…' : label; } };
+
+/* varios: una hoja para revisar y guardar de una */
+const multi = { list: [], on: [] };
+function openMulti(list, title) {
+  multi.list = list; multi.on = list.map(() => true);
+  $('#multiTitle').textContent = title;
+  renderMulti(); openSheet($('#multiSheet'));
+  $('#multiSheet .sheet__body').scrollTop = 0;
+}
+function renderMulti() {
+  $('#multiBody').innerHTML = `<ul class="list mlist">${multi.list.map((it, i) => {
+    const meta = [it.date ? whenLabel(it) : 'Sin fecha', topicOf(it.topic).name, it.amount !== null ? fmtMoney(it.amount) : '', it.repeat !== 'none' ? repeatLabel(it.repeat) : '', it.location].filter(Boolean);
+    return `<li class="mrow${multi.on[i] ? '' : ' is-off'}"><label class="mrow__l"><input type="checkbox" data-mi="${i}"${multi.on[i] ? ' checked' : ''}>` +
+      `<span class="mrow__c" aria-hidden="true">${icon('check')}</span><span class="mrow__b"><span class="mrow__t">${esc(it.title)}</span><span class="mrow__m">${esc(meta.join(' · '))}</span></span></label></li>`;
+  }).join('')}</ul><p class="set__note mlist__note">Después podés abrir cualquiera para cambiarle algo.</p>`;
+  const n = multi.on.filter(Boolean).length, b = $('#multiSave');
+  b.textContent = n ? 'Guardar ' + plural(n, 'pendiente', 'pendientes') : 'Elegí al menos uno'; b.disabled = !n;
+}
+function saveMulti() {
+  const now = Date.now(), added = [];
+  multi.list.forEach((x, i) => {
+    if (!multi.on[i]) return;
+    const it = Object.assign({ id: uid(), done: false, doneAt: null, createdAt: now, updatedAt: now }, x);
+    state.items.unshift(it); rememberPeople(it); added.push(it);
+  });
+  if (!added.length) return;
+  save(); closeSheet($('#multiSheet')); render();
+  toast('Anotados ' + plural(added.length, 'pendiente', 'pendientes') + (subscribed() && added.some(i => i.date) ? ' · van solos al Calendario' : ''));
+}
+
+/* varias cosas dichas de una: «llamar a Matías a las 10, pagar el ABL y comprar pañales».
+   Cuenta verbos (y los «buscarlo», «avisarle»); «tengo que» y «voy a» no suman: no son otra cosa. */
+const VERBOS = /(^|[^a-z])(llamar|llamo|pagar|pago|comprar|compro|ir|pasar|ver|mandar|mando|enviar|envio|hacer|hago|buscar|busco|retirar|retiro|devolver|firmar|entregar|anotar|inscribir|depositar|deposito|sacar|saco|reservar|reservo|pedir|pido|avisar|aviso|recordar|revisar|reviso|chequear|confirmar|preparar|preparo|ordenar|organizar|cancelar|renovar|tramitar|llevar|llevo|traer|cobrar|cobro|vender|transferir|transfiero|cargar|arreglar|reparar|cambiar|instalar|limpiar|lavar|cocinar|regar|imprimir|estudiar|escribir|escribo|responder|contestar|hablar|hablo|saludar|felicitar|regalar|festejar|visitar|juntarme|encontrarme|dejar|turno|reunion|cena|almuerzo|cumple|gimnasio|psicologo|medico|dentista|[a-z]{3,}(?:ar|er|ir)(?:lo|la|los|las|le|les|me|te|se|nos))(?=[^a-z]|$)/g;
+function looksMulti(text) {
+  const t = Parser.plain(text), verbs = (t.match(VERBOS) || []).length;
+  return verbs >= 2 && /,|;| y | e | despues | luego | tambien | ademas /.test(' ' + t + ' ');
+}
+/* Siguiente en «¿Qué hay que hacer?»: si parecen varias cosas, la IA las separa */
+async function firstStepNext() {
+  const input = $('#f_title'), raw = (input ? input.value : draft.title || '').trim(), d = draft;
+  if (raw && !d.id && raw !== d.title && aiOn() && looksMulti(raw)) {
+    const b = $('#btnSave'); b.disabled = true; b.textContent = 'Entendiendo…';
+    let done = false;
+    try {
+      const j = await iaPedir('armar', { texto: raw }, 30000);
+      if (draft !== d || !$('#formSheet').open) return;
+      const list = (j.pendientes || []).map(aiToItem).filter(Boolean);
+      if (list.length >= 2) { closeSheet($('#formSheet')); openMulti(list, 'Entendí ' + list.length + ' pendientes'); return; }
+      if (list.length === 1) { applyAiDraft(j.pendientes[0], false); done = true; }
+    } catch (e) { /* sin IA: sigue con el lector de siempre */ }
+    finally { if (draft === d && $('#formSheet').open) { b.textContent = d.step === 'que' ? 'Siguiente' : 'Guardar'; updateTitleUi(); } }
+    if (done) return;
+  }
+  if (draft !== d) return;
+  if (!commitTitle()) { formError('Escribí qué hay que hacer'); return; }
+  advance();
+}
+
+/* leer una foto, una captura o un PDF: factura, WhatsApp, circular del colegio, turno… */
+async function readWithAi(file) {
+  const d = draft, label = icon('camera') + 'Leer una foto, captura o PDF';
+  const busy = on => { const b = $('[data-act="f-leer"]'); if (b) { b.disabled = on; b.innerHTML = on ? icon('camera') + 'Leyendo…' : label; } };
   busy(true);
   try {
-    const img = await shrinkImage(file);
-    const r = await fetch('/api/factura', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify({ imagen: img.data, tipo: img.type, tz: localTz() }) });
-    let j = null; try { j = await r.json(); } catch (e) { j = null; }
-    if (!r.ok || !j || !j.ok) { toast(invoiceErrorText(j && j.error)); return; }
-    if (!j.esFactura) { toast('No parece una factura. Probá con otra foto, más de cerca.'); return; }
-    if (draft && !draft.id) applyInvoice(j);
-  } catch (e) { toast('No pude leer la factura. Probá de nuevo.'); }
+    let archivo, tipo;
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '')) {
+      if (file.size > 3 * 1024 * 1024) { toast('El PDF es muy grande: hasta 3 MB.'); return; }
+      archivo = await fileToBase64(file); tipo = 'application/pdf';
+    } else { const img = await shrinkImage(file, 1600); archivo = img.data; tipo = img.type; }
+    const j = await iaPedir('leer', { archivo, tipo }, 60000);
+    if (draft !== d || !$('#formSheet').open) return;
+    const list = (j.pendientes || []).map(aiToItem).filter(Boolean);
+    if (!list.length) { toast((j.resumen ? j.resumen + '. ' : '') + 'No encontré nada para agendar.'); return; }
+    if (list.length >= 2) { closeSheet($('#formSheet')); openMulti(list, j.resumen || 'Encontré ' + list.length + ' pendientes'); return; }
+    const it = applyAiDraft(j.pendientes[0], true);
+    if (it) toast((j.resumen || 'Listo') + (it.amount !== null ? ' · ' + fmtMoney(it.amount) : '') + (it.date ? ' · ' + whenLabel(it).toLowerCase() : ''));
+  } catch (e) { toast(iaErrorText(e.codigo)); }
   finally { busy(false); }
 }
+
+/* preguntarle a la agenda: va un resumen de tus datos y vuelve la respuesta */
+const ASK_CHIPS = ['¿Qué tengo mañana?', '¿Cuánto gasté este mes?', '¿Qué está atrasado?', '¿Qué pagos vienen?'];
+function agendaData() {
+  const t = todayStr(), lines = ['Hoy es ' + F.wdLong.format(new Date()) + ' ' + t + '.', '', 'PENDIENTES (qué | tema | cuándo | monto | estado | otros):'];
+  const fila = it => [it.title, topicOf(it.topic).name, it.date ? it.date + ' (' + whenLabel(it) + ')' : 'sin fecha', typeof it.amount === 'number' ? fmtMoney(it.amount) : '',
+    it.done ? 'hecho' : isLate(it) ? 'atrasado' : 'pendiente', it.repeat && it.repeat !== 'none' ? repeatLabel(it.repeat) : '',
+    (it.invitees || []).length ? 'con ' + it.invitees.join(', ') : '', it.location || '', it.priority ? 'importante' : ''].filter(Boolean).join(' | ');
+  pending().sort(sortPending).slice(0, 250).forEach(it => lines.push('- ' + fila(it)));
+  lines.push('', 'HECHOS EN LOS ÚLTIMOS 45 DÍAS:');
+  state.items.filter(it => it.done && it.doneAt && Date.now() - it.doneAt < 45 * 86400000).sort((a, b) => b.doneAt - a.doneAt).slice(0, 80)
+    .forEach(it => lines.push('- ' + fila(it) + ' | hecho el ' + ymd(new Date(it.doneAt))));
+  const desde = ymAdd(curYm(), -5);
+  lines.push('', 'PAGOS (fecha | qué | tema | monto):');
+  state.pagos.filter(p => String(p.date || '').slice(0, 7) >= desde).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 300)
+    .forEach(p => lines.push('- ' + [p.date, p.title, topicOf(p.topic).name, fmtMoney(p.amount)].join(' | ')));
+  lines.push('', 'TOTALES PAGADOS POR MES:');
+  for (let i = 0; i < 6; i++) { const ym = ymAdd(curYm(), -i), g = monthSums(ym); lines.push('- ' + ymLabel(ym, true) + ': ' + fmtMoney(g.paidTotal) + (i === 0 ? ' (falta pagar este mes: ' + fmtMoney(g.dueTotal) + ')' : '')); }
+  return lines.join('\n').slice(0, 58000);
+}
+function openAsk(q) {
+  $('#askAnswer').innerHTML = ''; $('#askInput').value = q || '';
+  openSheet($('#askSheet'));
+  if (q) ask(q); else $('#askInput').focus();
+}
+let askSeq = 0;
+async function ask(q) {
+  q = String(q || '').trim(); if (!q) { $('#askInput').focus(); return; }
+  const out = $('#askAnswer'), b = $('#askForm [type="submit"]'), n = ++askSeq; /* si preguntás otra cosa, vale la última */
+  const show = (cls, txt) => { out.innerHTML = `<p class="ask__q">${esc(q)}</p><p class="ask__a${cls}">${esc(txt).replace(/\n/g, '<br>')}</p>`; };
+  show(' is-busy', 'Pensando…'); b.disabled = true;
+  const active = document.activeElement; if (active && active.id === 'askInput') active.blur(); /* baja el teclado: se ve la respuesta */
+  try {
+    const j = await iaPedir('preguntar', { pregunta: q, datos: agendaData() }, 60000);
+    if (n === askSeq) show('', j.respuesta);
+  } catch (e) { if (n === askSeq) show(' is-err', iaErrorText(e.codigo)); }
+  finally { if (n === askSeq) b.disabled = false; }
+}
+
+/* el resumen inteligente del día: lo arma /api/resumen una vez por día (a las 6, o al abrir la app) */
+const BRIEF_KEY = 'pendientes.resumenDia';
+function briefToday() {
+  let b = null; try { b = JSON.parse(lsGet(BRIEF_KEY) || 'null'); } catch (e) { b = null; }
+  return b && b.fecha === todayStr() && b.texto ? b : null;
+}
+function setBrief(b) {
+  if (!b || !b.fecha) return;
+  const prev = lsGet(BRIEF_KEY), next = JSON.stringify({ fecha: b.fecha, texto: b.texto || '', at: b.at || null });
+  if (prev !== next) { lsSet(BRIEF_KEY, next); if (ui.view === 'inicio') render(); }
+}
+function noteBrief(rows) {
+  const r = rows.find(x => x.fields && x.fields[AT.A.key] === 'resumen');
+  try { if (r) setBrief(JSON.parse(r.fields[AT.A.value] || '{}')); } catch (e) { /* sin resumen */ }
+}
+function maybeBrief(force) {
+  if (!aiOn() || (!force && (briefToday() || ui.briefTried || new Date().getHours() < 5))) return Promise.resolve();
+  ui.briefTried = true;
+  return fetch('/api/resumen' + (force ? '?forzar=1' : ''), { cache: 'no-store', headers: { 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) } })
+    .then(r => (r.ok ? r.json() : null)).then(j => { if (j && j.ok) { setBrief(j); return true; } return false; }).catch(() => false);
+}
+
 function advance() {
   draft.step = nextStep(draft); draft.custom = null;
   renderForm();
@@ -1250,6 +1443,8 @@ async function runSync(full, keepalive) {
       if (data.calendario && data.calendario !== lsGet(CAL_KEY)) { lsSet(CAL_KEY, data.calendario); renderCalUi(); }
       if (data.anotar && data.anotar !== lsGet(SIRI_KEY)) { lsSet(SIRI_KEY, data.anotar); renderSiriUi(); }
       noteCalendarVisit(data.ajustes || []);
+      noteBrief(data.ajustes || []);
+      setTimeout(() => maybeBrief(false), 0);
       if (mergeRemote(data)) { persist(); render(); if ($('#detailSheet').open) renderDetail(); }
     }
     await pushDirty(keepalive);
@@ -1534,7 +1729,22 @@ function bind() {
         return;
       }
       case 'f-more': draft.more = !draft.more; renderForm(); if (draft.more) $('#moreBox').scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); return;
-      case 'f-factura': { const i = $('#facturaFile'); if (i) i.click(); return; }
+      case 'f-leer': { const i = $('#leerFile'); if (i) i.click(); return; }
+      case 'ask-open': openAsk(''); return;
+      case 'ask-q': { const q = a.dataset.q || ''; if ($('#askSheet').open) { $('#askInput').value = q; ask(q); } else openAsk(q); return; }
+      case 'brief-refresh': a.disabled = true; a.textContent = 'Actualizando…'; maybeBrief(true).then(ok => { render(); if (ok === false) toast('No pude actualizar el resumen. Probá en un rato.'); }); return;
+      case 'd-aimsg': {
+        const it = byId(detailId); if (!it) return;
+        const label = a.innerHTML, hint = $('#aiMsgHint') ? $('#aiMsgHint').value : '';
+        a.disabled = true; a.innerHTML = icon('sparkle') + 'Escribiendo…';
+        iaPedir('mensaje', { pendiente: { titulo: it.title, cuando: it.date ? longWhen(it) : '', lugar: it.location || '', con: (it.invitees || []).join(', '),
+          monto: typeof it.amount === 'number' ? fmtMoney(it.amount) : '', notas: it.notes || '' }, indicaciones: hint, nombre: state.settings.name || '' }, 45000)
+          .then(j => { const out = $('#aiMsgOut'); if (!out) return; out.hidden = false; $('#aiMsgText').value = j.mensaje; setAiMsgLink(); a.innerHTML = icon('sparkle') + 'Otra versión'; out.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); })
+          .catch(e => { toast(iaErrorText(e.codigo)); a.innerHTML = label; })
+          .finally(() => { a.disabled = false; });
+        return;
+      }
+      case 'd-aimsg-copy': { const t = $('#aiMsgText'); if (t) copyText(t.value); return; }
       case 'f-mic': {
         if (useKeyboardDictation()) { draft.dictar = true; renderForm(); const i = $('#f_title'); if (i) i.focus(); return; }
         closeSheet($('#formSheet')); startMic(); return;
@@ -1618,6 +1828,11 @@ function bind() {
   $('#btnMic').hidden = !micSupported();
   $('#btnMic').addEventListener('click', startMic);
   $('#micDone').addEventListener('click', () => endMic('listo'));
+  $('#multiSave').addEventListener('click', saveMulti);
+  $('#multiSheet').addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.mi; if (i !== undefined) { multi.on[+i] = e.target.checked; renderMulti(); const c = $(`#multiBody [data-mi="${i}"]`); if (c) c.focus(); } });
+  $('#askForm').addEventListener('submit', e => { e.preventDefault(); ask($('#askInput').value); });
+  $('#askChips').innerHTML = ASK_CHIPS.map(q => `<button type="button" class="chip chip--btn" data-act="ask-q" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+  $('#detailSheet').addEventListener('input', e => { if (e.target.id === 'aiMsgText') setAiMsgLink(); });
   $('#micSheet [data-close]').addEventListener('click', () => endMic('cancelar'));
   $('#micSheet').addEventListener('close', () => { if (mic.rec) endMic('cancelar'); });
   $('#btnSync').addEventListener('click', () => { openSettings(); const d = $('#setSync'); if (d) d.open = true; });
@@ -1640,7 +1855,7 @@ function bind() {
   /* formulario */
   $('#itemForm').addEventListener('submit', e => {
     e.preventDefault();
-    if (draft.step === 'que') { if (!commitTitle()) { formError('Escribí qué hay que hacer'); return; } advance(); return; }
+    if (draft.step === 'que') { firstStepNext(); return; }
     saveForm();
   });
   $('#formSheet').addEventListener('input', e => {
@@ -1653,7 +1868,7 @@ function bind() {
   });
   $('#formSheet').addEventListener('change', e => {
     const id = e.target.id;
-    if (id === 'facturaFile') { const f = e.target.files && e.target.files[0]; if (f) readInvoice(f); e.target.value = ''; return; }
+    if (id === 'leerFile') { const f = e.target.files && e.target.files[0]; if (f) readWithAi(f); e.target.value = ''; return; }
     if (id === 'f_repeat') draft.repeat = e.target.value;
     else if (id === 'f_duration') draft.duration = Number(e.target.value);
     else if (id === 'f_alert2') draft.alert2 = e.target.value === '' ? null : Number(e.target.value);
@@ -1662,7 +1877,7 @@ function bind() {
   $('#formSheet').addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     const id = e.target.id;
-    if (id === 'f_title') { e.preventDefault(); if (!commitTitle()) { formError('Escribí qué hay que hacer'); return; } advance(); }
+    if (id === 'f_title') { e.preventDefault(); firstStepNext(); }
     else if (id === 'f_date') { e.preventDefault(); $('[data-act="f-date-ok"]').click(); }
     else if (id === 'f_time') { e.preventDefault(); $('[data-act="f-time-ok"]').click(); }
   });
@@ -1733,6 +1948,7 @@ function init() {
   if (/^https?:$/.test(location.protocol)) {
     if (sync.on) runSync(true);
     fetch('/api/ics?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.apiOk = !!(j && j.ok); if (ui.apiOk) { render(); if ($('#detailSheet').open) renderDetail(); } }).catch(() => {});
+    fetch('/api/ia?ping=1', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { ui.ia = !!(j && j.ia); if (ui.ia) { render(); maybeBrief(false); } }).catch(() => {});
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
