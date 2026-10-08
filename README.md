@@ -115,6 +115,11 @@ En Ajustes → **Calendario del iPhone**:
   agregar pendientes a mano, para que no queden repetidos. Si pasan 10 días sin que la pida,
   vuelve a ofrecerlo.
 
+**Dictar.** El micrófono de la cabecera (y «Decirlo con la voz» en Nuevo) usa el dictado del
+teléfono (`webkitSpeechRecognition`, Safari): «Oye Siri, abrí Pendientes», micrófono y hablás; lo
+entendido abre el formulario ya leído y con «Guardar» queda. Si el navegador no tiene dictado, el
+botón no aparece.
+
 **Anotar sin abrir la app.** `POST /api/anotar?k=LLAVE` con `texto=…` (formulario o JSON; también
 `GET …&texto=…`) entiende la frase con el mismo `parser.js` de la app, la guarda en Airtable y
 contesta en texto plano para que Siri lo lea («Anotado en Gastos de la casa: Pagar ABL, mañana a

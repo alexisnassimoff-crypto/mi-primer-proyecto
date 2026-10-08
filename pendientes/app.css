@@ -165,6 +165,17 @@ main{padding-top:14px}
 .ticon--xs .ico{width:.85rem;height:.85rem}
 
 /* ---------- Bienvenida ---------- */
+/* ---------- Dictar ---------- */
+.mic{display:flex;flex-direction:column;align-items:center;gap:18px;padding:12px 20px 20px;text-align:center}
+.mic__ring{width:6.5rem;height:6.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--ink-2);transition:background .2s,color .2s}
+.mic__ring .ico{width:2.6rem;height:2.6rem}
+.mic__ring.is-on{background:var(--danger-soft);color:var(--danger);animation:micPulse 1.3s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 35%,transparent)}60%{box-shadow:0 0 0 16px transparent}}
+.mic__text{min-height:3.4em;font-size:1.0625rem;line-height:1.4;color:var(--ink-2);text-wrap:balance}
+.mic__text.is-text{font-size:1.3125rem;font-weight:550;color:var(--ink)}
+.mic .actions{width:100%;margin-top:0}
+@media (prefers-reduced-motion:reduce){.mic__ring.is-on{animation:none}}
+
 /* ---------- Gastos del mes ---------- */
 .money-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;width:100%;margin-top:12px;padding:16px 18px;text-align:left;transition:transform .12s}
 .money-tile:active{transform:scale(.99)}
