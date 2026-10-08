@@ -1,6 +1,16 @@
 {
   "functions": {
-    "api/datos.js": { "maxDuration": 30 },
-    "api/calendario.js": { "maxDuration": 30 }
+    "api/datos.js": {
+      "maxDuration": 30
+    },
+    "api/calendario.js": {
+      "maxDuration": 30
+    },
+    "api/anotar.js": {
+      "maxDuration": 30
+    },
+    "api/factura.js": {
+      "maxDuration": 60
+    }
   }
 }

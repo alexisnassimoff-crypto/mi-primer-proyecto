@@ -17,35 +17,15 @@
 const ICS = require('../ics.js');
 const Avisos = require('../avisos.js');
 const { CAMPOS, TABLAS, esperar, configurado, tokenOk, listar, airtable } = require('./_airtable.js');
+const { ZONA, zonaValida, aUtc, hoyEn } = require('./_zona.js');
 
 const P = CAMPOS.pendientes, A = CAMPOS.ajustes;
-const ZONA = 'America/Argentina/Buenos_Aires';
 const REPETIR = { 'todos los dias': 'DAILY', 'todas las semanas': 'WEEKLY', 'todos los meses': 'MONTHLY', 'todos los anos': 'YEARLY' };
 const PLATA = [0, 2].map(d => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: d, maximumFractionDigits: d }));
 
-function zonaValida(tz) {
-  try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return !!tz; } catch (e) { return false; }
-}
-
-/* Minutos que la zona está corrida de UTC en ese instante (Argentina: -180) */
-function desfase(ms, tz) {
-  const p = {};
-  new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
-    .formatToParts(new Date(ms)).forEach(x => { p[x.type] = +x.value; });
-  return Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - ms) / 60000);
-}
-
-/* Día y hora como los anotaste (en tu zona) -> instante exacto */
-function aUtc(y, mo, d, h, mi, tz) {
-  const pared = Date.UTC(y, mo - 1, d, h, mi);
-  let t = pared;
-  for (let i = 0; i < 2; i++) t = pared - desfase(t, tz) * 60000;
-  return new Date(t);
-}
-
-/* Avisos de siempre y zona horaria, guardados por la app en la tabla Ajustes */
+/* Avisos de siempre, zona horaria y hora del resumen, guardados por la app en la tabla Ajustes */
 function ajustesDe(filas) {
-  const out = { alertTimed: 15, alertAllDay: -540, tz: ZONA };
+  const out = { alertTimed: 15, alertAllDay: -540, tz: ZONA, resumen: 8 };
   const row = filas.find(r => r.fields && r.fields[A.key] === 'ajustes');
   let v = null;
   try { v = row ? JSON.parse(row.fields[A.value] || '{}') : null; } catch (e) { v = null; }
@@ -53,6 +33,42 @@ function ajustesDe(filas) {
     if (typeof v.alertTimed === 'number' && isFinite(v.alertTimed)) out.alertTimed = v.alertTimed;
     if (typeof v.alertAllDay === 'number' && isFinite(v.alertAllDay)) out.alertAllDay = v.alertAllDay;
     if (typeof v.tz === 'string' && zonaValida(v.tz)) out.tz = v.tz;
+    if (typeof v.resumen === 'number' && isFinite(v.resumen)) out.resumen = Math.max(0, Math.min(23, Math.round(v.resumen)));
+  }
+  return out;
+}
+
+/* ---- El resumen de la mañana ----
+   Un evento corto a la hora elegida, con aviso en el momento: «Hoy: ABL 12:00, Café 14:30…».
+   Se arma para hoy y los próximos días, así está listo aunque el Calendario se actualice tarde.
+   Solo los días que tienen algo (hoy también si hay atrasados). */
+const plata = n => PLATA[Number.isInteger(n) ? 0 : 1].format(n);
+const diaMas = (ymd, n) => { const m = ymd.split('-').map(Number); return new Date(Date.UTC(m[0], m[1] - 1, m[2] + n)).toISOString().slice(0, 10); };
+const diaCorto = ymd => { const m = ymd.split('-').map(Number); return new Intl.DateTimeFormat('es-AR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(m[0], m[1] - 1, m[2]))).replace('.', ''); };
+function resumenes(pendientes, aj, hoy) {
+  if (!aj.resumen) return [];
+  const vivos = pendientes.map(r => r.fields || {}).filter(f => !f[P.deleted] && !f[P.done] && String(f[P.title] || '').trim() && /^\d{4}-\d{2}-\d{2}$/.test(String(f[P.date] || '')));
+  const hora = f => { const m = /^(\d{1,2})[:.](\d{2})/.exec(String(f[P.time] || '')); return m ? (m[1].length < 2 ? '0' : '') + m[1] + ':' + m[2] : ''; };
+  const orden = (a, b) => ((hora(a) || '99') < (hora(b) || '99') ? -1 : (hora(a) || '99') > (hora(b) || '99') ? 1 : 0);
+  const linea = f => (hora(f) ? hora(f) + ' ' : '') + String(f[P.title]).trim() + (typeof f[P.amount] === 'number' ? ' (' + plata(f[P.amount]) + ')' : '');
+  const corto = f => String(f[P.title]).trim() + (hora(f) ? ' ' + hora(f) : '');
+  const atrasados = vivos.filter(f => f[P.date] < hoy).sort((a, b) => (a[P.date] < b[P.date] ? -1 : 1));
+  const fin = diaMas(hoy, 6);
+  const semana = vivos.filter(f => f[P.date] >= hoy && f[P.date] <= fin && typeof f[P.amount] === 'number' && f[P.amount] > 0).sort((a, b) => (a[P.date] < b[P.date] ? -1 : 1));
+  const total = semana.reduce((s, f) => s + f[P.amount], 0);
+  const out = [];
+  for (let i = 0; i <= 6; i++) {
+    const dia = diaMas(hoy, i), delDia = vivos.filter(f => f[P.date] === dia).sort(orden), esHoy = i === 0;
+    if (!delDia.length && !(esHoy && atrasados.length)) continue;
+    let title = delDia.length ? 'Hoy: ' + delDia.slice(0, 3).map(corto).join(', ') + (delDia.length > 3 ? ' y ' + (delDia.length - 3) + ' más' : '') : 'Hoy: nada anotado';
+    if (esHoy && atrasados.length) title += ' · ' + atrasados.length + (atrasados.length === 1 ? ' atrasado' : ' atrasados');
+    const desc = [];
+    if (delDia.length) desc.push('Hoy:\n' + delDia.map(f => '• ' + linea(f)).join('\n'));
+    if (esHoy && atrasados.length) desc.push('Atrasados:\n' + atrasados.slice(0, 8).map(f => '• ' + String(f[P.title]).trim() + ' (' + diaCorto(f[P.date]) + ')').join('\n') + (atrasados.length > 8 ? '\n• y ' + (atrasados.length - 8) + ' más' : ''));
+    if (esHoy && semana.length) desc.push('Esta semana vencen ' + plata(total) + ':\n' + semana.slice(0, 8).map(f => '• ' + String(f[P.title]).trim() + ' ' + plata(f[P.amount]) + ' (' + diaCorto(f[P.date]) + ')').join('\n'));
+    const m = dia.split('-').map(Number), start = aUtc(m[0], m[1], m[2], aj.resumen, 0, aj.tz);
+    out.push({ uid: 'resumen-' + dia.replace(/-/g, '') + '@pendientes', title: title.slice(0, 300), description: desc.join('\n\n').slice(0, 4000),
+      start, end: new Date(start.getTime() + 15 * 60000), allDay: false, alarms: [0], transparent: true });
   }
   return out;
 }
@@ -139,7 +155,7 @@ module.exports = async function (req, res) {
   try {
     const [pendientes, ajustes] = await Promise.all([listar('pendientes'), listar('ajustes')]);
     const aj = ajustesDe(ajustes);
-    const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).sort((a, b) => a.start - b.start);
+    const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).concat(resumenes(pendientes, aj, hoyEn(aj.tz))).sort((a, b) => a.start - b.start);
     const quien = 't' in q ? '' : cliente(req.headers && req.headers['user-agent']);
     if (quien) await anotarVisita(ajustes, quien);
     calendario();
@@ -154,4 +170,5 @@ module.exports = async function (req, res) {
 };
 
 module.exports.eventoDe = eventoDe;
+module.exports.resumenes = resumenes;
 module.exports.aUtc = aUtc;

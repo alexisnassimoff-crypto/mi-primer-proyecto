@@ -68,15 +68,20 @@ pendientes/index.html       estructura
 pendientes/app.css          diseño (tokens de color al inicio, claro y oscuro)
 pendientes/app.js           la app: inicio, temas, agenda, ficha, formulario paso a paso y ajustes
 pendientes/parser.js        entiende frases en castellano (fechas, horas, avisos, montos)
+pendientes/temas.js         temas de fábrica, alias y palabras clave (los comparte con el API)
 pendientes/avisos.js        cómo se escriben y se leen los avisos (lo comparte con el API)
 pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
 pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)
 pendientes/api/ics.js       función de Vercel: sirve uno o varios eventos como text/calendar
 pendientes/api/datos.js     función de Vercel: lee y guarda en Airtable (el único que conoce el token)
-pendientes/api/calendario.js función de Vercel: el calendario suscrito, armado desde Airtable
-pendientes/api/_airtable.js acceso a Airtable que comparten las dos funciones (no es una dirección)
-pendientes/vercel.json      le da hasta 30 s a las funciones de Airtable
+pendientes/api/calendario.js función de Vercel: el calendario suscrito, armado desde Airtable, con el resumen de la mañana
+pendientes/api/anotar.js    función de Vercel: anota un pendiente desde Siri o la hoja de compartir
+pendientes/api/factura.js   función de Vercel: lee una factura con una foto (Claude)
+pendientes/api/_airtable.js acceso a Airtable que comparten las funciones (no es una dirección)
+pendientes/api/_zona.js     zona horaria en el servidor (no es una dirección)
+pendientes/vercel.json      le da más tiempo a las funciones (30 s; 60 s a la factura)
+pendientes/GUIA.md          lo que queda de tu lado para activar cada cosa, paso a paso
 ```
 
 **Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
@@ -110,6 +115,36 @@ En Ajustes → **Calendario del iPhone**:
   agregar pendientes a mano, para que no queden repetidos. Si pasan 10 días sin que la pida,
   vuelve a ofrecerlo.
 
+**Anotar sin abrir la app.** `POST /api/anotar?k=LLAVE` con `texto=…` (formulario o JSON; también
+`GET …&texto=…`) entiende la frase con el mismo `parser.js` de la app, la guarda en Airtable y
+contesta en texto plano para que Siri lo lea («Anotado en Gastos de la casa: Pagar ABL, mañana a
+las 12:00. Aviso 15 min antes.»). La llave sale de `PENDIENTES_CLAVE` (la entrega `/api/datos`) y
+solo sirve para anotar. En Ajustes → «Anotar con Siri o desde WhatsApp» está el link para el atajo y
+los pasos para armarlo. Abrir la app con `?nuevo=texto` abre el formulario ya entendido.
+
+**Resumen de la mañana.** Con la suscripción al calendario, cada día que tiene algo aparece un
+evento corto a la hora elegida (Ajustes → Calendario del iPhone → «Resumen de la mañana», a las 8
+por defecto) con aviso en el momento: «Hoy: ABL 12:00, Café 14:30 · 1 atrasado», y en el detalle la
+lista completa, los atrasados y lo que vence en la semana con los montos. Se arma para hoy y los
+seis días siguientes, así está listo aunque el Calendario se actualice tarde.
+
+**Gastos del mes.** Al marcar hecho un pendiente con monto queda un pago (tabla *Pagos* en
+Airtable: Qué, Monto, Fecha, Tema, Pendiente, ID). En Inicio aparece «Gastos de octubre: pagaste
+$X · falta pagar $Y» y al tocarlo, la pantalla del mes: pagado, comparación con el mes anterior, lo
+que falta pagar y la lista de pagos (se pueden borrar, con Deshacer). «Anotar un gasto ya pagado»
+crea el pendiente hecho y el pago de una vez. Volver un pendiente a pendientes saca su pago.
+
+**Foto de una factura.** En Nuevo, «Leer una factura con la cámara» achica la foto y la manda a
+`POST /api/factura` (pide la clave de la app), que se la da a Claude con un esquema JSON y devuelve
+quién cobra, qué es, el monto y el vencimiento. El formulario queda armado («Pagar Edenor octubre
+2026», tema Gastos, todo el día el vencimiento, aviso dos días antes a las 9, monto y notas). Hace
+falta `ANTHROPIC_API_KEY` en Vercel (ver `pendientes/GUIA.md`); sin ella el botón avisa.
+
+**Posponer y mandar la lista.** En la ficha: «Pasar a mañana», «Al lunes», «Una semana más» (o
+«Para hoy» / «Para mañana» si no tenía fecha), con Deshacer. En la pantalla de un tema con más de
+un pendiente: «Mandar la lista» comparte el tema con sus pendientes, fechas y montos (WhatsApp,
+Mail…) o lo copia.
+
 **Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
 conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base
 «Pendientes» (tablas *Pendientes*, *Temas* y *Ajustes*) y se trae lo que cambió en otros equipos.
@@ -124,6 +159,7 @@ Safari → Compartir → «Agregar a inicio».
    `data.records:write`, con acceso solo a la base «Pendientes».
 2. En Vercel, proyecto `pendientes-ale` → Settings → Environment Variables, agregar
    `AIRTABLE_TOKEN` (el token) y `PENDIENTES_CLAVE` (una clave a elección, de 8 caracteres o más).
+   Para leer facturas con una foto, también `ANTHROPIC_API_KEY`.
 3. Volver a publicar (un merge o «Redeploy»).
 4. En cada equipo: Ajustes → Respaldo en Airtable → escribir la clave → Conectar. La primera vez
    sube todo lo que había en ese equipo.
