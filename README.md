@@ -68,12 +68,15 @@ pendientes/index.html       estructura
 pendientes/app.css          diseño (tokens de color al inicio, claro y oscuro)
 pendientes/app.js           la app: inicio, temas, agenda, ficha, formulario paso a paso y ajustes
 pendientes/parser.js        entiende frases en castellano (fechas, horas, avisos, montos)
+pendientes/avisos.js        cómo se escriben y se leen los avisos (lo comparte con el API)
 pendientes/ics.js           generador de archivos .ics (lo comparte con el API)
 pendientes/sw.js            abre sin conexión
 pendientes/fonts/           tipografías (copia de assets/fonts, para que la carpeta sea autónoma)
-pendientes/api/ics.js       función de Vercel: sirve un evento como text/calendar
+pendientes/api/ics.js       función de Vercel: sirve uno o varios eventos como text/calendar
 pendientes/api/datos.js     función de Vercel: lee y guarda en Airtable (el único que conoce el token)
-pendientes/vercel.json      le da hasta 30 s a la función de Airtable
+pendientes/api/calendario.js función de Vercel: el calendario suscrito, armado desde Airtable
+pendientes/api/_airtable.js acceso a Airtable que comparten las dos funciones (no es una dirección)
+pendientes/vercel.json      le da hasta 30 s a las funciones de Airtable
 ```
 
 **Publicación.** Es su propio proyecto en Vercel, separado de la landing: importar este mismo repo
@@ -85,9 +88,22 @@ landing redirija `/pendientes/` a esa dirección.
 `/api/ics?...` que Safari abre con la vista nativa de Calendario (un toque y «Añadir»), con la
 alerta (`VALARM`), los invitados con mail (`ATTENDEE`), la repetición (`RRULE`) y el lugar. Si el
 API no existe (otro hosting o servidor local) se descarga el `.ics`. También hay link a Google
-Calendar (manda la invitación formal si hay mails), invitación por WhatsApp o Mail con el detalle
-y un link para que la otra persona lo agregue a su calendario, y «Mandar toda la agenda al
-calendario» en Ajustes, que importa todos los pendientes con fecha de una vez.
+Calendar (manda la invitación formal si hay mails) e invitación por WhatsApp o Mail con el detalle
+y un link para que la otra persona lo agregue a su calendario.
+
+En Ajustes → **Calendario del iPhone**:
+
+- **Mandar todo al Calendario** (o «Agregar todo una sola vez»): un link común a
+  `/api/ics?z=1&lote=…` con todos los pendientes con fecha comprimidos adentro; Safari lo abre en
+  Calendario con «Añadir todo». No necesita Airtable. Si son demasiados para un link, usa el
+  calendario de Airtable; en la compu se baja el `.ics`. (Antes era un formulario POST, y el iPhone
+  no lo abre.)
+- **Suscribirme en el Calendario** (con el respaldo conectado): `webcal://…/api/calendario?k=…`.
+  El iPhone vuelve a pedirlo cada tanto, así que lo nuevo aparece solo y lo hecho o borrado
+  desaparece, con sus avisos. La `k` sale de `PENDIENTES_CLAVE` (la entrega `/api/datos` a la app
+  conectada) y solo sirve para leer el calendario; si se cambia la clave, hay que volver a
+  suscribirse. Si los avisos no suenan, en la suscripción apagar «Eliminar alarmas». Las horas se
+  pasan a UTC con la zona horaria que la app guarda en *Ajustes* (Argentina si no hay).
 
 **Datos.** Cada equipo guarda todo en su `localStorage`, así la app abre al instante y funciona sin
 conexión. Con el **respaldo en Airtable** conectado, además, cada cambio se sube a la base

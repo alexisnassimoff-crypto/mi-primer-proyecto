@@ -2,7 +2,8 @@
    Pendientes — app
    Inicio (hoy + temas), Agenda y un formulario que pregunta de a una
    cosa. Todo vive en localStorage de este dispositivo. Sin dependencias.
-   Módulos: ics.js (archivos .ics) y parser.js (entiende frases en castellano).
+   Módulos: ics.js (archivos .ics), parser.js (entiende frases en castellano)
+   y avisos.js (cómo se escriben los avisos; también lo usa el servidor).
    ============================================================ */
 (function () {
 'use strict';
@@ -104,8 +105,7 @@ const DEFAULT_TOPICS = [
   { id: 'otros', name: 'Otros', color: '#6B7280', icon: 'tag', aliases: ['otro', 'varios'], keywords: '' }
 ];
 const SUGGEST_ORDER = ['harper', 'juli', 'familia', 'compras', 'gastos', 'casa', 'central'];
-const ALERTS_TIMED = [['', 'Sin aviso'], ['0', 'En el momento'], ['5', '5 min antes'], ['10', '10 min antes'], ['15', '15 min antes'], ['30', '30 min antes'], ['60', '1 hora antes'], ['120', '2 horas antes'], ['1440', '1 día antes'], ['2880', '2 días antes'], ['10080', '1 semana antes']];
-const ALERTS_ALLDAY = [['', 'Sin aviso'], ['-540', 'Ese día a las 9'], ['900', 'El día anterior a las 9'], ['2340', 'Dos días antes a las 9'], ['9540', 'Una semana antes a las 9']];
+const { ALERTS_TIMED, ALERTS_ALLDAY, alertLabelFor, toAllDayAlert, parseAlertText } = Avisos;
 const ASK_ALERT_TIMED = [['15', '15 min antes'], ['60', '1 hora antes'], ['1440', '1 día antes'], ['0', 'En el momento'], ['', 'No avisar']];
 const ASK_ALERT_ALLDAY = [['-540', 'Ese día a las 9'], ['900', 'El día anterior'], ['', 'No avisar']];
 const ASK_TIMES = [['09:00', '9:00'], ['12:00', '12:00'], ['15:00', '15:00'], ['18:00', '18:00'], ['20:00', '20:00'], ['custom', 'Otra hora']];
@@ -180,19 +180,9 @@ function sortPending(a, b) {
 }
 function durLabel(m) { m = Number(m); if (!m) return ''; if (m < 60) return m + ' min'; const h = Math.floor(m / 60), r = m % 60; return r ? h + ' h ' + pad(r) : h + ' h'; }
 function repeatLabel(r) { const x = REPEATS.find(o => o[0] === r); return x ? x[1] : ''; }
-function alertLabelFor(min, allDay) {
-  if (min === null || min === undefined || min === '') return 'Sin aviso';
-  const list = allDay ? ALERTS_ALLDAY : ALERTS_TIMED, hit = list.find(o => o[0] === String(min));
-  if (hit) return hit[1];
-  min = Number(min);
-  if (min === 0) return 'En el momento';
-  const a = Math.abs(min), u = a % 1440 === 0 ? (a / 1440) + (a === 1440 ? ' día' : ' días') : a % 60 === 0 ? (a / 60) + (a === 60 ? ' hora' : ' horas') : a + ' min';
-  return min > 0 ? u + ' antes' : u + ' después';
-}
 function defaultAlertFor(date, time) { if (!date) return null; return time ? Number(state.settings.alertTimed) : Number(state.settings.alertAllDay); }
 /* Un aviso "con hora" son minutos antes; uno "de todo el día" se mide desde la medianoche. */
 function alertValid(v, timed) { if (v === null || v === undefined) return true; v = Number(v); return timed ? v >= 0 : ALERTS_ALLDAY.some(o => o[0] === String(v)); }
-function toAllDayAlert(v) { if (v === null || v === undefined) return v; return v < 1440 ? -540 : Math.round(v / 1440) * 1440 - 540; }
 
 /* ---------- calendario e invitaciones ---------- */
 function toEvent(it) {
@@ -237,19 +227,12 @@ function links(it) {
 function icsAttrs(it) { return isIOS() ? '' : ` download="${esc(slug(it.title || 'evento'))}.ics"`; }
 function downloadIcs(items, name) {
   const text = ICS.build({ events: items.map(toEvent), name: 'Pendientes' });
-  if (ui.apiOk && items.length > 1) { postIcs(text, name); return; }
   const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name + '.ics'; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
   if (isIOS()) toast('Abrilo desde Descargas y tocá «Añadir todo»');
-}
-function postIcs(text, name) {
-  const f = document.createElement('form'); f.method = 'POST'; f.action = '/api/ics'; f.target = isIOS() ? '_self' : '_blank'; f.hidden = true;
-  const t = document.createElement('textarea'); t.name = 'ics'; t.value = text;
-  const n = document.createElement('input'); n.type = 'hidden'; n.name = 'f'; n.value = name;
-  f.appendChild(t); f.appendChild(n); document.body.appendChild(f); f.submit(); setTimeout(() => f.remove(), 1000);
 }
 function copyText(text) {
   const done = () => toast('Copiado');
@@ -735,6 +718,7 @@ function renderSettings() {
   $('#settingsBody').innerHTML =
     `<details class="set" id="setSync"${sync.on ? '' : ' open'}><summary><span>Respaldo en Airtable</span><span class="set__end"><small id="syncSum"></small>${icon('chevR')}</span></summary>` +
       `<div class="set__body" id="syncBox"></div></details>` +
+    `<details class="set" id="setCal"><summary>Calendario del iPhone ${icon('chevR')}</summary><div class="set__body" id="calBox"></div></details>` +
     `<details class="set"><summary>Tu nombre y mail ${icon('chevR')}</summary><div class="set__body">` +
       `<p class="set__note">Aparecen en las invitaciones que mandás.</p>` +
       `<label class="field" for="s_name"><span class="field__l">Nombre</span><input id="s_name" type="text" autocomplete="name" value="${esc(s.name)}"></label>` +
@@ -751,7 +735,6 @@ function renderSettings() {
       `<button type="button" class="btn btn--secondary btn--block" data-act="s-restore">Restaurar una copia</button></div></details>` +
     `<div class="set set--row"><span id="themeLabel">Apariencia</span><div class="seg3" role="radiogroup" aria-labelledby="themeLabel">` +
       [['auto', 'Auto'], ['light', 'Clara'], ['dark', 'Oscura']].map(o => `<button type="button" role="radio" aria-checked="${(s.theme || 'auto') === o[0]}" data-act="s-theme" data-value="${o[0]}">${o[1]}</button>`).join('') + '</div></div>' +
-    `<button type="button" class="set set--btn" data-act="s-export">${icon('calendar')}Mandar todo al Calendario</button>` +
     `<button type="button" class="set set--btn set--danger" data-act="s-clear">${icon('trash')}Borrar las hechas</button>` +
     `<details class="set"><summary>Ayuda ${icon('chevR')}</summary><div class="set__body set__note">` +
       `<p>Para tenerlo como app: en Safari tocá Compartir y «Agregar a inicio».</p>` +
@@ -759,6 +742,7 @@ function renderSettings() {
       `<p>«Agregar al Calendario» abre el evento en el Calendario del iPhone. Ahí tocá «Añadir».</p></div></details>`;
   renderTopicEditor();
   renderSyncUi();
+  renderCalUi();
 }
 function openSettings() { renderSettings(); const dlg = $('#settingsSheet'); openSheet(dlg); dlg.querySelector('.sheet__body').scrollTop = 0; }
 function exportJson() {
@@ -780,8 +764,8 @@ function importJson(file) {
         const cur = byId(x.id);
         if (!cur) { state.items.push(x); added++; } else if ((x.updatedAt || 0) > (cur.updatedAt || 0)) { Object.assign(cur, x); updated++; }
       });
-      (inc.topics || []).forEach(t => { if (t && t.id && !state.topics.some(x => x.id === t.id)) { state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = Date.now(); } });
-      if (inc.settings) { state.settings = Object.assign({}, state.settings, inc.settings); state.settingsAt = Date.now(); }
+      (inc.topics || []).forEach(t => { if (t && t.id && !state.topics.some(x => x.id === t.id)) { state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = later(state.topicsSy); } });
+      if (inc.settings) { state.settings = Object.assign({}, state.settings, inc.settings); state.settingsAt = later(state.settingsSy); }
       (inc.people || []).forEach(p => { if (state.people.indexOf(p) < 0) state.people.push(p); });
       (inc.places || []).forEach(p => { if (state.places.indexOf(p) < 0) state.places.push(p); });
       save(); applyTheme(); render(); renderSettings();
@@ -833,33 +817,17 @@ const AT = {
 const REPEAT_AT = { daily: 'Todos los días', weekly: 'Todas las semanas', monthly: 'Todos los meses', yearly: 'Todos los años' };
 const KIND_AT = { tarea: 'Tarea', reunion: 'Reunión', recordatorio: 'Recordatorio' };
 const HASH_KEYS = ['title', 'topic', 'date', 'time', 'alert', 'alert2', 'done', 'priority', 'invitees', 'location', 'amount', 'repeat', 'duration', 'kind', 'notes'];
-const NUM_WORDS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, diez: 10, quince: 15, veinte: 20, treinta: 30 };
-const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia';
+const CLAVE_KEY = 'pendientes.clave', LAST_KEY = 'pendientes.ultimaCopia', CAL_KEY = 'pendientes.calendario';
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
 const iso = ms => (ms ? new Date(ms).toISOString() : null);
+/* marca un cambio de acá: siempre después de lo último sincronizado, aunque pase en el mismo milisegundo */
+const later = sy => Math.max(Date.now(), (sy || 0) + 1);
+const localTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } };
 const sync = { on: !!lsGet(CLAVE_KEY), busy: false, again: null, last: Number(lsGet(LAST_KEY)) || 0, pulled: 0, err: null, timer: null };
 
 /* Huella de lo que importa de un registro: si cambia, alguien lo editó allá */
 function recHash(f) { return HASH_KEYS.map(k => { const v = f[AT.P[k]]; return v === undefined || v === null || v === false || v === '' ? '' : String(v); }).join('\u0001'); }
-/* «15 min antes», «1 hora antes», «El día anterior a las 9»… → minutos como los guarda la app */
-function parseAlertText(s, timed) {
-  const t = Parser.plain(String(s == null ? '' : s)).replace(/\s+/g, ' ').trim();
-  if (!t) return undefined;
-  if (/^(sin aviso|no|no avisar|ninguno|nada|-)$/.test(t)) return null;
-  const ad = ALERTS_ALLDAY.find(o => o[0] !== '' && Parser.plain(o[1]) === t);
-  if (ad) { const v = Number(ad[0]); return timed ? ({ '900': 1440, '2340': 2880, '9540': 10080 })[String(v)] : v; }
-  if (/en el momento|a la hora/.test(t)) return timed ? 0 : -540;
-  if (/^(ese|el mismo) dia/.test(t)) return timed ? undefined : -540;
-  if (/(dia anterior|el dia antes)/.test(t) && !/\d/.test(t)) return timed ? 1440 : 900;
-  if (/despues/.test(t)) return undefined;
-  const m = /(\d+(?:[.,]\d+)?|un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|diez|quince|veinte|treinta)\s*(m|min|mins|minuto|minutos|h|hs|hora|horas|d|dia|dias|semana|semanas)\b/.exec(t);
-  const n = m ? (isNaN(m[1].replace(',', '.')) ? NUM_WORDS[m[1]] : Number(m[1].replace(',', '.'))) : (/^\d+$/.test(t) ? Number(t) : NaN);
-  if (isNaN(n)) return undefined;
-  const u = m ? m[2] : 'min';
-  const mins = Math.round(/^m/.test(u) ? n : /^h/.test(u) ? n * 60 : /^d/.test(u) ? n * 1440 : n * 10080);
-  return timed ? mins : toAllDayAlert(mins);
-}
 /* Tema por nombre; si escribiste uno nuevo en Airtable, se crea */
 function topicIdFromName(name) {
   const raw = String(name || '').trim(), n = Parser.plain(raw);
@@ -869,7 +837,7 @@ function topicIdFromName(name) {
   const nt = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: raw.slice(0, 40), color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
   const otros = state.topics.findIndex(x => x.id === 'otros');
   state.topics.splice(otros < 0 ? state.topics.length : otros, 0, nt);
-  state.topicsAt = Date.now();
+  state.topicsAt = later(state.topicsSy);
   return nt.id;
 }
 function itemFields(it) {
@@ -938,7 +906,7 @@ function mergeTopics(rows) {
   state._topicRids = state._topicRids || {};
   rows.forEach(r => { if (r.fields[T.id]) state._topicRids[r.fields[T.id]] = r.rid; });
   const live = rows.filter(r => r.fields[T.id] && !r.fields[T.deleted]).sort((a, b) => (a.fields[T.order] || 0) - (b.fields[T.order] || 0));
-  if (!live.length) { if ((state.topicsAt || 0) <= (state.topicsSy || 0)) state.topicsAt = Date.now(); return false; } /* allá no hay: van los de acá */
+  if (!live.length) { if ((state.topicsAt || 0) <= (state.topicsSy || 0)) state.topicsAt = later(state.topicsSy); return false; } /* allá no hay: van los de acá */
   if ((state.topicsAt || 0) > (state.topicsSy || 0) && state.topicsSy) return false;                       /* cambios de acá sin subir: ganan */
   const rawSig = topicsSig(live.map(r => ({ id: r.fields[T.id], name: r.fields[T.name], color: r.fields[T.color], icon: r.fields[T.icon], hidden: r.fields[T.hidden] })));
   const remote = live.map(r => {
@@ -956,18 +924,23 @@ function mergeTopics(rows) {
 }
 function mergeSettings(rows) {
   const A = AT.A, row = rows.find(r => r.fields[A.key] === 'ajustes');
-  if (!row) { if ((state.settingsAt || 0) <= (state.settingsSy || 0)) state.settingsAt = Date.now(); return false; }
+  if (!row) { if ((state.settingsAt || 0) <= (state.settingsSy || 0)) state.settingsAt = later(state.settingsSy); return false; }
   state._settingsRid = row.rid;
   const at = Date.parse(row.fields[A.updatedAt]) || 0;
-  if ((state.settingsAt || 0) > (state.settingsSy || 0) && state.settingsSy) return false;
-  if (at <= (state.settingsSy || 0)) return false;
   let v = null;
   try { v = JSON.parse(row.fields[A.value] || '{}'); } catch (e) { v = null; }
   if (!v || typeof v !== 'object') return false;
-  ['name', 'email'].forEach(k => { if (typeof v[k] === 'string') state.settings[k] = v[k]; });
-  ['alertTimed', 'alertAllDay', 'meetingDuration'].forEach(k => { if (typeof v[k] === 'number' && isFinite(v[k])) state.settings[k] = v[k]; });
-  state.settingsAt = state.settingsSy = at;
-  return true;
+  let changed = false;
+  const localDirty = (state.settingsAt || 0) > (state.settingsSy || 0) && state.settingsSy;
+  if (!localDirty && at > (state.settingsSy || 0)) {
+    ['name', 'email'].forEach(k => { if (typeof v[k] === 'string') state.settings[k] = v[k]; });
+    ['alertTimed', 'alertAllDay', 'meetingDuration'].forEach(k => { if (typeof v[k] === 'number' && isFinite(v[k])) state.settings[k] = v[k]; });
+    state.settingsAt = state.settingsSy = at;
+    changed = true;
+  }
+  /* el calendario suscrito necesita tu zona horaria: si allá falta, se vuelve a subir */
+  if (!v.tz && localTz() && (state.settingsAt || 0) <= (state.settingsSy || 0)) state.settingsAt = later(state.settingsSy);
+  return changed;
 }
 function mergeItems(rows) {
   const P = AT.P, seen = new Set(), tombs = new Set(state.tombs.map(t => t.id));
@@ -1047,7 +1020,7 @@ async function pushDirty(keepalive) {
   if (settingsDirty) {
     const s = state.settings, f = {};
     f[A.key] = 'ajustes';
-    f[A.value] = JSON.stringify({ name: s.name, email: s.email, alertTimed: Number(s.alertTimed), alertAllDay: Number(s.alertAllDay), meetingDuration: Number(s.meetingDuration) });
+    f[A.value] = JSON.stringify({ name: s.name, email: s.email, alertTimed: Number(s.alertTimed), alertAllDay: Number(s.alertAllDay), meetingDuration: Number(s.meetingDuration), tz: localTz() });
     f[A.updatedAt] = iso(settingsAt);
     ajustes.push({ rid: state._settingsRid, fields: f });
   }
@@ -1082,13 +1055,14 @@ async function runSync(full, keepalive) {
     if (full) {
       const data = await api('GET');
       sync.pulled = Date.now();
+      if (data.calendario && data.calendario !== lsGet(CAL_KEY)) { lsSet(CAL_KEY, data.calendario); renderCalUi(); }
       if (mergeRemote(data)) { persist(); render(); if ($('#detailSheet').open) renderDetail(); }
     }
     await pushDirty(keepalive);
     sync.last = Date.now(); lsSet(LAST_KEY, String(sync.last)); sync.err = null;
   } catch (e) {
     sync.err = e && e.code ? e.code : 'red';
-    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); }
+    if (sync.err === 'clave') { sync.on = false; lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); renderCalUi(); }
   } finally {
     sync.busy = false; renderSyncUi();
     const again = sync.again; sync.again = null;
@@ -1155,6 +1129,65 @@ function connectSync() {
   return runSync(true).then(() => { if (sync.on && !sync.err) toast('Conectado: tus pendientes quedan guardados en Airtable'); });
 }
 
+/* ---------- calendario del iPhone ----------
+   «Mandar todo»: un link común que Safari abre en Calendario con «Añadir todo».
+   Los pendientes viajan comprimidos dentro del link, así anda aunque no uses Airtable.
+   «Suscribirme» (con Airtable): el iPhone vuelve a pedir /api/calendario cada tanto
+   y lo que anotás aparece solo, con sus avisos. */
+const LOTE_MAX = 16000;
+const calItems = () => state.items.filter(it => !it.done && it.date).sort(sortPending);
+const calSig = items => items.map(it => it.id + ':' + (it.updatedAt || 0)).join(',') + '|' + (state.topicsAt || 0);
+const feedPath = () => (lsGet(CAL_KEY) ? '/api/calendario?k=' + encodeURIComponent(lsGet(CAL_KEY)) : '');
+const feedUrl = scheme => (feedPath() ? scheme + '://' + location.host + feedPath() : '');
+function b64url(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function loteUrl(items) {
+  /* sin organizador ni invitados: entra más en el link y no llega como invitación */
+  const list = items.map(it => ICS.paramsFromEvent(Object.assign(toEvent(it), { organizer: null, attendees: [] })));
+  const bytes = new TextEncoder().encode(JSON.stringify(list));
+  let url;
+  try {
+    const z = new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate')));
+    url = '/api/ics?z=1&lote=' + b64url(new Uint8Array(await z.arrayBuffer()));
+  } catch (e) { url = '/api/ics?lote=' + b64url(bytes); }
+  return url.length <= LOTE_MAX ? url : null;
+}
+/* en el iPhone: el link (o, si son demasiados para un link, el calendario de Airtable); si no, el archivo */
+async function allTarget(items) {
+  if (!(ui.apiOk && isIOS())) return null;
+  const url = await loteUrl(items).catch(() => null);
+  return url || (sync.on ? feedPath() : '') || null;
+}
+async function sendAllToCalendar(items) {
+  const url = await allTarget(items);
+  if (url) location.href = url; else downloadIcs(items, 'pendientes');
+}
+let calPrep = 0;
+function prepareCalAll() {
+  const a = $('#calAll'); if (!a) return;
+  const items = calItems(), sig = calSig(items), n = ++calPrep;
+  delete a.dataset.sig; a.setAttribute('href', '#');
+  if (!items.length) return;
+  allTarget(items).then(url => { if (url && n === calPrep && a.isConnected) { a.setAttribute('href', url); a.dataset.sig = sig; } }).catch(() => {});
+}
+function calBoxHtml() {
+  const on = sync.on && !!feedPath();
+  const all = `<a class="btn btn--${on ? 'secondary' : 'primary'} btn--block" id="calAll" href="#" data-act="s-cal-all">${on ? 'Agregar todo una sola vez' : icon('calendar') + 'Mandar todo al Calendario'}</a>`;
+  if (!on) return all + `<p class="set__note">En Calendario tocá «Añadir todo». ${sync.on ? 'Para que se agreguen solos, tocá «Sincronizar ahora» en el respaldo.' : 'Si conectás Airtable, se agregan solos.'}</p>`;
+  return `<a class="btn btn--primary btn--block" href="${esc(feedUrl('webcal'))}">${icon('calendar')}Suscribirme en el Calendario</a>` +
+    `<p class="set__note">Te suscribís una vez y lo que anotes con fecha aparece solo, con sus avisos. Si no suenan, en la suscripción apagá «Eliminar alarmas».</p>` +
+    all +
+    `<button type="button" class="btn btn--secondary btn--block" data-act="s-cal-copy">${icon('copy')}Copiar el link</button>`;
+}
+function renderCalUi() {
+  const box = $('#calBox'); if (!box) return;
+  box.innerHTML = calBoxHtml();
+  prepareCalAll();
+}
+
 /* ---------- eventos ---------- */
 function bind() {
   $$('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon); });
@@ -1209,32 +1242,34 @@ function bind() {
       case 's-theme': state.settings.theme = a.dataset.value; save(); applyTheme(); $$('[data-act="s-theme"]').forEach(b => b.setAttribute('aria-checked', String(b === a))); return;
       case 's-add-topic': {
         const t = { id: 't' + Date.now().toString(36), name: 'Nuevo tema', color: PALETTE[state.topics.length % PALETTE.length], icon: 'tag', aliases: [], keywords: '' };
-        state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = Date.now(); save(); renderTopicEditor(); render();
+        state.topics.splice(state.topics.length - 1, 0, t); state.topicsAt = later(state.topicsSy); save(); renderTopicEditor(); render();
         const inp = $(`#topicEditor .trow[data-id="${t.id}"] [data-f="name"]`); if (inp) { inp.focus(); inp.select(); }
         return;
       }
-      case 't-hide': { const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (t) { t.hidden = !t.hidden; state.topicsAt = Date.now(); save(); renderTopicEditor(); render(); } return; }
+      case 't-hide': { const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (t) { t.hidden = !t.hidden; state.topicsAt = later(state.topicsSy); save(); renderTopicEditor(); render(); } return; }
       case 't-del': {
         const r = a.closest('.trow'), t = state.topics.find(x => x.id === r.dataset.id); if (!t) return;
         if (a.dataset.confirm !== '1') { a.dataset.confirm = '1'; a.innerHTML = '<span style="font-size:.8125rem;font-weight:700">¿Seguro?</span>'; setTimeout(() => { if (a.isConnected) { a.dataset.confirm = ''; a.innerHTML = icon('trash'); } }, 3000); return; }
         const n = state.items.filter(it => it.topic === t.id).length;
         state.items.forEach(it => { if (it.topic === t.id) { it.topic = 'otros'; it.updatedAt = Date.now(); } });
         state.topics = state.topics.filter(x => x.id !== t.id);
-        state.topicsAt = Date.now(); state.topicTombs.push(t.id);
+        state.topicsAt = later(state.topicsSy); state.topicTombs.push(t.id);
         if (ui.view === 'tema' && ui.topicId === t.id) goBack();
         save(); renderTopicEditor(); render(); toast('Tema eliminado' + (n ? '. Sus pendientes pasaron a Otros' : ''));
         return;
       }
       case 's-connect': connectSync(); return;
       case 's-sync': runSync(true); return;
-      case 's-disconnect': lsSet(CLAVE_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); toast('Este equipo ya no guarda en Airtable'); return;
+      case 's-disconnect': lsSet(CLAVE_KEY, ''); lsSet(CAL_KEY, ''); sync.on = false; sync.err = null; clearTimeout(sync.timer); renderSyncUi(); renderCalUi(); toast('Este equipo ya no guarda en Airtable'); return;
       case 's-backup': exportJson(); return;
       case 's-restore': $('#importFile').click(); return;
-      case 's-export': {
-        const its = state.items.filter(it => !it.done && it.date);
-        if (!its.length) { toast('No hay pendientes con fecha'); return; }
-        downloadIcs(its, 'pendientes'); return;
+      case 's-cal-all': {
+        const its = calItems();
+        if (!its.length) { e.preventDefault(); toast('No hay pendientes con fecha'); return; }
+        if (a.dataset.sig && a.dataset.sig === calSig(its)) return; /* el link ya está listo: lo abre Safari */
+        e.preventDefault(); sendAllToCalendar(its); return;
       }
+      case 's-cal-copy': { const u = feedUrl(location.protocol.replace(':', '')); if (u) copyText(u); return; }
       case 's-clear': {
         const gone = state.items.filter(it => it.done); if (!gone.length) { toast('No hay hechas para borrar'); return; }
         state.items = state.items.filter(it => !it.done);
@@ -1304,14 +1339,14 @@ function bind() {
     else if (id === 's_email') state.settings.email = v.trim();
     else if (id === 's_alertTimed' || id === 's_alertAllDay' || id === 's_meetingDuration') state.settings[id.slice(2)] = Number(v);
     else return;
-    state.settingsAt = Date.now();
+    state.settingsAt = later(state.settingsSy);
     save();
   });
   $('#settingsSheet').addEventListener('input', e => {
     const r = e.target.closest('.trow'); if (!r) return;
     const t = state.topics.find(x => x.id === r.dataset.id), f = e.target.dataset.f; if (!t || !f) return;
     t[f] = f === 'name' ? (e.target.value.trim() || t.name) : e.target.value;
-    state.topicsAt = Date.now();
+    state.topicsAt = later(state.topicsSy);
     if (f === 'name') state.items.forEach(it => { if (it.topic === t.id) it.updatedAt = Date.now(); }); /* en Airtable el tema va por nombre */
     save();
   });
