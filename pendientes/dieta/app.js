@@ -79,7 +79,10 @@ const dia = (f, ev) => Plan.evaluarDia(state.comidas, f, ev || semana(f));
 const pesosOrd = () => state.pesos.slice().sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
 const objetivo = () => Number(state.ajustes.objetivo) || Plan.OBJETIVO;
 const inicio = () => (/^\d{4}-\d{2}-\d{2}$/.test(state.ajustes.inicio || '') ? state.ajustes.inicio : hoy());
-const limite = () => Plan.sumarDias(inicio(), Plan.PLAZO_DIAS);
+/* la fecha de la sesión con Ari: la que anotaste, o un mes desde el inicio */
+const limite = () => (/^\d{4}-\d{2}-\d{2}$/.test(state.ajustes.sesion || '') ? state.ajustes.sesion : Plan.sumarDias(inicio(), Plan.PLAZO_DIAS));
+const meta = () => { const a = Number(state.ajustes.metaMin), b = Number(state.ajustes.metaMax); return a > 0 && b >= a ? [a, b] : Plan.META; };
+const metaTexto = () => { const m = meta(); return m[0] === m[1] ? m[0] + ' kg' : 'entre ' + m[0] + ' y ' + m[1] + ' kg'; };
 
 const ui = { view: 'inicio', dia: null, ia: false, apiOk: false, ideasComida: null, ideasSemilla: 0, ideasIa: null, checkComida: null, checkRes: null, pop: false };
 
@@ -221,7 +224,7 @@ function renderInicio() {
   const r = Plan.racha(state.comidas, h), tot = Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h);
   const diasPlan = Plan.diasEntre(inicio(), h) + 1;
   const vacio = !state.comidas.length && !state.pesos.length;
-  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá anotás lo que comés en cada comida y la app ve cómo cuenta en el plan. Si cumplís el plan de Ari, el día gana una estrella. Objetivo: ' + objetivo() + ' kg.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
+  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá anotás lo que comés en cada comida y la app ve cómo cuenta en el plan. Si cumplís el plan de Ari, el día gana una estrella. Primero ' + objetivo() + ' kg para la próxima sesión; la meta, ' + metaTexto() + '.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
   html += '<div class="frase">' + icon('star') + '<div><p class="frase__q">' + esc(Plan.frase(h)) + '</p><span class="frase__k">Ari</span></div></div>';
   html += dayCardHtml(h);
   html += '<section class="section"><div class="section__h"><span>Esta semana</span><span class="section__sub">Lunes a domingo</span></div><div class="card">' + weekHtml(h) + cuposHtml(h) + '</div></section>';
@@ -229,7 +232,7 @@ function renderInicio() {
   html += '<section class="section"><div class="card"><button type="button" class="entry" data-ideas>' + icon('bulb') + '<span>¿Qué como?<small>Ideas dentro del plan' + (ui.ia && sync.on ? ', con la IA' : '') + '</small></span>' + icon('chevR') + '</button>' +
     '<button type="button" class="entry" data-check>' + icon('help') + '<span>¿Esto va?<small>Preguntá antes de comer</small></span>' + icon('chevR') + '</button></div></section>';
   const dias = Plan.diasEntre(h, limite());
-  html += '<p class="note" style="margin:22px 4px 0;text-align:center">Objetivo <b>' + objetivo() + ' kg</b>. ' + (dias > 0 ? 'En el mes no te pesás: el pesaje es el ' + fechaCorta(limite()) + ', en ' + dias + (dias === 1 ? ' día.' : ' días.') : dias === 0 ? 'Hoy es el día del pesaje.' : 'El plazo del mes ya pasó: cambialo en Ajustes.') + '</p>';
+  html += '<p class="note" style="margin:22px 4px 0;text-align:center">Para la sesión con Ari' + (state.ajustes.sesion ? '' : ' (en un mes)') + ': <b>' + objetivo() + ' kg</b>' + (dias > 0 ? ', el ' + fechaCorta(limite()) + ', en ' + dias + (dias === 1 ? ' día' : ' días') : dias === 0 ? ', hoy' : ' (la fecha ya pasó: cambiala en Ajustes)') + '. En el medio no te pesás.<br>Meta final: <b>' + metaTexto() + '</b>, bajando grasa y manteniendo el músculo.</p>';
   $('#main').innerHTML = html;
   if (ui.pop) { ui.pop = false; const s = $('#dayStar'); if (s) s.classList.add('is-pop'); }
 }
@@ -274,11 +277,11 @@ function chartHtml(ps) {
     '<text x="' + P.l + '" y="' + (H - 4) + '">' + fechaCorta(ps[0].fecha) + '</text><text x="' + (W - P.r) + '" y="' + (H - 4) + '" text-anchor="end">' + fechaCorta(ps[ps.length - 1].fecha) + '</text></svg>';
 }
 function renderPeso() {
-  setHeader('Peso', 'Objetivo ' + objetivo() + ' kg para el ' + fechaCorta(limite()), 'Inicio');
+  setHeader('Peso', objetivo() + ' kg para la sesión del ' + fechaCorta(limite()) + ' · meta final ' + metaTexto(), 'Inicio');
   const ps = pesosOrd(), obj = objetivo();
   let html = '';
   if (!ps.length) {
-    html = '<div class="card empty">Todavía no te pesaste. Cargá el primer peso: desde ahí se mide cuánto falta para ' + obj + '.</div>';
+    html = '<div class="card empty">Todavía no hay pesadas. Ari pidió no pesarse en el medio: cargá el peso del día de la sesión (y el de arranque, si lo sabés). Desde ahí se mide cuánto falta para ' + obj + ' y después para la meta de ' + metaTexto() + '.</div>';
   } else {
     const ult = ps[ps.length - 1], pri = ps[0], baj = Math.round((pri.kg - ult.kg) * 10) / 10, falta = Math.round((ult.kg - obj) * 10) / 10;
     const total = pri.kg - obj, prog = total > 0 ? Math.max(0, Math.min(1, (pri.kg - ult.kg) / total)) : 1;
@@ -480,7 +483,7 @@ function ultimasTexto(dias) {
 }
 function datosTexto() {
   const h = hoy(), ps = pesosOrd(), L = [];
-  L.push('Objetivo: ' + objetivo() + ' kg. Inicio del plan: ' + fechaCorta(inicio()) + '. Plazo: hasta el ' + fechaCorta(limite()) + ' (quedan ' + Plan.diasEntre(h, limite()) + ' días).');
+  L.push('Objetivo para la próxima sesión con Ari: ' + objetivo() + ' kg el ' + fechaCorta(limite()) + ' (quedan ' + Plan.diasEntre(h, limite()) + ' días). Meta final: ' + metaTexto() + '. Inicio del plan: ' + fechaCorta(inicio()) + '. En el medio no se pesa.');
   L.push('Pesos: ' + (ps.length ? ps.map(p => fechaCorta(p.fecha) + ' ' + fmtKg(p.kg) + ' kg').join(', ') : 'todavía no se pesó') + '.');
   L.push('Racha: ' + Plan.racha(state.comidas, h) + ' días seguidos con estrella. Estrellas desde el inicio: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
   const ev = semana(h);
@@ -615,12 +618,17 @@ function syncBoxHtml() {
 }
 function renderSettings() {
   const t = lsGet(THEME_KEY) || 'auto';
+  /* las secciones abiertas siguen abiertas al volver a dibujar */
+  const abiertas = $$('#settingsBody details').map(d => d.id + ':' + d.open), ab = id => { const x = abiertas.find(a => a.indexOf(id + ':') === 0); return x ? x.endsWith('true') : id === 'set-sync'; };
   $('#settingsBody').innerHTML =
-    '<details class="set" open><summary>Respaldo e IA ' + icon('chevR') + '</summary><div class="set__body" id="syncBox">' + syncBoxHtml() + '</div></details>' +
-    '<details class="set"><summary>Objetivo y fechas ' + icon('chevR') + '</summary><div class="set__body">' +
-    '<label class="field"><span class="field__l">Objetivo (kg)</span><input id="s_obj" type="text" inputmode="decimal" value="' + String(objetivo()).replace('.', ',') + '" autocomplete="off"></label>' +
+    '<details class="set" id="set-sync"' + (ab('set-sync') ? ' open' : '') + '><summary>Respaldo e IA ' + icon('chevR') + '</summary><div class="set__body" id="syncBox">' + syncBoxHtml() + '</div></details>' +
+    '<details class="set" id="set-obj"' + (ab('set-obj') ? ' open' : '') + '><summary>Objetivo y fechas ' + icon('chevR') + '</summary><div class="set__body">' +
+    '<label class="field"><span class="field__l">Objetivo para la sesión (kg)</span><input id="s_obj" type="text" inputmode="decimal" value="' + String(objetivo()).replace('.', ',') + '" autocomplete="off"></label>' +
+    '<label class="field"><span class="field__l">Sesión con Ari</span><input id="s_sesion" type="date" value="' + limite() + '" min="' + hoy() + '"></label>' +
+    '<p class="set__note">' + (state.ajustes.sesion ? 'Cuando la fijes, cambiala acá.' : 'Por ahora, un mes desde que empezaste. Cuando fijes el día con Ari, ponelo acá.') + '</p>' +
+    '<div class="field"><span class="field__l">Meta final (kg)</span><div style="display:flex;gap:10px;align-items:center"><input id="s_meta1" type="text" inputmode="decimal" value="' + meta()[0] + '" autocomplete="off" aria-label="Desde" style="flex:1"><span>a</span><input id="s_meta2" type="text" inputmode="decimal" value="' + meta()[1] + '" autocomplete="off" aria-label="Hasta" style="flex:1"></div></div>' +
     '<label class="field"><span class="field__l">Empezaste el plan el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
-    '<p class="set__note">El plazo es un mes desde ese día: el pesaje es el ' + fechaCorta(limite()) + '.</p></div></details>' +
+    '<p class="set__note">Desde ese día se cuentan las estrellas.</p></div></details>' +
     '<button type="button" class="set set--btn" data-plan>' + icon('book') + 'El plan de Ari</button>' +
     '<button type="button" class="set set--btn" data-go-peso>' + icon('scale') + 'Peso (para el pesaje de fin de mes)</button>' +
     '<div class="set set--row"><span>Aspecto</span><div class="seg3" role="radiogroup" aria-label="Aspecto"><button type="button" role="radio" aria-checked="' + (t === 'auto') + '" data-theme="auto">Auto</button><button type="button" role="radio" aria-checked="' + (t === 'light') + '" data-theme="light">Claro</button><button type="button" role="radio" aria-checked="' + (t === 'dark') + '" data-theme="dark">Oscuro</button></div></div>' +
@@ -767,6 +775,8 @@ function mergeAjustes(rows) {
   if (localDirty || at <= (state.ajustesSy || 0)) return false;
   if (typeof v.objetivo === 'number' && v.objetivo > 0) state.ajustes.objetivo = v.objetivo;
   if (/^\d{4}-\d{2}-\d{2}$/.test(v.inicio || '')) state.ajustes.inicio = v.inicio;
+  if (typeof v.sesion === 'string') state.ajustes.sesion = /^\d{4}-\d{2}-\d{2}$/.test(v.sesion) ? v.sesion : '';
+  if (typeof v.metaMin === 'number' && typeof v.metaMax === 'number' && v.metaMin > 0 && v.metaMax >= v.metaMin) { state.ajustes.metaMin = v.metaMin; state.ajustes.metaMax = v.metaMax; }
   if (typeof v.nombre === 'string') state.ajustes.nombre = v.nombre;
   state.ajustesAt = state.ajustesSy = at;
   return true;
@@ -800,7 +810,7 @@ async function pushDirty(keepalive) {
     .concat(state.pesoTombs.map(t => { const f = {}; f[W.id] = t.id; f[W.deleted] = true; f[W.updatedAt] = iso(t.at); return { rid: t.rid || undefined, fields: f }; }));
   const ajustes = [];
   const ajustesAt = state.ajustesAt || 0;
-  if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), nombre: state.ajustes.nombre || 'Ale', tz: localTz() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
+  if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), sesion: state.ajustes.sesion || '', metaMin: meta()[0], metaMax: meta()[1], nombre: state.ajustes.nombre || 'Ale', tz: localTz() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
   const CHUNK = 150;
   const n = Math.max(1, Math.ceil(Math.max(filasC.length, filasW.length) / CHUNK));
   for (let i = 0; i < n; i++) {
@@ -958,6 +968,12 @@ function init() {
   });
   $('#settingsBody').addEventListener('change', e => {
     if (e.target.id === 's_obj') { const v = Math.round(parseFloat(String(e.target.value).replace(',', '.')) * 2) / 2; if (v >= 30 && v <= 300) { state.ajustes.objetivo = v; state.ajustesAt = Date.now(); persist(); queueSync(); render(); } }
+    if (e.target.id === 's_sesion') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { state.ajustes.sesion = v; state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render(); } }
+    if (e.target.id === 's_meta1' || e.target.id === 's_meta2') {
+      const n = v => Math.round(parseFloat(String(v).replace(',', '.')) * 2) / 2;
+      const a = n($('#s_meta1').value), b = n($('#s_meta2').value);
+      if (a >= 30 && b >= a && b <= 300) { state.ajustes.metaMin = a; state.ajustes.metaMax = b; state.ajustesAt = Date.now(); persist(); queueSync(); render(); }
+    }
     if (e.target.id === 's_inicio') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= hoy()) { state.ajustes.inicio = v; state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render(); } }
   });
   $('#settingsSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 's_clave') { e.preventDefault(); connectSync(); } });

@@ -11,7 +11,8 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const OBJETIVO = 78;       /* kg */
+  const OBJETIVO = 78;       /* kg, para la próxima sesión con Ari */
+  const META = [70, 74];     /* kg, la meta final de Ari: bajar grasa manteniendo el músculo */
   const PLAZO_DIAS = 30;     /* «en un mes»: no hay que pesarse en el medio, se pesa al final */
 
   /* Las comidas del día. «desde/hasta» son las horas para proponer cuál cargar. */
@@ -189,7 +190,7 @@
     'Si jugás al fútbol, no podés ir a trabar la pelota con el pie flojo.',
     'El sobrepeso con la edad lesiona y desgasta el cuerpo.',
     'Felicitate cuando cumplís. Un día bien comido es una estrella.',
-    'Bajar grasa, mantener músculo. Objetivo: 78.'
+    'Bajar grasa, mantener músculo. Primero 78; la meta, entre 70 y 74.'
   ];
   function frase(fecha) {
     const n = diasEntre('2026-01-05', fecha);
@@ -198,7 +199,7 @@
 
   /* El plan en texto, para la IA y para la pantalla «El plan» */
   const PLAN_TEXTO = [
-    'Objetivo: llegar a 78 kg en un mes. Bajar grasa y mantener la masa muscular.',
+    'Objetivo para la próxima sesión con Ari (en un mes): 78 kg. Meta final: quedar entre 70 y 74 kg, bajando grasa y manteniendo la masa muscular.',
     'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana (4 huevos enteros también cuenta como cumplido; las claras son solo por el colesterol).',
     'Almuerzo: 5 veces por semana mitad proteína y mitad vegetales; 1 vez por semana carbohidrato, proteína y vegetales (un tercio cada uno); 1 vez por semana libre (el permitido).',
     'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',
@@ -207,5 +208,5 @@
     'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
   ];
 
-  return { OBJETIVO, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, comidaAhora, evaluarSemana, quedan, evaluarDia, racha, estrellas, ideas, frase };
+  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, comidaAhora, evaluarSemana, quedan, evaluarDia, racha, estrellas, ideas, frase };
 }));
