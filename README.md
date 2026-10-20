@@ -213,25 +213,27 @@ en Vercel). Cargás cada comida del día y la app dice si cumple el plan de Ari 
 cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** por cada día cumplido.
 
 - **Hoy**: la frase de Ari del día, las cuatro comidas (desayuno, almuerzo, merienda, cena) con
-  «Cargar» en las que faltan, «Anotar un extra» (postre, fruta, picoteo), la semana con sus
-  estrellas, los cupos que quedan, la racha, las estrellas acumuladas y el peso.
-- **Cargar**: ¿qué comida? → ¿cómo fue? (los tipos de esa comida, con el cupo semanal que queda)
-  → ¿qué comiste? (opcional). Si la comida ya estaba cargada, se edita. Se puede elegir otro día.
+  «Cargar» en las que faltan, «Anotar un extra» (postre, fruta, picoteo, de un toque), la semana
+  con sus estrellas, los cupos que quedan, la racha, las estrellas acumuladas y la fecha del pesaje.
+- **Cargar, de un toque**: «Cargar» en una comida abre «¿cómo fue?» y tocar un tipo la guarda (sin
+  texto ni fecha). El botón Cargar de abajo pregunta primero qué comida (la de la hora ya marcada).
+  Tocar una comida cargada la cambia o la borra. Para otro día: Historial → ese día → Cargar.
 - **Historial**: por semana, cada día con su estrella y el resumen de lo que comió; tocar un día lo
   abre para corregirlo.
-- **Peso**: pesadas, cuánto falta para el objetivo (78 kg), barra de avance y gráfico; el plazo es
-  un mes desde la fecha de inicio (Ajustes → Objetivo y fechas).
+- **Peso**: Ari pidió no pesarse durante el mes, así que Hoy solo muestra el objetivo (78 kg) y la
+  fecha del pesaje (un mes desde la fecha de inicio, Ajustes → Objetivo y fechas). La pantalla de
+  pesadas (barra, gráfico) queda en Ajustes → Peso, para el pesaje de fin de mes.
 - **¿Qué como?**: ideas dentro del plan para la comida que toca (sin IA, giran con «Otras ideas») y,
   con el respaldo conectado, ideas de Claude con lo que tenga en la heladera, mirando lo que comió
   esos días y los cupos que quedan. «Cargar» en una idea abre el formulario ya armado.
 - **¿Esto va?** (con IA): escribe lo que quiere comer («milanesa con puré») y Claude dice cómo
   cuenta (plan, con carbo, libre o fuera del plan), si entra con los cupos que quedan y la versión
-  que sí entra.
+  que sí entra. «Cargarlo así» y «Cargar» en una idea guardan la comida directo.
 - **Preguntale a la dieta** (ícono de mensaje, con IA): preguntas con sus datos («¿cómo vengo esta
   semana?», «¿cuánto bajé?»).
 
 **Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
-desayuno de 2 huevos y 2 claras los 7 días; almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
+desayuno de huevos los 7 días (2 y 2 claras, o 4 enteros: las claras son solo por el colesterol); almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
 por semana; merienda pan turco (o nada); cena proteína y vegetales, 1 «con carbo» y 2 libres por
 semana; sin postres, frutas ni extras. La semana va de lunes a domingo; un «libre» o «con carbo»
 de más (ya usado el cupo) queda **excedido** y no suma. El día gana la estrella cuando desayuno,

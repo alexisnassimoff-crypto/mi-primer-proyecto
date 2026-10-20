@@ -214,27 +214,21 @@ function cuposHtml(fecha) {
   });
   return h + '</div>';
 }
-function pesoTileHtml() {
-  const ps = pesosOrd(), ult = ps[ps.length - 1], obj = objetivo();
-  if (!ult) return '<button type="button" class="entry" data-go="peso">' + icon('scale') + '<span>Todavía no te pesaste<small>Cargá el primer peso para ver cuánto falta para ' + obj + '</small></span>' + icon('chevR') + '</button>';
-  const falta = Math.round((ult.kg - obj) * 10) / 10, dias = Plan.diasEntre(hoy(), limite());
-  const s = falta > 0 ? 'Faltan ' + fmtKg(falta) + ' kg para ' + obj : '¡Llegaste al objetivo!';
-  return '<button type="button" class="entry" data-go="peso">' + icon('scale') + '<span>' + fmtKg(ult.kg) + ' kg <small>' + esc(s) + (dias > 0 ? ' · ' + dias + (dias === 1 ? ' día' : ' días') + ' de plazo' : '') + '</small></span>' + icon('chevR') + '</button>';
-}
 function renderInicio() {
   const h = hoy();
   setHeader('Hoy', cap(fechaLarga(h)), null);
   const r = Plan.racha(state.comidas, h), tot = Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h);
   const diasPlan = Plan.diasEntre(inicio(), h) + 1;
   const vacio = !state.comidas.length && !state.pesos.length;
-  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá cargás cada comida del día. Si cumplís el plan de Ari, el día gana una estrella. Objetivo: ' + objetivo() + ' kg.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
+  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá cargás cada comida con un toque. Si cumplís el plan de Ari, el día gana una estrella. Objetivo: ' + objetivo() + ' kg.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
   html += '<div class="frase">' + icon('star') + '<div><p class="frase__q">' + esc(Plan.frase(h)) + '</p><span class="frase__k">Ari</span></div></div>';
   html += dayCardHtml(h);
   html += '<section class="section"><div class="section__h"><span>Esta semana</span><span class="section__sub">Lunes a domingo</span></div><div class="card">' + weekHtml(h) + cuposHtml(h) + '</div></section>';
   html += '<section class="section"><div class="stats"><div class="stat"><div class="stat__v">' + icon('star') + r + '</div><div class="stat__k">' + (r === 1 ? 'día seguido' : 'días seguidos') + '</div></div><div class="stat"><div class="stat__v">' + tot + '</div><div class="stat__k">' + (tot === 1 ? 'estrella' : 'estrellas') + ' en ' + diasPlan + (diasPlan === 1 ? ' día' : ' días') + '</div></div></div></section>';
   html += '<section class="section"><div class="card"><button type="button" class="entry" data-ideas>' + icon('bulb') + '<span>¿Qué como?<small>Ideas dentro del plan' + (ui.ia && sync.on ? ', con la IA' : '') + '</small></span>' + icon('chevR') + '</button>' +
     '<button type="button" class="entry" data-check>' + icon('help') + '<span>¿Esto va?<small>Preguntá antes de comer</small></span>' + icon('chevR') + '</button></div></section>';
-  html += '<section class="section"><div class="section__h"><span>Peso</span><span class="section__sub">Objetivo ' + objetivo() + ' kg</span></div><div class="card">' + pesoTileHtml() + '</div></section>';
+  const dias = Plan.diasEntre(h, limite());
+  html += '<p class="note" style="margin:22px 4px 0;text-align:center">Objetivo <b>' + objetivo() + ' kg</b>. ' + (dias > 0 ? 'En el mes no te pesás: el pesaje es el ' + fechaCorta(limite()) + ', en ' + dias + (dias === 1 ? ' día.' : ' días.') : dias === 0 ? 'Hoy es el día del pesaje.' : 'El plazo del mes ya pasó: cambialo en Ajustes.') + '</p>';
   $('#main').innerHTML = html;
   if (ui.pop) { ui.pop = false; const s = $('#dayStar'); if (s) s.classList.add('is-pop'); }
 }
@@ -244,7 +238,7 @@ function renderDia(fecha) {
 }
 function renderHistorial() {
   const h = hoy();
-  let desde = inicio();
+  let desde = inicio() < Plan.lunesDe(h) ? inicio() : Plan.lunesDe(h); /* siempre la semana entera */
   state.comidas.forEach(c => { if (c.fecha < desde) desde = c.fecha; });
   if (Plan.diasEntre(desde, h) > 180) desde = Plan.sumarDias(h, -180);
   setHeader('Historial', 'Desde el ' + fechaCorta(desde), null);
@@ -304,27 +298,34 @@ function renderPeso() {
   $('#main').innerHTML = html;
 }
 
-/* ---------- Cargar / editar una comida ---------- */
+/* ---------- Cargar / editar una comida ----------
+   De un toque: elegís cómo fue y queda guardada. Sin texto ni fecha: la fecha es la del
+   día que estás mirando (Hoy, o un día del historial). */
 let form = null;
 function openForm(o) {
   o = o || {};
-  form = { id: o.id || null, fecha: o.fecha || hoy(), comida: o.comida || null, tipo: o.tipo || null, que: o.que || '', nuevo: !o.id };
-  if (form.comida === 'extra') form.tipo = 'nova';
+  const fecha = o.fecha || (ui.view === 'dia' && ui.dia ? ui.dia : hoy());
+  if (o.comida === 'extra' && !o.id) { o.tipo = 'nova'; o.directo = true; }
+  if (o.directo && o.comida && o.tipo) { guardarComida({ id: o.id, fecha, comida: o.comida, tipo: o.tipo, que: o.que || '' }); return; }
+  form = { id: o.id || null, fecha, comida: o.comida || null, tipo: o.tipo || null, que: o.que || '', chips: !!o.elegir || !o.comida };
+  if (form.comida && !form.id) { const ya = comidasDe(fecha).find(x => x.comida === form.comida); if (ya) { form.id = ya.id; form.tipo = ya.tipo; } }
   renderForm(true);
   openSheet($('#formSheet'));
 }
 function renderForm(primera) {
-  $('#formTitle').textContent = form.id ? 'Editar comida' : 'Cargar una comida';
-  $('#formErr').textContent = '';
-  const h = hoy(), del = comidasDe(form.fecha);
-  let html = '<div class="q"><div class="datechip"><span>' + esc(fechaRel(form.fecha)) + (form.fecha !== h ? '' : ', ' + fechaLarga(h).split(' ').slice(1).join(' ')) + '</span><input type="date" id="f_fecha" value="' + form.fecha + '" max="' + h + '" aria-label="Fecha"></div>' +
-    '<label class="q__label">¿Qué comida?</label><div class="opts">' + Plan.COMIDAS.map(c => {
-      const ya = c.id !== 'extra' ? del.find(x => x.comida === c.id && x.id !== form.id) : null;
+  const esHoy = form.fecha === hoy();
+  $('#formTitle').textContent = form.id && !form.chips ? 'Cambiar ' + nombreDe(form.comida).toLowerCase() + (esHoy ? ' de hoy' : ' del ' + fechaCorta(form.fecha)) : 'Cargar' + (esHoy ? '' : ' el ' + fechaCorta(form.fecha));
+  const del = comidasDe(form.fecha);
+  let html = '';
+  if (form.chips) {
+    html += '<div class="q"><label class="q__label">¿Qué comida?</label><div class="opts">' + Plan.COMIDAS.map(c => {
+      const ya = c.id !== 'extra' ? del.find(x => x.comida === c.id) : null;
       return '<button type="button" class="opt" data-comida="' + c.id + '" aria-pressed="' + (form.comida === c.id) + '">' + icon(ICONO_COMIDA[c.id]) + '<span>' + esc(c.nombre) + (ya ? '<small>ya cargada</small>' : '') + '</span></button>';
     }).join('') + '</div></div>';
+  }
   if (form.comida && form.comida !== 'extra') {
     const otras = state.comidas.filter(c => c.id !== form.id), ev = Plan.evaluarSemana(otras, Plan.lunesDe(form.fecha));
-    html += '<div class="q' + (primera ? '' : ' is-new') + '"><label class="q__label">¿Cómo fue?</label><div class="opts opts--1">' + Plan.TIPOS[form.comida].map(t => {
+    html += '<div class="q' + (primera ? '' : ' is-new') + '"><label class="q__label">¿Cómo fue?<small>Tocá una y queda guardada.</small></label><div class="opts opts--1">' + Plan.TIPOS[form.comida].map(t => {
       let cupo = '';
       if (t.cupo) {
         const c = ev.cupos[form.comida].find(x => x.tipo === t.id), q = Math.max(0, t.cupo - (c ? c.usado : 0));
@@ -333,36 +334,29 @@ function renderForm(primera) {
       return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, t.cupo + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
     }).join('') + '</div></div>';
   }
-  if (form.comida && form.tipo) {
-    const ph = form.comida === 'extra' ? 'Un alfajor, una fruta, picoteo…' : form.comida === 'desayuno' ? 'Revueltos con café' : form.comida === 'merienda' ? 'Pan turco con pastrón y tomate' : 'Pollo a la plancha con ensalada';
-    html += '<div class="q' + (primera ? '' : ' is-new') + '"><label class="q__label" for="f_que">' + (form.comida === 'extra' ? '¿Qué fue?' : '¿Qué comiste?') + '<small>Opcional. Sirve para el historial y para las ideas.</small></label><input class="q__input" id="f_que" type="text" value="' + esc(form.que) + '" placeholder="' + esc(ph) + '" autocapitalize="sentences" enterkeyhint="done" maxlength="200"></div>';
-  }
   if (form.id) html += '<div class="actions"><button type="button" class="btn btn--danger btn--block" data-borrar>' + icon('trash') + 'Borrar esta comida</button></div>';
   $('#formBody').innerHTML = html;
-  $('#btnSave').disabled = !(form.comida && form.tipo);
 }
-function guardarForm() {
-  if (!form.comida) { $('#formErr').textContent = 'Elegí qué comida es.'; return; }
-  if (!form.tipo) { $('#formErr').textContent = 'Contá cómo fue.'; return; }
-  const inp = $('#f_que'); if (inp) form.que = inp.value.trim().slice(0, 200);
-  const now = Date.now(), antes = dia(form.fecha), antesEst = semana(form.fecha).estados;
-  let c;
-  if (form.id && byId(form.id)) { c = byId(form.id); Object.assign(c, { fecha: form.fecha, comida: form.comida, tipo: form.tipo, que: form.que, updatedAt: now }); }
+function guardarComida(o) {
+  const now = Date.now(), antes = dia(o.fecha), antesEst = semana(o.fecha).estados;
+  let c = o.id ? byId(o.id) : null;
+  if (!c && o.comida !== 'extra') c = comidasDe(o.fecha).find(x => x.comida === o.comida) || null; /* una por comida y día */
+  if (c) Object.assign(c, { fecha: o.fecha, comida: o.comida, tipo: o.tipo, que: o.que || c.que || '', updatedAt: now });
   else {
     const d = new Date();
-    c = { id: uid(), fecha: form.fecha, comida: form.comida, tipo: form.tipo, que: form.que, hora: form.fecha === hoy() ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : '', createdAt: now, updatedAt: now };
+    c = { id: uid(), fecha: o.fecha, comida: o.comida, tipo: o.tipo, que: o.que || '', hora: o.fecha === hoy() ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : '', createdAt: now, updatedAt: now };
     state.comidas.push(c);
   }
   persist();
-  closeSheet($('#formSheet'));
+  $$('dialog[open]').forEach(d => closeSheet(d));
   const despuesEst = semana(c.fecha).estados, despues = dia(c.fecha), estado = despuesEst[c.id];
   const otraExcedida = Object.keys(despuesEst).find(id => id !== c.id && despuesEst[id] === 'excedido' && antesEst[id] !== 'excedido');
   if (despues.estrella && !antes.estrella) { ui.pop = true; }
-  if (ui.view === 'inicio' || ui.view === 'dia' || ui.view === 'historial') render();
+  render();
   const POS = ['Bien ahí.', 'Una más cumplida.', 'Así se hace.', 'Firme.', 'Eso es comer bien.'];
   if (despues.estrella && !antes.estrella) toast('⭐ ¡Día cumplido! Una estrella más.', { star: true, ms: 4500 });
   else if (c.comida === 'extra') toast('Anotado. Lo importante es que lo cargaste. Ahora: no, gracias.');
-  else if (otraExcedida) { const o = byId(otraExcedida); toast('Anotado. Con esta, ' + (o.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
+  else if (otraExcedida) { const o2 = byId(otraExcedida); toast('Anotado. Con esta, ' + (o2.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o2.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o2.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
   else if (estado === 'ok') toast(c.tipo === 'nada' ? 'Listo.' : POS[Math.floor(Math.random() * POS.length)]);
   else if (estado === 'excedido') toast('Anotado. Ese cupo ya estaba usado esta semana: hoy no suma estrella.', { ms: 4500 });
   else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.');
@@ -581,8 +575,9 @@ function renderSettings() {
     '<details class="set"><summary>Objetivo y fechas ' + icon('chevR') + '</summary><div class="set__body">' +
     '<label class="field"><span class="field__l">Objetivo (kg)</span><input id="s_obj" type="text" inputmode="decimal" value="' + String(objetivo()).replace('.', ',') + '" autocomplete="off"></label>' +
     '<label class="field"><span class="field__l">Empezaste el plan el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
-    '<p class="set__note">El plazo es un mes desde ese día: hasta el ' + fechaCorta(limite()) + '.</p></div></details>' +
+    '<p class="set__note">El plazo es un mes desde ese día: el pesaje es el ' + fechaCorta(limite()) + '.</p></div></details>' +
     '<button type="button" class="set set--btn" data-plan>' + icon('book') + 'El plan de Ari</button>' +
+    '<button type="button" class="set set--btn" data-go-peso>' + icon('scale') + 'Peso (para el pesaje de fin de mes)</button>' +
     '<div class="set set--row"><span>Aspecto</span><div class="seg3" role="radiogroup" aria-label="Aspecto"><button type="button" role="radio" aria-checked="' + (t === 'auto') + '" data-theme="auto">Auto</button><button type="button" role="radio" aria-checked="' + (t === 'light') + '" data-theme="light">Claro</button><button type="button" role="radio" aria-checked="' + (t === 'dark') + '" data-theme="dark">Oscuro</button></div></div>' +
     '<button type="button" class="set set--btn" data-export>' + icon('download') + 'Guardar una copia (.json)</button>' +
     '<button type="button" class="set set--btn" data-import>' + icon('upload') + 'Restaurar una copia</button>' +
@@ -837,7 +832,7 @@ function init() {
   $('#btnSettings').addEventListener('click', () => { renderSettings(); openSheet($('#settingsSheet')); });
   $('#btnAsk').addEventListener('click', openAsk);
   $('#btnSync').addEventListener('click', () => { runSync(true); toast(sync.err ? 'Reintentando…' : 'Sincronizando…'); });
-  $('#btnNew').addEventListener('click', () => openForm({ fecha: ui.view === 'dia' && ui.dia ? ui.dia : hoy(), comida: ui.view === 'dia' ? null : Plan.comidaAhora(new Date().getHours()) }));
+  $('#btnNew').addEventListener('click', () => openForm({ fecha: ui.view === 'dia' && ui.dia ? ui.dia : hoy(), comida: ui.view === 'dia' ? null : Plan.comidaAhora(new Date().getHours()), elegir: true }));
   $$('.tab[data-go]').forEach(t => t.addEventListener('click', () => { if (ui.view !== t.dataset.go) go(t.dataset.go, null, true); else window.scrollTo({ top: 0, behavior: 'smooth' }); }));
 
   $('#main').addEventListener('click', e => {
@@ -853,23 +848,19 @@ function init() {
     else if (b.dataset.borrarPeso) borrarPeso(b.dataset.borrarPeso);
   });
 
-  /* formulario */
+  /* formulario: tocar un tipo guarda */
   $('#formBody').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.comida) {
       const cid = b.dataset.comida;
-      const ya = cid !== 'extra' ? comidasDe(form.fecha).find(x => x.comida === cid && x.id !== form.id) : null;
-      if (ya) { form = { id: ya.id, fecha: ya.fecha, comida: ya.comida, tipo: ya.tipo, que: ya.que || '', nuevo: false }; }
-      else { form.comida = cid; form.tipo = cid === 'extra' ? 'nova' : (Plan.tipo(cid, form.tipo) ? form.tipo : null); }
+      if (cid === 'extra') { guardarComida({ fecha: form.fecha, comida: 'extra', tipo: 'nova' }); return; }
+      const ya = comidasDe(form.fecha).find(x => x.comida === cid);
+      form.comida = cid; form.id = ya ? ya.id : null; form.tipo = ya ? ya.tipo : null;
       renderForm(false);
-    } else if (b.dataset.tipo) { form.tipo = b.dataset.tipo; renderForm(false); const i = $('#f_que'); if (i && !i.value) i.focus(); }
+    } else if (b.dataset.tipo) guardarComida({ id: form.id, fecha: form.fecha, comida: form.comida, tipo: b.dataset.tipo });
     else if (b.hasAttribute('data-borrar')) { const id = form.id; closeSheet($('#formSheet')); borrarComida(id); }
   });
-  $('#formBody').addEventListener('change', e => {
-    if (e.target.id === 'f_fecha') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= hoy()) { form.fecha = v; renderForm(false); } }
-  });
-  $('#formBody').addEventListener('input', e => { if (e.target.id === 'f_que') form.que = e.target.value; });
-  $('#comidaForm').addEventListener('submit', e => { e.preventDefault(); guardarForm(); });
+  $('#comidaForm').addEventListener('submit', e => e.preventDefault());
 
   /* peso */
   $('#pesoForm').addEventListener('submit', e => { e.preventDefault(); guardarPeso(); });
@@ -881,7 +872,7 @@ function init() {
     else if (b.hasAttribute('data-otras-ideas')) { ui.ideasSemilla = Math.floor(Math.random() * 100000); renderIdeas(); }
     else if (b.hasAttribute('data-ideas-local')) { ui.ideasIa = null; renderIdeas(); }
     else if (b.hasAttribute('data-ideas-ia')) pedirIdeas();
-    else if (b.hasAttribute('data-cargar-idea')) openForm({ comida: b.dataset.comida, tipo: b.dataset.tipo, que: b.dataset.que });
+    else if (b.hasAttribute('data-cargar-idea')) openForm({ comida: b.dataset.comida, tipo: b.dataset.tipo, que: b.dataset.que, directo: true });
   });
   $('#ideasBody').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'i_pedido') { e.preventDefault(); pedirIdeas(); } });
 
@@ -890,7 +881,7 @@ function init() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.checkComida) { ui.checkComida = b.dataset.checkComida; ui.checkRes = null; renderCheck(); }
     else if (b.hasAttribute('data-check-ia')) preguntarCheck();
-    else if (b.hasAttribute('data-cargar-idea')) openForm({ comida: b.dataset.comida, tipo: b.dataset.tipo, que: b.dataset.que });
+    else if (b.hasAttribute('data-cargar-idea')) openForm({ comida: b.dataset.comida, tipo: b.dataset.tipo, que: b.dataset.que, directo: true });
   });
   $('#checkBody').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'c_texto') { e.preventDefault(); preguntarCheck(); } });
   $('#checkBody').addEventListener('input', e => { if (e.target.id === 'c_texto') ui.checkTexto = e.target.value; });
@@ -906,6 +897,7 @@ function init() {
     else if (b.hasAttribute('data-sync-off')) disconnectSync();
     else if (b.hasAttribute('data-sync-now')) { runSync(true); renderSyncBox(); }
     else if (b.hasAttribute('data-plan')) openPlan();
+    else if (b.hasAttribute('data-go-peso')) { closeSheet($('#settingsSheet')); setTimeout(() => go('peso'), 50); }
     else if (b.dataset.theme) { lsSet(THEME_KEY, b.dataset.theme === 'auto' ? '' : b.dataset.theme); applyTheme(); renderSettings(); }
     else if (b.hasAttribute('data-export')) exportar();
     else if (b.hasAttribute('data-import')) $('#importFile').click();

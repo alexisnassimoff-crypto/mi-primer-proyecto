@@ -12,7 +12,7 @@
   'use strict';
 
   const OBJETIVO = 78;       /* kg */
-  const PLAZO_DIAS = 30;     /* «en un mes» */
+  const PLAZO_DIAS = 30;     /* «en un mes»: no hay que pesarse en el medio, se pesa al final */
 
   /* Las comidas del día. «desde/hasta» son las horas para proponer cuál cargar. */
   const COMIDAS = [
@@ -27,7 +27,7 @@
      Los «plan» no tienen tope: comer bien nunca está de más. */
   const TIPOS = {
     desayuno: [
-      { id: 'plan', nombre: '2 huevos y 2 claras', detalle: 'Como dice el plan, todos los días', ok: true },
+      { id: 'plan', nombre: 'Huevos', detalle: '2 huevos y 2 claras, o 4 enteros (las claras son solo por el colesterol)', ok: true },
       { id: 'nova', nombre: 'Otra cosa', detalle: 'Algo que no está en el plan', ok: false },
       { id: 'nada', nombre: 'No desayuné', detalle: 'El plan pide desayunar los 7 días', ok: false }
     ],
@@ -166,7 +166,7 @@
   function ideas(cid, semilla) {
     semilla = typeof semilla === 'number' ? semilla : Math.floor(Math.random() * 10000);
     const out = [];
-    if (cid === 'desayuno') return [{ tipo: 'plan', titulo: '2 huevos y 2 claras', detalle: 'Revueltos, duros o a la plancha. Con café o té sin azúcar.' }, { tipo: 'plan', titulo: 'Omelette de 2 huevos y 2 claras', detalle: 'Con espinaca o tomate adentro, sin queso ni pan.' }];
+    if (cid === 'desayuno') return [{ tipo: 'plan', titulo: '2 huevos y 2 claras', detalle: 'Revueltos, duros o a la plancha. Con café o té sin azúcar.' }, { tipo: 'plan', titulo: 'Omelette de 2 huevos y 2 claras', detalle: 'Con espinaca o tomate adentro, sin queso ni pan.' }, { tipo: 'plan', titulo: '4 huevos enteros', detalle: 'Vale igual. Las claras son solo por el colesterol.' }];
     if (cid === 'merienda') return [0, 1, 2].map(i => ({ tipo: 'plan', titulo: elegir(MERIENDA, semilla + i * 7), detalle: 'Poquito no hay problema. Sin manteca ni dulces.' }));
     if (cid === 'almuerzo' || cid === 'cena') {
       for (let i = 0; i < 3; i++) out.push({ tipo: 'plan', titulo: elegir(PROTE, semilla + i * 5) + ' con ' + elegir(VEGE, semilla + i * 3), detalle: 'Mitad proteína, mitad vegetales. Sin pan ni postre.' });
@@ -199,7 +199,7 @@
   /* El plan en texto, para la IA y para la pantalla «El plan» */
   const PLAN_TEXTO = [
     'Objetivo: llegar a 78 kg en un mes. Bajar grasa y mantener la masa muscular.',
-    'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana.',
+    'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana (4 huevos enteros también cuenta como cumplido; las claras son solo por el colesterol).',
     'Almuerzo: 5 veces por semana mitad proteína y mitad vegetales; 1 vez por semana carbohidrato, proteína y vegetales (un tercio cada uno); 1 vez por semana libre (el permitido).',
     'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',
     'Cena: 4 veces por semana proteína y vegetales (perfecta); 1 vez por semana con carbohidrato (un tercio cada uno); 2 veces por semana libre.',
