@@ -17,6 +17,9 @@
     },
     "api/resumen.js": {
       "maxDuration": 60
+    },
+    "api/dieta.js": {
+      "maxDuration": 60
     }
   },
   "crons": [

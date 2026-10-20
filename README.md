@@ -10,6 +10,7 @@ css/fonts.css         tipografías auto-hospedadas
 js/main.js            interacciones + armado de los links de WhatsApp
 assets/               imágenes, íconos y tipografías
 pendientes/           dashboard personal de pendientes: otro proyecto de Vercel (ver más abajo)
+pendientes/dieta/     la app Dieta: se publica con Pendientes, en /dieta/ (ver más abajo)
 ```
 
 ## Verlo localmente
@@ -201,6 +202,61 @@ sin romper nada.
 **Verlo localmente:** el mismo `python3 -m http.server 8000` de arriba y abrir
 `http://localhost:8000/pendientes/`. Para probar el API hace falta `cd pendientes && vercel dev`
 (o el deploy).
+
+---
+
+## Dieta — seguir el plan de Ari (carpeta `pendientes/dieta/`)
+
+App para el teléfono que vive dentro del proyecto de Pendientes en Vercel: se publica sola con
+el mismo merge y queda en https://pendientes-ale.vercel.app/dieta/ (sin proyecto nuevo ni pasos
+en Vercel). Cargás cada comida del día y la app dice si cumple el plan de Ari (la nutricionista),
+cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** por cada día cumplido.
+
+- **Hoy**: la frase de Ari del día, las cuatro comidas (desayuno, almuerzo, merienda, cena) con
+  «Cargar» en las que faltan, «Anotar un extra» (postre, fruta, picoteo), la semana con sus
+  estrellas, los cupos que quedan, la racha, las estrellas acumuladas y el peso.
+- **Cargar**: ¿qué comida? → ¿cómo fue? (los tipos de esa comida, con el cupo semanal que queda)
+  → ¿qué comiste? (opcional). Si la comida ya estaba cargada, se edita. Se puede elegir otro día.
+- **Historial**: por semana, cada día con su estrella y el resumen de lo que comió; tocar un día lo
+  abre para corregirlo.
+- **Peso**: pesadas, cuánto falta para el objetivo (78 kg), barra de avance y gráfico; el plazo es
+  un mes desde la fecha de inicio (Ajustes → Objetivo y fechas).
+- **¿Qué como?**: ideas dentro del plan para la comida que toca (sin IA, giran con «Otras ideas») y,
+  con el respaldo conectado, ideas de Claude con lo que tenga en la heladera, mirando lo que comió
+  esos días y los cupos que quedan. «Cargar» en una idea abre el formulario ya armado.
+- **¿Esto va?** (con IA): escribe lo que quiere comer («milanesa con puré») y Claude dice cómo
+  cuenta (plan, con carbo, libre o fuera del plan), si entra con los cupos que quedan y la versión
+  que sí entra.
+- **Preguntale a la dieta** (ícono de mensaje, con IA): preguntas con sus datos («¿cómo vengo esta
+  semana?», «¿cuánto bajé?»).
+
+**Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
+desayuno de 2 huevos y 2 claras los 7 días; almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
+por semana; merienda pan turco (o nada); cena proteína y vegetales, 1 «con carbo» y 2 libres por
+semana; sin postres, frutas ni extras. La semana va de lunes a domingo; un «libre» o «con carbo»
+de más (ya usado el cupo) queda **excedido** y no suma. El día gana la estrella cuando desayuno,
+almuerzo y cena están cargados y bien, la merienda (si se cargó) también, y no hay extras.
+
+```
+pendientes/dieta/index.html  estructura
+pendientes/dieta/app.css     diseño (mismos tokens que Pendientes; verde = cumplido, ámbar = con carbo, violeta = libre, rojo = fuera del plan)
+pendientes/dieta/app.js      la app: hoy, cargar, historial, peso, ideas, ¿esto va?, preguntas, ajustes y respaldo
+pendientes/dieta/plan.js     el plan de Ari en reglas: comidas, tipos, cupos, estrellas, ideas y frases (lo comparte con el API)
+pendientes/dieta/sw.js       abre sin conexión (alcance: solo /dieta/)
+pendientes/api/dieta.js      función de Vercel: respaldo en Airtable (GET/POST) y la IA (sugerir, evaluar, preguntar)
+```
+
+**Respaldo e IA.** Usa la misma clave que Pendientes (`PENDIENTES_CLAVE`), el mismo token de Airtable
+y la misma clave de IA: no hay variables nuevas en Vercel. En Ajustes → Respaldo e IA se escribe la
+clave una vez por teléfono (la app agregada a la pantalla de inicio tiene su propio almacenamiento,
+así que no la ve aunque Pendientes ya esté conectado). Con la clave, comidas y pesadas se suben a
+la base «Pendientes» de Airtable, tablas **Comidas** (`tblZjmsX8CZ5ROWQq`) y **Peso**
+(`tbl2CdDk3I22f1hN0`), y el objetivo y la fecha de inicio van en *Ajustes*, fila «dieta». Lo que se
+corrige en Airtable llega a la app (las columnas se leen por id) y marcar «Eliminado» la saca. Sin
+clave, la app anda igual, solo en ese teléfono, y sin IA. También hay copia local (.json) y
+restauración.
+
+**Verlo localmente:** `python3 -m http.server 8000` y abrir `http://localhost:8000/pendientes/dieta/`.
 
 ---
 
