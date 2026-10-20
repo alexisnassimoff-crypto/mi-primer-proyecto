@@ -6,14 +6,16 @@ La app de la dieta está en **https://pendientes-ale.vercel.app/dieta/**. Para t
 el iPhone: abrila en Safari → Compartir → «Agregar a inicio». Queda con su propio ícono (una
 estrella verde).
 
-1. **Cargá cada comida.** Tocá **Cargar** (o «Cargar» al lado de la comida): qué comida, cómo fue
-   (los tipos del plan, con los cupos que te quedan en la semana) y, si querés, qué comiste.
+1. **Cargá cada comida, de un toque.** Tocá «Cargar» al lado de la comida y después cómo fue:
+   queda guardada. Si te equivocaste, tocá la comida y elegí otra opción (o borrala). Para un día
+   anterior: Historial → ese día → Cargar.
 2. **La estrella.** Cuando desayuno, almuerzo y cena están cargados y dentro del plan (y no hubo
    extras), el día gana la estrella. Si te tentaste, cargalo igual en «Anotar un extra»: la app es
    honesta, no te reta.
 3. **Los cupos.** Almuerzo: 1 con carbo y 1 libre por semana. Cena: 1 con carbo y 2 libres. Se ven
    en Hoy, en «Esta semana». Si ya usaste el cupo, la app te avisa antes de guardar.
-4. **Peso.** En Hoy, abajo, «Pesarme». Muestra cuánto falta para 78 y los días que quedan del mes.
+4. **Peso.** Como en el mes no te pesás, Hoy solo muestra la fecha del pesaje. Cuando llegue, está
+   en Ajustes → Peso.
 5. **¿Qué como?** Ideas dentro del plan para la comida que toca.
 6. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
