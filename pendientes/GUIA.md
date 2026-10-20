@@ -6,9 +6,12 @@ La app de la dieta está en **https://pendientes-ale.vercel.app/dieta/**. Para t
 el iPhone: abrila en Safari → Compartir → «Agregar a inicio». Queda con su propio ícono (una
 estrella verde).
 
-1. **Cargá cada comida, de un toque.** Tocá «Cargar» al lado de la comida y después cómo fue:
-   queda guardada. Si te equivocaste, tocá la comida y elegí otra opción (o borrala). Para un día
-   anterior: Historial → ese día → Cargar.
+1. **Cargá cada comida.** Tocá «Cargar» al lado de la comida y escribí qué comiste (o dictalo
+   con el micrófono del teclado). Con la IA conectada, tocás **Listo** y la app ve sola cómo
+   cuenta en el plan; el aviso te lo dice y tiene «Cambiar» por si no estás de acuerdo. Sin IA,
+   tocás cómo fue y queda guardada. Abajo del texto aparece lo que cargaste otras veces: un toque
+   y listo. Si te equivocaste, tocá la comida y corregila (o borrala). Para un día anterior:
+   Historial → ese día → Cargar.
 2. **La estrella.** Cuando desayuno, almuerzo y cena están cargados y dentro del plan (y no hubo
    extras), el día gana la estrella. Si te tentaste, cargalo igual en «Anotar un extra»: la app es
    honesta, no te reta.

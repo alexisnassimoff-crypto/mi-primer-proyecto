@@ -10,6 +10,7 @@
    POST /api/dieta   X-Clave  { accion, ... }   la IA (Claude), siempre dentro del plan:
         accion 'sugerir'  { comida, pedido, semana, ultimas, hora } → { sugerencias: [{ titulo, detalle, tipo }], nota }
         accion 'evaluar'  { texto, comida, semana }                 → { tipo, va, veredicto, alternativa }
+        accion 'clasificar' { texto, comida }                        → { tipo, nota }   cómo cuenta lo que ya comió
         accion 'preguntar'{ pregunta, datos }                        → { respuesta }
    ============================================================ */
 'use strict';
@@ -119,6 +120,33 @@ async function evaluar(b, hoy, hora) {
   return { status: 200, body: { ok: true, comida: cid, tipo: TIPOS_IA.indexOf(d && d.tipo) >= 0 ? d.tipo : 'nova', va: !!(d && d.va), veredicto: limpiarTexto(d && d.veredicto, 400), alternativa: limpiarTexto(d && d.alternativa, 300) } };
 }
 
+/* Lo que Ale ya comió: cómo cuenta en el plan. Devuelve el tipo crudo (si es libre o carbo, la app
+   mira sola si queda cupo). */
+async function clasificar(b, hoy, hora) {
+  const texto = limpiarTexto(b.texto, 300);
+  if (!texto) return { status: 400, body: { error: 'pedido' } };
+  const cid = COMIDAS.indexOf(b.comida) >= 0 ? b.comida : Plan.comidaAhora(hora);
+  const tipos = Plan.TIPOS[cid].map(t => t.id);
+  const d = await pedir({
+    system: sistema(hoy), effort: 'low', maxTokens: 512,
+    schema: {
+      type: 'object',
+      properties: {
+        tipo: { type: 'string', enum: tipos },
+        nota: { type: 'string', description: 'muy corta (hasta 12 palabras): por qué cuenta así, o vacío si es obvio' }
+      },
+      required: ['tipo', 'nota'], additionalProperties: false
+    },
+    content: [{ type: 'text', text: 'Ale cargó esto como ' + (cid === 'desayuno' ? 'desayuno' : cid === 'almuerzo' ? 'almuerzo' : cid === 'merienda' ? 'merienda' : 'cena') + ': «' + texto + '». Clasificalo según el plan.\n' +
+      'Tipos posibles: ' + tipos.join(', ') + '. ' +
+      (cid === 'desayuno' ? 'plan = huevos (2 y 2 claras, o hasta 4 enteros), solos o con café o té sin azúcar; cualquier otra cosa (tostadas, cereales, medialunas, fruta) = nova. ' :
+        cid === 'merienda' ? 'plan = un pan turco con pastrón, queso y tomate, palta o huevo, o una merienda igual de chica dentro del plan (por ejemplo solo huevo o solo pastrón); nada = no merendó; cualquier otra cosa = nova. ' :
+        'plan = proteína y vegetales sin carbohidrato; carbo = con una porción chica de arroz, papa, batata, fideos, pan, legumbres, choclo o masa; libre = cualquier comida que no entra en las otras (pizza, hamburguesa con pan, pastas con salsa, asado con pan, sushi, comida de restaurante); nova = postre, fruta, dulces, picoteo o algo que claramente no es una comida del plan. ') +
+      'Si dice que no comió, nada. Ante la duda entre plan y carbo, mirá si nombra un carbohidrato. No seas estricto con las cantidades ni con el aceite o los condimentos.' }]
+  });
+  return { status: 200, body: { ok: true, comida: cid, tipo: tipos.indexOf(d && d.tipo) >= 0 ? d.tipo : 'nova', nota: limpiarTexto(d && d.nota, 120) } };
+}
+
 async function preguntar(b, hoy) {
   const pregunta = limpiarTexto(b.pregunta, 300);
   const datos = String(b.datos || '').slice(0, 40000);
@@ -133,7 +161,7 @@ async function preguntar(b, hoy) {
   return { status: 200, body: { ok: true, respuesta: respuesta.replace(/\*\*/g, '').slice(0, 3000) } };
 }
 
-const ACCIONES = { sugerir, evaluar, preguntar };
+const ACCIONES = { sugerir, evaluar, clasificar, preguntar };
 
 /* en el respaldo solo entra la fila «dieta» de Ajustes */
 function soloDieta(filas) {

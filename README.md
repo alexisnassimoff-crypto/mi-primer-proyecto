@@ -215,9 +215,13 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
 - **Hoy**: la frase de Ari del día, las cuatro comidas (desayuno, almuerzo, merienda, cena) con
   «Cargar» en las que faltan, «Anotar un extra» (postre, fruta, picoteo, de un toque), la semana
   con sus estrellas, los cupos que quedan, la racha, las estrellas acumuladas y la fecha del pesaje.
-- **Cargar, de un toque**: «Cargar» en una comida abre «¿cómo fue?» y tocar un tipo la guarda (sin
-  texto ni fecha). El botón Cargar de abajo pregunta primero qué comida (la de la hora ya marcada).
-  Tocar una comida cargada la cambia o la borra. Para otro día: Historial → ese día → Cargar.
+- **Cargar**: «Cargar» en una comida abre «¿Qué comiste?» (el texto es el registro real) con
+  chips de lo que cargó otras veces para esa comida. Con la IA conectada, **Listo** la clasifica
+  sola (plan, con carbo, libre, fuera del plan; acción `clasificar` del API) y el aviso dice cómo
+  contó, con «Cambiar». Sin IA, o si prefiere elegir, aparecen los botones «¿Cómo fue?» y tocar
+  uno guarda. Un chip de otras veces guarda con el tipo de aquella vez, sin IA. El botón Cargar
+  de abajo pregunta primero qué comida (la de la hora ya marcada, con ✓ en las cargadas). Tocar
+  una comida cargada la cambia (texto o tipo) o la borra. Para otro día: Historial → ese día.
 - **Historial**: por semana, cada día con su estrella y el resumen de lo que comió; tocar un día lo
   abre para corregirlo.
 - **Peso**: Ari pidió no pesarse durante el mes, así que Hoy solo muestra el objetivo (78 kg) y la

@@ -1,6 +1,6 @@
 /* Dieta — service worker: la app abre sin conexión.
    Red primero (para recibir actualizaciones), caché como respaldo. Alcance: solo /dieta/. */
-var VERSION = 'dieta-v2';
+var VERSION = 'dieta-v3';
 var CORE = ['./', 'index.html', 'app.css', 'app.js', 'plan.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', '../fonts/instrument-serif-latin.woff2'];
 
 self.addEventListener('install', function (e) {
