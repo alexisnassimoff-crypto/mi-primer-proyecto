@@ -224,9 +224,10 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
   una comida cargada la cambia (texto o tipo) o la borra. Para otro día: Historial → ese día.
 - **Historial**: por semana, cada día con su estrella y el resumen de lo que comió; tocar un día lo
   abre para corregirlo.
-- **Peso**: Ari pidió no pesarse durante el mes, así que Hoy solo muestra el objetivo (78 kg) y la
-  fecha del pesaje (un mes desde la fecha de inicio, Ajustes → Objetivo y fechas). La pantalla de
-  pesadas (barra, gráfico) queda en Ajustes → Peso, para el pesaje de fin de mes.
+- **Peso**: Ari pidió no pesarse durante el mes, así que Hoy solo muestra el objetivo para la
+  próxima sesión (78 kg, en la fecha de la sesión: la anotada en Ajustes → Objetivo y fechas, o un
+  mes desde el inicio) y la meta final (entre 70 y 74 kg, bajando grasa y manteniendo músculo).
+  La pantalla de pesadas (barra, gráfico) queda en Ajustes → Peso, para el día de la sesión.
 - **¿Qué como?**: ideas dentro del plan para la comida que toca (sin IA, giran con «Otras ideas») y,
   con el respaldo conectado, ideas de Claude con lo que tenga en la heladera, mirando lo que comió
   esos días y los cupos que quedan. «Cargar» en una idea abre el formulario ya armado.
