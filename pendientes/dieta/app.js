@@ -179,7 +179,8 @@ function dayCardHtml(fecha) {
     filas.forEach(f => {
       const st = ev.estados[f.id], t = Plan.tipo(f.comida, f.tipo);
       const cls = st === 'ok' ? 'is-ok' : st === 'excedido' || st === 'nova' || st === 'nada' ? (st === 'nada' && !c.obligatoria ? 'is-ok' : 'is-bad') : '';
-      const etiqueta = st === 'ok' ? (f.tipo === 'plan' ? '' : tag(f.tipo, t.nombre)) : st === 'excedido' ? tag('excedido', 'Cupo usado') : st === 'nada' ? (c.obligatoria ? tag('nada', 'No comí') : '') : tag('nova', 'Fuera del plan');
+      const cq = st === 'ok' && t && t.cupo ? (ev.cupos[c.id] || []).find(x => x.tipo === t.id) : null;
+      const etiqueta = st === 'ok' ? (f.tipo === 'plan' ? '' : cq ? tag(f.tipo, cq.usado + ' de ' + cq.cupo) : '') : st === 'excedido' ? tag('excedido', 'Cupo usado') : st === 'nada' ? (c.obligatoria ? tag('nada', 'No comí') : '') : tag('nova', 'Fuera del plan');
       h += '<li><button type="button" class="meal ' + cls + '" data-editar="' + f.id + '"><span class="meal__ic">' + icon(ICONO_COMIDA[c.id]) + '</span><span class="meal__b"><span class="meal__n">' + esc(c.nombre) + (f.hora ? ' · ' + esc(f.hora) : '') + '</span>' +
         '<span class="meal__t">' + esc(t ? t.nombre : 'Me salí') + '</span>' + (f.que ? '<span class="meal__q">' + esc(f.que) + '</span>' : '') + '</span><span class="meal__e">' + (etiqueta || icon(st === 'ok' ? 'check' : 'chevR')) + '</span></button></li>';
     });
@@ -220,7 +221,7 @@ function renderInicio() {
   const r = Plan.racha(state.comidas, h), tot = Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h);
   const diasPlan = Plan.diasEntre(inicio(), h) + 1;
   const vacio = !state.comidas.length && !state.pesos.length;
-  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá cargás cada comida con un toque. Si cumplís el plan de Ari, el día gana una estrella. Objetivo: ' + objetivo() + ' kg.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
+  let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá anotás lo que comés en cada comida y la app ve cómo cuenta en el plan. Si cumplís el plan de Ari, el día gana una estrella. Objetivo: ' + objetivo() + ' kg.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
   html += '<div class="frase">' + icon('star') + '<div><p class="frase__q">' + esc(Plan.frase(h)) + '</p><span class="frase__k">Ari</span></div></div>';
   html += dayCardHtml(h);
   html += '<section class="section"><div class="section__h"><span>Esta semana</span><span class="section__sub">Lunes a domingo</span></div><div class="card">' + weekHtml(h) + cuposHtml(h) + '</div></section>';
@@ -299,49 +300,90 @@ function renderPeso() {
 }
 
 /* ---------- Cargar / editar una comida ----------
-   De un toque: elegís cómo fue y queda guardada. Sin texto ni fecha: la fecha es la del
-   día que estás mirando (Hoy, o un día del historial). */
+   Primero qué comiste (con lo que ya cargaste otras veces a mano), y la app decide cómo cuenta:
+   la IA lo clasifica; sin IA, tocás cómo fue. Siempre queda el registro real. */
 let form = null;
 function openForm(o) {
   o = o || {};
   const fecha = o.fecha || (ui.view === 'dia' && ui.dia ? ui.dia : hoy());
-  if (o.comida === 'extra' && !o.id) { o.tipo = 'nova'; o.directo = true; }
   if (o.directo && o.comida && o.tipo) { guardarComida({ id: o.id, fecha, comida: o.comida, tipo: o.tipo, que: o.que || '' }); return; }
-  form = { id: o.id || null, fecha, comida: o.comida || null, tipo: o.tipo || null, que: o.que || '', chips: !!o.elegir || !o.comida };
-  if (form.comida && !form.id) { const ya = comidasDe(fecha).find(x => x.comida === form.comida); if (ya) { form.id = ya.id; form.tipo = ya.tipo; } }
-  renderForm(true);
+  let id = o.id || null, que = o.que || '', tipo = o.tipo || null, comida = o.comida || Plan.comidaAhora(new Date().getHours());
+  if (id) { const c = byId(id); if (c) { que = que || c.que || ''; tipo = tipo || c.tipo; comida = c.comida; } else id = null; }
+  if (!id && comida !== 'extra') { const ya = comidasDe(fecha).find(x => x.comida === comida); if (ya) { id = ya.id; que = que || ya.que || ''; tipo = ya.tipo; } }
+  form = { id, fecha, comida, tipo, que, queDe: id ? que : (tipo ? que : null), tipoDe: tipo, elegir: !!id || !iaOn(), segm: !!o.elegir, busy: false };
+  renderForm();
   openSheet($('#formSheet'));
+  setTimeout(() => { const i = $('#f_que'); if (i && !form.id) i.focus(); }, 350);
 }
-function renderForm(primera) {
-  const esHoy = form.fecha === hoy();
-  $('#formTitle').textContent = form.id && !form.chips ? 'Cambiar ' + nombreDe(form.comida).toLowerCase() + (esHoy ? ' de hoy' : ' del ' + fechaCorta(form.fecha)) : 'Cargar' + (esHoy ? '' : ' el ' + fechaCorta(form.fecha));
-  const del = comidasDe(form.fecha);
+/* lo que cargaste otras veces para esa comida, lo más reciente primero */
+function recientes(cid) {
+  const out = [], vistos = new Set();
+  state.comidas.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(c => {
+    const q = String(c.que || '').trim(); if (c.comida !== cid || !q) return;
+    const k = q.toLowerCase(); if (vistos.has(k) || (form && form.id === c.id)) return;
+    vistos.add(k); out.push({ que: q, tipo: c.tipo });
+  });
+  return out.slice(0, 6);
+}
+function renderForm() {
+  const esHoy = form.fecha === hoy(), cid = form.comida, extra = cid === 'extra';
+  $('#formTitle').textContent = (form.id ? 'Cambiar ' + nombreDe(cid).toLowerCase() : 'Cargar') + (esHoy ? '' : ' · ' + fechaCorta(form.fecha));
+  $('#formErr').textContent = '';
   let html = '';
-  if (form.chips) {
-    html += '<div class="q"><label class="q__label">¿Qué comida?</label><div class="opts">' + Plan.COMIDAS.map(c => {
-      const ya = c.id !== 'extra' ? del.find(x => x.comida === c.id) : null;
-      return '<button type="button" class="opt" data-comida="' + c.id + '" aria-pressed="' + (form.comida === c.id) + '">' + icon(ICONO_COMIDA[c.id]) + '<span>' + esc(c.nombre) + (ya ? '<small>ya cargada</small>' : '') + '</span></button>';
-    }).join('') + '</div></div>';
+  if (form.segm) {
+    const del = comidasDe(form.fecha);
+    html += '<div class="seg seg--5" role="radiogroup" aria-label="Comida">' + Plan.COMIDAS.map(c => '<button type="button" role="radio" aria-checked="' + (cid === c.id) + '" data-comida="' + c.id + '">' + esc(c.nombre) + (c.id !== 'extra' && del.some(x => x.comida === c.id) ? ' ✓' : '') + '</button>').join('') + '</div>';
   }
-  if (form.comida && form.comida !== 'extra') {
-    const otras = state.comidas.filter(c => c.id !== form.id), ev = Plan.evaluarSemana(otras, Plan.lunesDe(form.fecha));
-    html += '<div class="q' + (primera ? '' : ' is-new') + '"><label class="q__label">¿Cómo fue?<small>Tocá una y queda guardada.</small></label><div class="opts opts--1">' + Plan.TIPOS[form.comida].map(t => {
-      let cupo = '';
-      if (t.cupo) {
-        const c = ev.cupos[form.comida].find(x => x.tipo === t.id), q = Math.max(0, t.cupo - (c ? c.usado : 0));
-        cupo = q ? '<span class="opt__c">' + (q === 1 ? 'Te queda 1 esta semana' : 'Te quedan ' + q + ' esta semana') + '</span>' : '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
-      }
-      return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, t.cupo + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
-    }).join('') + '</div></div>';
+  const ph = extra ? 'Un alfajor, una banana, unas papas fritas…' : cid === 'desayuno' ? '2 huevos revueltos y 2 claras, café' : cid === 'almuerzo' ? 'Pollo a la plancha con ensalada' : cid === 'merienda' ? 'Pan turco con pastrón y tomate' : 'Merluza al horno con calabaza';
+  html += '<div class="q"><label class="q__label" for="f_que">' + (extra ? '¿Qué fue?' : '¿Qué comiste?') + '<small>' + (extra ? 'Anotalo tal cual: el registro honesto es lo que sirve.' : 'Con detalle, así queda el registro real de lo que comés.') + '</small></label>' +
+    '<input class="q__input" id="f_que" type="text" value="' + esc(form.que) + '" placeholder="' + esc(ph) + '" autocapitalize="sentences" autocomplete="off" enterkeyhint="done" maxlength="200">';
+  const rec = recientes(cid);
+  if (rec.length) html += '<div class="recent"><span class="recent__k">Lo de otras veces</span>' + rec.map((r, i) => '<button type="button" class="chip--btn" data-rec="' + i + '">' + esc(r.que) + '</button>').join('') + '</div>';
+  html += '</div>';
+  if (!extra) {
+    if (form.elegir) {
+      const otras = state.comidas.filter(c => c.id !== form.id), ev = Plan.evaluarSemana(otras, Plan.lunesDe(form.fecha));
+      html += '<div class="q"><label class="q__label">¿Cómo fue?<small>' + (form.id ? 'Tocá otra opción para cambiarla.' : 'Tocá una y queda guardada.') + '</small></label><div class="opts opts--1">' + Plan.TIPOS[cid].map(t => {
+        let cupo = '';
+        if (t.cupo) {
+          const c = ev.cupos[cid].find(x => x.tipo === t.id), q = Math.max(0, t.cupo - (c ? c.usado : 0));
+          cupo = q ? '<span class="opt__c">' + (q === 1 ? 'Te queda 1 esta semana' : 'Te quedan ' + q + ' esta semana') + '</span>' : '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
+        }
+        return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, t.cupo + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
+      }).join('') + '</div></div>';
+    } else {
+      html += '<p class="note" style="margin-top:16px">' + icon('sparkles') + ' Tocá <b>Listo</b> y la app ve sola cómo cuenta en el plan. <button type="button" class="linkbtn" data-elegir style="min-height:0;display:inline">Prefiero elegirlo yo</button></p>';
+    }
   }
   if (form.id) html += '<div class="actions"><button type="button" class="btn btn--danger btn--block" data-borrar>' + icon('trash') + 'Borrar esta comida</button></div>';
   $('#formBody').innerHTML = html;
+  const save = $('#btnSave');
+  save.disabled = form.busy;
+  save.textContent = form.busy ? 'Pensando…' : 'Listo';
+}
+async function listoForm() {
+  if (form.busy) return;
+  const inp = $('#f_que'); if (inp) form.que = inp.value.trim().slice(0, 200);
+  const base = { id: form.id, fecha: form.fecha, comida: form.comida, que: form.que };
+  if (form.comida === 'extra') { guardarComida(Object.assign(base, { tipo: 'nova' })); return; }
+  if (form.tipo && (form.id || form.que === form.queDe)) { guardarComida(Object.assign(base, { tipo: form.tipo })); return; } /* ya se sabe cómo cuenta */
+  if (!form.que) { $('#formErr').textContent = form.elegir ? 'Escribí qué comiste y tocá cómo fue.' : 'Escribí qué comiste.'; return; }
+  if (!iaOn()) { form.elegir = true; renderForm(); $('#formErr').textContent = 'Tocá cómo fue.'; return; }
+  form.busy = true; renderForm();
+  try {
+    const r = await ia({ accion: 'clasificar', comida: form.comida, texto: form.que });
+    form.busy = false;
+    guardarComida(Object.assign(base, { tipo: r.tipo, nota: r.nota, cambiar: true }));
+  } catch (e) {
+    form.busy = false; form.elegir = true; renderForm();
+    $('#formErr').textContent = (e && e.code === 'red' ? 'Sin conexión.' : 'No pude verlo solo.') + ' Tocá cómo fue.';
+  }
 }
 function guardarComida(o) {
   const now = Date.now(), antes = dia(o.fecha), antesEst = semana(o.fecha).estados;
   let c = o.id ? byId(o.id) : null;
   if (!c && o.comida !== 'extra') c = comidasDe(o.fecha).find(x => x.comida === o.comida) || null; /* una por comida y día */
-  if (c) Object.assign(c, { fecha: o.fecha, comida: o.comida, tipo: o.tipo, que: o.que || c.que || '', updatedAt: now });
+  if (c) Object.assign(c, { fecha: o.fecha, comida: o.comida, tipo: o.tipo, que: o.que != null ? o.que : (c.que || ''), updatedAt: now });
   else {
     const d = new Date();
     c = { id: uid(), fecha: o.fecha, comida: o.comida, tipo: o.tipo, que: o.que || '', hora: o.fecha === hoy() ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : '', createdAt: now, updatedAt: now };
@@ -353,14 +395,17 @@ function guardarComida(o) {
   const otraExcedida = Object.keys(despuesEst).find(id => id !== c.id && despuesEst[id] === 'excedido' && antesEst[id] !== 'excedido');
   if (despues.estrella && !antes.estrella) { ui.pop = true; }
   render();
+  const t = Plan.tipo(c.comida, c.tipo), como = t ? t.nombre.toLowerCase() : 'me salí';
+  const cambiar = o.cambiar ? { action: 'Cambiar', onAction: () => openForm({ id: c.id, fecha: c.fecha, comida: c.comida }) } : {};
   const POS = ['Bien ahí.', 'Una más cumplida.', 'Así se hace.', 'Firme.', 'Eso es comer bien.'];
-  if (despues.estrella && !antes.estrella) toast('⭐ ¡Día cumplido! Una estrella más.', { star: true, ms: 4500 });
+  if (despues.estrella && !antes.estrella) toast('⭐ ¡Día cumplido! ' + (o.cambiar ? 'Contó como ' + como + '.' : 'Una estrella más.'), Object.assign({ star: true, ms: 5000 }, cambiar));
   else if (c.comida === 'extra') toast('Anotado. Lo importante es que lo cargaste. Ahora: no, gracias.');
   else if (otraExcedida) { const o2 = byId(otraExcedida); toast('Anotado. Con esta, ' + (o2.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o2.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o2.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
+  else if (o.cambiar && estado === 'ok') toast('Contó como ' + como + '. ' + (o.nota || POS[Math.floor(Math.random() * POS.length)]), Object.assign({ ms: 5000 }, cambiar));
   else if (estado === 'ok') toast(c.tipo === 'nada' ? 'Listo.' : POS[Math.floor(Math.random() * POS.length)]);
-  else if (estado === 'excedido') toast('Anotado. Ese cupo ya estaba usado esta semana: hoy no suma estrella.', { ms: 4500 });
-  else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.');
-  else toast('Anotado. Mañana se arranca firme otra vez.');
+  else if (estado === 'excedido') toast('Contó como ' + como + ', y ese cupo ya estaba usado esta semana: hoy no suma estrella.', Object.assign({ ms: 5500 }, cambiar));
+  else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.', cambiar);
+  else toast((o.cambiar ? 'Contó como fuera del plan. ' : 'Anotado. ') + 'Mañana se arranca firme otra vez.', Object.assign({ ms: 5000 }, cambiar));
   queueSync();
 }
 function borrarComida(id) {
@@ -848,19 +893,27 @@ function init() {
     else if (b.dataset.borrarPeso) borrarPeso(b.dataset.borrarPeso);
   });
 
-  /* formulario: tocar un tipo guarda */
+  /* formulario */
   $('#formBody').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.comida) {
-      const cid = b.dataset.comida;
-      if (cid === 'extra') { guardarComida({ fecha: form.fecha, comida: 'extra', tipo: 'nova' }); return; }
-      const ya = comidasDe(form.fecha).find(x => x.comida === cid);
-      form.comida = cid; form.id = ya ? ya.id : null; form.tipo = ya ? ya.tipo : null;
-      renderForm(false);
-    } else if (b.dataset.tipo) guardarComida({ id: form.id, fecha: form.fecha, comida: form.comida, tipo: b.dataset.tipo });
+      const inp = $('#f_que'); if (inp) form.que = inp.value.trim();
+      const cid = b.dataset.comida, ya = cid !== 'extra' ? comidasDe(form.fecha).find(x => x.comida === cid) : null;
+      form.comida = cid; form.id = ya ? ya.id : null; form.tipo = ya ? ya.tipo : null; form.tipoDe = form.tipo; form.queDe = ya ? (ya.que || '') : null;
+      if (ya && !form.que) form.que = ya.que || '';
+      form.elegir = !!ya || !iaOn();
+      renderForm();
+    } else if (b.dataset.rec) {
+      const r = recientes(form.comida)[+b.dataset.rec]; if (!r) return;
+      form.que = r.que; form.queDe = r.que; form.tipo = r.tipo; form.tipoDe = r.tipo;
+      const inp = $('#f_que'); if (inp) inp.value = r.que;
+      if (!form.id && !form.elegir) listoForm(); else renderForm();
+    } else if (b.dataset.tipo) { const inp = $('#f_que'); if (inp) form.que = inp.value.trim(); guardarComida({ id: form.id, fecha: form.fecha, comida: form.comida, tipo: b.dataset.tipo, que: form.que }); }
+    else if (b.hasAttribute('data-elegir')) { const inp = $('#f_que'); if (inp) form.que = inp.value.trim(); form.elegir = true; renderForm(); }
     else if (b.hasAttribute('data-borrar')) { const id = form.id; closeSheet($('#formSheet')); borrarComida(id); }
   });
-  $('#comidaForm').addEventListener('submit', e => e.preventDefault());
+  $('#formBody').addEventListener('input', e => { if (e.target.id === 'f_que') { form.que = e.target.value; if (form.que.trim() !== form.queDe && !form.id) form.tipo = null; } });
+  $('#comidaForm').addEventListener('submit', e => { e.preventDefault(); listoForm(); });
 
   /* peso */
   $('#pesoForm').addEventListener('submit', e => { e.preventDefault(); guardarPeso(); });
