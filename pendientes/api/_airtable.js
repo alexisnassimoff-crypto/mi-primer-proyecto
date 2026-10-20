@@ -1,6 +1,6 @@
 /* ============================================================
    Pendientes — acceso a Airtable compartido por las funciones de Vercel
-   (/api/datos y /api/calendario). Empieza con guion bajo para que Vercel
+   (/api/datos, /api/calendario y /api/dieta). Empieza con guion bajo para que Vercel
    no lo publique como una dirección propia.
    El token de Airtable vive solo en las variables de entorno.
    ============================================================ */
@@ -25,13 +25,24 @@ const CAMPOS = {
   pagos: {
     title: 'fldNXxWuCDPirF2xn', amount: 'fld3ziTYrZXECGTeo', date: 'fldmDxclvVuzJOpeK', topic: 'fldGrAHGgN4RVW2kg', item: 'fldb9Rv4p47lo8QER',
     deleted: 'fldS5NFh9rQ6o04L7', id: 'fld8lEN7zS5AKXZ8T', createdAt: 'flduKjByy3tEZKoQC'
+  },
+  /* la app Dieta (/dieta): comidas y pesadas */
+  comidas: {
+    que: 'flddTZbEV9Td45abs', fecha: 'fldN05RuxFWnmqbRc', comida: 'fld0pmDejT8PLBBsj', tipo: 'fldkXAvUuAeOdnbAk', hora: 'fldxnIUPrkH27sRfP', notas: 'fldpF2lGNvZE9p17p',
+    deleted: 'fldppPmHxiO1xQXVf', id: 'fld5odv4a76csI2xZ', createdAt: 'fldsuws5mjzlZr8jQ', updatedAt: 'fldUwG4k2PY7XgD3j'
+  },
+  pesos: {
+    fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5',
+    createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq'
   }
 };
 const TABLAS = {
   pendientes: { id: 'tblpKK8NsolmgeL26', clave: CAMPOS.pendientes.id, campos: Object.values(CAMPOS.pendientes) },
   temas: { id: 'tblI0Sur9eZPbk8L1', clave: CAMPOS.temas.id, campos: Object.values(CAMPOS.temas) },
   ajustes: { id: 'tblQeyD9jJ3QW2TSM', clave: CAMPOS.ajustes.key, campos: Object.values(CAMPOS.ajustes) },
-  pagos: { id: 'tblj3fTk6OAALp1CD', clave: CAMPOS.pagos.id, campos: Object.values(CAMPOS.pagos) }
+  pagos: { id: 'tblj3fTk6OAALp1CD', clave: CAMPOS.pagos.id, campos: Object.values(CAMPOS.pagos) },
+  comidas: { id: 'tblZjmsX8CZ5ROWQq', clave: CAMPOS.comidas.id, campos: Object.values(CAMPOS.comidas) },
+  pesos: { id: 'tbl2CdDk3I22f1hN0', clave: CAMPOS.pesos.id, campos: Object.values(CAMPOS.pesos) }
 };
 const MAX_FILAS = 200;
 

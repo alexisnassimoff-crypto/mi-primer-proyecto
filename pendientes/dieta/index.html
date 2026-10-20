@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dieta</title>
+<meta name="description" content="Cargá lo que comés y seguí el plan de Ari, con estrellas por cada día cumplido.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" id="metaTheme" content="#F4F5F7">
+<meta name="apple-mobile-web-app-title" content="Dieta">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="../fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<header class="top wrap">
+  <div class="top__row">
+    <button type="button" class="back" id="btnBack" hidden><span data-icon="chevL"></span><span id="btnBackTxt">Inicio</span></button>
+    <span class="top__spacer"></span>
+    <button type="button" class="icon-btn sync-btn" id="btnSync" hidden></button>
+    <button type="button" class="icon-btn" id="btnAsk" aria-label="Preguntale a la dieta" hidden><span data-icon="msg"></span></button>
+    <button type="button" class="icon-btn" id="btnSettings" aria-label="Ajustes"><span data-icon="gear"></span></button>
+  </div>
+  <h1 class="title" id="viewTitle" tabindex="-1">Hoy</h1>
+  <p class="subtitle" id="viewSub"></p>
+</header>
+
+<main id="main" class="wrap"></main>
+
+<nav class="tabbar" aria-label="Secciones">
+  <div class="tabbar__inner">
+    <button type="button" class="tab" data-go="inicio" id="tabInicio"><span data-icon="home"></span><span>Hoy</span></button>
+    <button type="button" class="tab tab--new" id="btnNew"><span data-icon="plus"></span><span>Cargar</span></button>
+    <button type="button" class="tab" data-go="historial" id="tabHistorial"><span data-icon="list"></span><span>Historial</span></button>
+  </div>
+</nav>
+
+<!-- Cargar o editar una comida -->
+<dialog class="sheet sheet--page" id="formSheet" aria-labelledby="formTitle">
+  <form class="sheet__in" id="comidaForm" novalidate autocomplete="off">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="formTitle" tabindex="-1">Cargar una comida</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="formBody"></div>
+    <footer class="sheet__foot">
+      <p class="form-err" id="formErr" role="alert"></p>
+      <button type="submit" class="btn btn--primary btn--block" id="btnSave">Guardar</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ¿Qué como? -->
+<dialog class="sheet sheet--page" id="ideasSheet" aria-labelledby="ideasTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="ideasTitle" tabindex="-1">¿Qué como?</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="ideasBody"></div>
+  </div>
+</dialog>
+
+<!-- ¿Esto va? -->
+<dialog class="sheet sheet--page" id="checkSheet" aria-labelledby="checkTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="checkTitle" tabindex="-1">¿Esto va?</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="checkBody"></div>
+  </div>
+</dialog>
+
+<!-- Preguntale a la dieta -->
+<dialog class="sheet" id="askSheet" aria-labelledby="askTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="askTitle">Preguntale a la dieta</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body ask">
+      <form class="ask__form" id="askForm" novalidate autocomplete="off">
+        <label class="sr" for="askInput">Tu pregunta</label>
+        <input class="q__input" id="askInput" type="text" placeholder="¿Cómo vengo esta semana?" enterkeyhint="send" autocomplete="off" autocapitalize="sentences">
+        <button type="submit" class="btn btn--primary btn--block">Preguntar</button>
+      </form>
+      <div class="chips chips--acts" id="askChips" role="group" aria-label="Preguntas de ejemplo"></div>
+      <div class="ask__answer" id="askAnswer" aria-live="polite"></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- Pesarme -->
+<dialog class="sheet" id="pesoSheet" aria-labelledby="pesoTitle">
+  <form class="sheet__in" id="pesoForm" novalidate autocomplete="off">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="pesoTitle">Pesarme</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="pesoBody"></div>
+    <footer class="sheet__foot">
+      <p class="form-err" id="pesoErr" role="alert"></p>
+      <button type="submit" class="btn btn--primary btn--block">Guardar</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- El plan de Ari -->
+<dialog class="sheet sheet--page" id="planSheet" aria-labelledby="planTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="planTitle" tabindex="-1">El plan de Ari</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="planBody"></div>
+  </div>
+</dialog>
+
+<!-- Ajustes -->
+<dialog class="sheet" id="settingsSheet" aria-labelledby="settingsTitle">
+  <div class="sheet__in">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="settingsTitle">Ajustes</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Cerrar"><span data-icon="x"></span></button>
+    </header>
+    <div class="sheet__body" id="settingsBody"></div>
+  </div>
+</dialog>
+
+<input id="importFile" type="file" accept="application/json,.json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="plan.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
