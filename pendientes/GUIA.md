@@ -20,7 +20,8 @@ estrella verde).
 4. **Peso.** Como en el mes no te pesás, Hoy solo muestra el objetivo para la sesión con Ari (78)
    y la meta final (70 a 74). Cuando fijes el día de la sesión, ponelo en Ajustes → Objetivo y
    fechas → «Sesión con Ari». Las pesadas están en Ajustes → Peso.
-5. **¿Qué como?** Ideas dentro del plan para la comida que toca.
+5. **¿Qué como?** Ideas dentro del plan para la comida que toca. Todo kosher: sin cerdo ni
+   mariscos, y sin mezclar carne con lácteos (la IA también lo sabe).
 6. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
    eso, además, todo queda guardado en Airtable (tablas Comidas y Peso) por si cambiás de teléfono.

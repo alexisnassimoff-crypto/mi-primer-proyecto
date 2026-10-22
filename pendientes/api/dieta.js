@@ -34,7 +34,8 @@ function sistema(hoy) {
     '- nova: no está en el plan y no entra en ningún cupo (postres, frutas, picoteo, extras; o un libre cuando ya no queda cupo).\n\n' +
     'Lo que dice Ari para la cabeza: alejarse de la comida y anticiparse; practicar «no, gracias»; ponerse feliz cuando comió sano y poco; ' +
     'o se usa el permitido o no se usa, no hay medias tintas; el alimento es droga; los atajos se pagan después; felicitarse cuando cumple.\n' +
-    'Sé concreto con comida argentina de todos los días (pollo, carne, pescado, huevos, ensaladas, verduras al horno, pastrón, queso, palta). ' +
+    'ALE COME KOSHER, SIEMPRE: nunca sugieras cerdo (jamón, panceta, bondiola, lomo de cerdo, chorizo o salame comunes) ni mariscos (camarones, langostinos, calamar, mejillones, pulpo); pescado solo con escamas (merluza, salmón, atún, lenguado, trucha); y nunca juntes carne o pollo con lácteos en la misma comida (nada de pastrón con queso, milanesa a la napolitana, carne con crema o manteca, pollo con queso). Si Ale te pregunta por algo así, decile que no va por kosher y proponé la versión kosher. ' +
+    'Sé concreto con comida argentina y judía de todos los días (pollo, carne, pavita, pescado, huevos, ensaladas, verduras al horno, pastrón, queso, palta). ' +
     'No hables de calorías ni de gramos exactos. Nunca recomiendes saltear comidas, ayunar ni comer menos de lo que el plan indica. ' +
     'No sos médico: si Ale cuenta un síntoma o algo de salud, decile que lo hable con Ari o con su médico.';
 }
@@ -86,7 +87,7 @@ async function sugerir(b, hoy, hora) {
       'Dame 3 o 4 opciones. La mayoría de tipo plan (' + (cid === 'desayuno' ? 'huevos y claras' : cid === 'merienda' ? 'pan turco con algo del plan' : 'proteína y vegetales, mitad y mitad') + '). ' +
       (cid === 'almuerzo' || cid === 'cena' ? 'Podés sumar una de tipo carbo solo si queda cupo esta semana, y una libre solo si queda cupo y Ale lo pide o es claramente una ocasión (salida, cumpleaños). ' : '') +
       'Si Ale pide algo que no entra en el plan, no lo armes: proponé la versión que sí entra (la misma idea, sin lo que no va) y explicalo en la nota. ' +
-      'Si lo que tiene a mano es algo concreto, usalo. Nada de postres ni frutas.' }]
+      'Si lo que tiene a mano es algo concreto, usalo. Nada de postres ni frutas. Todo kosher: sin cerdo ni mariscos, y sin mezclar carne con lácteos.' }]
   });
   const sugerencias = (Array.isArray(d && d.sugerencias) ? d.sugerencias : []).map(x => ({
     titulo: limpiarTexto(x && x.titulo, 120), detalle: limpiarTexto(x && x.detalle, 220), tipo: ['plan', 'carbo', 'libre'].indexOf(x && x.tipo) >= 0 ? x.tipo : 'plan'
@@ -115,6 +116,7 @@ async function evaluar(b, hoy, hora) {
       (semana ? 'Cupos que quedan esta semana: ' + semana + '.\n' : '') +
       'Decidí el tipo según el plan. Si es carbo o libre y no queda cupo, entonces tipo nova y va=false, y decile que ya usó el cupo. ' +
       'Si el desayuno no es huevos y claras, o la merienda no es un pan turco con algo del plan, es nova. Postre, fruta o picoteo: nova. ' +
+      'Si no es kosher (cerdo, mariscos, carne con lácteos), es nova aunque sea proteína y vegetales: decilo y proponé la versión kosher. ' +
       'Sé firme y amable; no lo retes. Ante la duda, proponé la alternativa que sí entra.' }]
   });
   return { status: 200, body: { ok: true, comida: cid, tipo: TIPOS_IA.indexOf(d && d.tipo) >= 0 ? d.tipo : 'nova', va: !!(d && d.va), veredicto: limpiarTexto(d && d.veredicto, 400), alternativa: limpiarTexto(d && d.alternativa, 300) } };
@@ -142,7 +144,8 @@ async function clasificar(b, hoy, hora) {
       (cid === 'desayuno' ? 'plan = huevos (2 y 2 claras, o hasta 4 enteros), solos o con café o té sin azúcar; cualquier otra cosa (tostadas, cereales, medialunas, fruta) = nova. ' :
         cid === 'merienda' ? 'plan = un pan turco con pastrón, queso y tomate, palta o huevo, o una merienda igual de chica dentro del plan (por ejemplo solo huevo o solo pastrón); nada = no merendó; cualquier otra cosa = nova. ' :
         'plan = proteína y vegetales sin carbohidrato; carbo = con una porción chica de arroz, papa, batata, fideos, pan, legumbres, choclo o masa; libre = cualquier comida que no entra en las otras (pizza, hamburguesa con pan, pastas con salsa, asado con pan, sushi, comida de restaurante); nova = postre, fruta, dulces, picoteo o algo que claramente no es una comida del plan. ') +
-      'Si dice que no comió, nada. Ante la duda entre plan y carbo, mirá si nombra un carbohidrato. No seas estricto con las cantidades ni con el aceite o los condimentos.' }]
+      'Si dice que no comió, nada. Ante la duda entre plan y carbo, mirá si nombra un carbohidrato. No seas estricto con las cantidades ni con el aceite o los condimentos. ' +
+      'Si lo que comió no es kosher (cerdo, mariscos, o carne con lácteos), es nova y la nota lo dice en pocas palabras.' }]
   });
   return { status: 200, body: { ok: true, comida: cid, tipo: tipos.indexOf(d && d.tipo) >= 0 ? d.tipo : 'nova', nota: limpiarTexto(d && d.nota, 120) } };
 }

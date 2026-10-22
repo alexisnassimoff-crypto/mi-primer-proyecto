@@ -40,7 +40,7 @@
       { id: 'nada', nombre: 'No almorcé', detalle: 'El plan pide las 4 comidas', ok: false }
     ],
     merienda: [
-      { id: 'plan', nombre: 'Pan turco', detalle: 'Con pastrón (hasta 4 fetas), queso y tomate, palta o huevo', ok: true },
+      { id: 'plan', nombre: 'Pan turco', detalle: 'Con pastrón (hasta 4 fetas), o queso y tomate, o palta, o huevo', ok: true },
       { id: 'nada', nombre: 'No merendé', detalle: 'Está bien, la merienda es chica', ok: true },
       { id: 'nova', nombre: 'Me salí', detalle: 'Más que un pan turco, o algo que no va', ok: false }
     ],
@@ -159,15 +159,16 @@
   }
 
   /* ---------- Ideas para cada comida (sin IA) ---------- */
-  const PROTE = ['pollo a la plancha', 'bife de carne magra', 'pescado al horno', 'atún al natural', 'tortilla de claras con un huevo', 'milanesa de pollo al horno (sin pan rallado)', 'lomo de cerdo a la plancha', 'merluza a la plancha', 'pechuga al limón', 'carne al horno', 'salmón', 'hamburguesa casera sin pan'];
+  /* Ale come kosher: sin cerdo ni mariscos, pescado con escamas, y nunca carne con lácteos */
+  const PROTE = ['pollo a la plancha', 'bife de carne magra', 'pescado al horno', 'atún al natural', 'tortilla de claras con un huevo', 'milanesa de pollo al horno (sin pan rallado)', 'pavita a la plancha', 'merluza a la plancha', 'pechuga al limón', 'carne al horno', 'salmón', 'hamburguesa casera sin pan', 'pastrón con ensalada'];
   const VEGE = ['ensalada de lechuga, tomate y zanahoria', 'brócoli al vapor', 'zapallitos salteados', 'calabaza al horno', 'chauchas', 'espinaca salteada', 'ensalada de rúcula y tomate', 'coliflor al horno', 'berenjenas grilladas', 'verduras al wok', 'repollo y zanahoria rallados', 'tomates con albahaca', 'morrones asados'];
   const CARBO = ['un poco de arroz', 'una papa chica al horno', 'batata asada', 'un puñado de fideos', 'un pan', 'quinoa', 'lentejas'];
-  const MERIENDA = ['pan turco con 4 fetas de pastrón y tomate', 'pan turco con 2 fetas de queso y tomate', 'pan turco con palta', 'pan turco con un huevo revuelto', 'pan turco con pastrón y queso (2 fetas de cada uno)', 'pan turco con huevo duro y tomate'];
+  const MERIENDA = ['pan turco con 4 fetas de pastrón y tomate', 'pan turco con 2 fetas de queso y tomate', 'pan turco con palta', 'pan turco con un huevo revuelto', 'pan turco con pastrón y palta', 'pan turco con huevo duro y tomate'];
   const elegir = (arr, semilla) => arr[Math.abs(semilla) % arr.length];
   function ideas(cid, semilla) {
     semilla = typeof semilla === 'number' ? semilla : Math.floor(Math.random() * 10000);
     const out = [];
-    if (cid === 'desayuno') return [{ tipo: 'plan', titulo: '2 huevos y 2 claras', detalle: 'Revueltos, duros o a la plancha. Con café o té sin azúcar.' }, { tipo: 'plan', titulo: 'Omelette de 2 huevos y 2 claras', detalle: 'Con espinaca o tomate adentro, sin queso ni pan.' }, { tipo: 'plan', titulo: '4 huevos enteros', detalle: 'Vale igual. Las claras son solo por el colesterol.' }];
+    if (cid === 'desayuno') return [{ tipo: 'plan', titulo: '2 huevos y 2 claras', detalle: 'Revueltos, duros o a la plancha. Con café o té sin azúcar.' }, { tipo: 'plan', titulo: 'Omelette de 2 huevos y 2 claras', detalle: 'Con espinaca o tomate adentro, sin pan.' }, { tipo: 'plan', titulo: '4 huevos enteros', detalle: 'Vale igual. Las claras son solo por el colesterol.' }];
     if (cid === 'merienda') return [0, 1, 2].map(i => ({ tipo: 'plan', titulo: elegir(MERIENDA, semilla + i * 7), detalle: 'Poquito no hay problema. Sin manteca ni dulces.' }));
     if (cid === 'almuerzo' || cid === 'cena') {
       for (let i = 0; i < 3; i++) out.push({ tipo: 'plan', titulo: elegir(PROTE, semilla + i * 5) + ' con ' + elegir(VEGE, semilla + i * 3), detalle: 'Mitad proteína, mitad vegetales. Sin pan ni postre.' });
@@ -205,6 +206,7 @@
     'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',
     'Cena: 4 veces por semana proteína y vegetales (perfecta); 1 vez por semana con carbohidrato (un tercio cada uno); 2 veces por semana libre.',
     'No postres. No frutas. No extras.',
+    'Ale come kosher: nada de cerdo ni mariscos; pescado solo con escamas (merluza, salmón, atún, lenguado); y nunca carne o pollo junto con lácteos en la misma comida (pastrón con queso, carne con crema o con manteca, no van). Toda idea o sugerencia tiene que respetarlo.',
     'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
   ];
 

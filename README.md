@@ -240,7 +240,9 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
 **Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
 desayuno de huevos los 7 días (2 y 2 claras, o 4 enteros: las claras son solo por el colesterol); almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
 por semana; merienda pan turco (o nada); cena proteína y vegetales, 1 «con carbo» y 2 libres por
-semana; sin postres, frutas ni extras. La semana va de lunes a domingo; un «libre» o «con carbo»
+semana; sin postres, frutas ni extras. Ale come **kosher**: las ideas de la app no llevan cerdo ni
+mariscos ni mezclan carne con lácteos, y la IA tiene la misma regla (lo que no es kosher cuenta
+como fuera del plan). La semana va de lunes a domingo; un «libre» o «con carbo»
 de más (ya usado el cupo) queda **excedido** y no suma. El día gana la estrella cuando desayuno,
 almuerzo y cena están cargados y bien, la merienda (si se cargó) también, y no hay extras.
 
