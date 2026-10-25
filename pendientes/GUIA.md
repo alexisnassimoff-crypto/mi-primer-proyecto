@@ -15,14 +15,16 @@ estrella verde).
 2. **La estrella.** Cuando desayuno, almuerzo y cena están cargados y dentro del plan (y no hubo
    extras), el día gana la estrella. Si te tentaste, cargalo igual en «Anotar un extra»: la app es
    honesta, no te reta.
-3. **Los cupos.** Almuerzo: 1 con carbo y 1 libre por semana. Cena: 1 con carbo y 2 libres. Se ven
+3. **Shabat.** Los sábados el desayuno no hace falta: «No desayuné» cuenta como cumplido y el
+   día puede ganar la estrella igual.
+4. **Los cupos.** Almuerzo: 1 con carbo y 1 libre por semana. Cena: 1 con carbo y 2 libres. Se ven
    en Hoy, en «Esta semana». Si ya usaste el cupo, la app te avisa antes de guardar.
-4. **Peso.** Como en el mes no te pesás, Hoy solo muestra el objetivo para la sesión con Ari (78)
+5. **Peso.** Como en el mes no te pesás, Hoy solo muestra el objetivo para la sesión con Ari (78)
    y la meta final (70 a 74). Cuando fijes el día de la sesión, ponelo en Ajustes → Objetivo y
    fechas → «Sesión con Ari». Las pesadas están en Ajustes → Peso.
-5. **¿Qué como?** Ideas dentro del plan para la comida que toca. Todo kosher: sin cerdo ni
+6. **¿Qué como?** Ideas dentro del plan para la comida que toca. Todo kosher: sin cerdo ni
    mariscos, y sin mezclar carne con lácteos (la IA también lo sabe).
-6. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
+7. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
    eso, además, todo queda guardado en Airtable (tablas Comidas y Peso) por si cambiás de teléfono.
 
