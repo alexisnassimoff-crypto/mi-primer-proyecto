@@ -30,7 +30,7 @@
     desayuno: [
       { id: 'plan', nombre: 'Huevos', detalle: '2 huevos y 2 claras, o 4 enteros (las claras son solo por el colesterol)', ok: true },
       { id: 'nova', nombre: 'Otra cosa', detalle: 'Algo que no está en el plan', ok: false },
-      { id: 'nada', nombre: 'No desayuné', detalle: 'El plan pide desayunar los 7 días', ok: false }
+      { id: 'nada', nombre: 'No desayuné', detalle: 'El plan pide desayunar los 7 días; los sábados, por Shabat, está bien', ok: false }
     ],
     almuerzo: [
       { id: 'plan', nombre: 'Proteína y vegetales', detalle: 'Mitad y mitad', ok: true },
@@ -71,6 +71,8 @@
   /* lunes de la semana de esa fecha */
   function lunesDe(s) { const d = deYmd(s), dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); return ymd(d); }
   const diasEntre = (a, b) => Math.round((deYmd(b) - deYmd(a)) / 86400000);
+  /* Shabat: los sábados Ale reza a la mañana y no desayuna. Eso no es salirse del plan. */
+  const esSabado = s => deYmd(s).getDay() === 6;
 
   /* ---------- Qué comida toca ahora ---------- */
   function comidaAhora(hora) {
@@ -96,7 +98,7 @@
     dentro.forEach(c => {
       const t = tipo(c.comida, c.tipo);
       if (!t) { estados[c.id] = 'nova'; return; }
-      if (!t.ok) { estados[c.id] = t.id === 'nada' ? 'nada' : 'nova'; return; }
+      if (!t.ok) { estados[c.id] = t.id === 'nada' ? (c.comida === 'desayuno' && esSabado(c.fecha) ? 'ok' : 'nada') : 'nova'; return; }
       if (!t.cupo) { estados[c.id] = 'ok'; return; }
       usados[c.comida] = usados[c.comida] || {};
       usados[c.comida][t.id] = (usados[c.comida][t.id] || 0) + 1;
@@ -127,7 +129,7 @@
     let cargadas = 0;
     COMIDAS.filter(c => c.id !== 'extra').forEach(c => {
       const filas = porComida[c.id];
-      if (!filas.length) { if (c.obligatoria) faltan.push(c.id); return; }
+      if (!filas.length) { if (c.obligatoria && !(c.id === 'desayuno' && esSabado(fecha))) faltan.push(c.id); return; }
       cargadas++;
       filas.forEach(f => { if (ev.estados[f.id] !== 'ok') fallas.push({ comida: c.id, estado: ev.estados[f.id], tipo: f.tipo }); });
     });
@@ -206,9 +208,10 @@
     'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',
     'Cena: 4 veces por semana proteína y vegetales (perfecta); 1 vez por semana con carbohidrato (un tercio cada uno); 2 veces por semana libre.',
     'No postres. No frutas. No extras.',
+    'Los sábados (Shabat) Ale reza a la mañana y no desayuna: eso está bien, no es salirse del plan.',
     'Ale come kosher: nada de cerdo ni mariscos; pescado solo con escamas (merluza, salmón, atún, lenguado); y nunca carne o pollo junto con lácteos en la misma comida (pastrón con queso, carne con crema o con manteca, no van). Toda idea o sugerencia tiene que respetarlo.',
     'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
   ];
 
-  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, comidaAhora, evaluarSemana, quedan, evaluarDia, racha, estrellas, ideas, frase };
+  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, evaluarSemana, quedan, evaluarDia, racha, estrellas, ideas, frase };
 }));

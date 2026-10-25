@@ -166,7 +166,8 @@ function textoDia(d, esHoy) {
   if (!d.cargadas) return { t: esHoy ? 'Todavía no cargaste nada' : 'Sin cargar', s: esHoy ? 'Arrancá con el desayuno.' : '' };
   const faltan = d.faltan.map(c => nombreDe(c).toLowerCase());
   if (!faltan.length && !d.porComida.merienda.length) faltan.push('merienda (si merendás)');
-  return { t: 'Vas bien: ' + d.cargadas + ' de 4', s: faltan.length ? 'Falta: ' + faltan.join(', ') + '.' : '' };
+  const total = Plan.esSabado(d.fecha) && !d.porComida.desayuno.length ? 3 : 4;
+  return { t: 'Vas bien: ' + d.cargadas + ' de ' + total, s: (faltan.length ? 'Falta: ' + faltan.join(', ') + '.' : '') + (total === 3 ? ' Shabat: sin desayuno, está bien.' : '') };
 }
 function dayCardHtml(fecha) {
   const ev = semana(fecha), d = dia(fecha, ev), esHoy = fecha === hoy(), tx = textoDia(d, esHoy);
@@ -181,7 +182,7 @@ function dayCardHtml(fecha) {
     }
     filas.forEach(f => {
       const st = ev.estados[f.id], t = Plan.tipo(f.comida, f.tipo);
-      const cls = st === 'ok' ? 'is-ok' : st === 'excedido' || st === 'nova' || st === 'nada' ? (st === 'nada' && !c.obligatoria ? 'is-ok' : 'is-bad') : '';
+      const cls = st === 'ok' ? 'is-ok' : st === 'excedido' || st === 'nova' || st === 'nada' ? 'is-bad' : '';
       const cq = st === 'ok' && t && t.cupo ? (ev.cupos[c.id] || []).find(x => x.tipo === t.id) : null;
       const etiqueta = st === 'ok' ? (f.tipo === 'plan' ? '' : cq ? tag(f.tipo, cq.usado + ' de ' + cq.cupo) : '') : st === 'excedido' ? tag('excedido', 'Cupo usado') : st === 'nada' ? (c.obligatoria ? tag('nada', 'No comí') : '') : tag('nova', 'Fuera del plan');
       h += '<li><button type="button" class="meal ' + cls + '" data-editar="' + f.id + '"><span class="meal__ic">' + icon(ICONO_COMIDA[c.id]) + '</span><span class="meal__b"><span class="meal__n">' + esc(c.nombre) + (f.hora ? ' · ' + esc(f.hora) : '') + '</span>' +
@@ -348,6 +349,7 @@ function renderForm() {
       const otras = state.comidas.filter(c => c.id !== form.id), ev = Plan.evaluarSemana(otras, Plan.lunesDe(form.fecha));
       html += '<div class="q"><label class="q__label">¿Cómo fue?<small>' + (form.id ? 'Tocá otra opción para cambiarla.' : 'Tocá una y queda guardada.') + '</small></label><div class="opts opts--1">' + Plan.TIPOS[cid].map(t => {
         let cupo = '';
+        if (cid === 'desayuno' && t.id === 'nada' && Plan.esSabado(form.fecha)) cupo = '<span class="opt__c">Hoy es Shabat: está bien</span>';
         if (t.cupo) {
           const c = ev.cupos[cid].find(x => x.tipo === t.id), q = Math.max(0, t.cupo - (c ? c.usado : 0));
           cupo = q ? '<span class="opt__c">' + (q === 1 ? 'Te queda 1 esta semana' : 'Te quedan ' + q + ' esta semana') + '</span>' : '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
@@ -405,7 +407,7 @@ function guardarComida(o) {
   else if (c.comida === 'extra') toast('Anotado. Lo importante es que lo cargaste. Ahora: no, gracias.');
   else if (otraExcedida) { const o2 = byId(otraExcedida); toast('Anotado. Con esta, ' + (o2.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o2.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o2.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
   else if (o.cambiar && estado === 'ok') toast('Contó como ' + como + '. ' + (o.nota || POS[Math.floor(Math.random() * POS.length)]), Object.assign({ ms: 5000 }, cambiar));
-  else if (estado === 'ok') toast(c.tipo === 'nada' ? 'Listo.' : POS[Math.floor(Math.random() * POS.length)]);
+  else if (estado === 'ok') toast(c.tipo === 'nada' ? (c.comida === 'desayuno' ? 'Listo. Shabat shalom.' : 'Listo.') : POS[Math.floor(Math.random() * POS.length)]);
   else if (estado === 'excedido') toast('Contó como ' + como + ', y ese cupo ya estaba usado esta semana: hoy no suma estrella.', Object.assign({ ms: 5500 }, cambiar));
   else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.', cambiar);
   else toast((o.cambiar ? 'Contó como fuera del plan. ' : 'Anotado. ') + 'Mañana se arranca firme otra vez.', Object.assign({ ms: 5000 }, cambiar));
