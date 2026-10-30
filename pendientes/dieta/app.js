@@ -148,7 +148,7 @@ function tipoCorto(c) {
   const t = Plan.tipo(c.comida, c.tipo), n = nombreDe(c.comida);
   if (c.comida === 'extra') return 'Extra';
   if (!t || t.id === 'nova') return n + ': me salí';
-  if (t.id === 'plan') return c.comida === 'desayuno' ? 'Huevos' : c.comida === 'merienda' ? 'Pan turco' : n + ' prote y vegetales';
+  if (t.id === 'plan') return c.comida === 'desayuno' ? 'Huevos' : c.comida === 'merienda' ? 'Merienda plan' : n + ' prote y vegetales';
   if (t.id === 'nada') return 'Sin ' + (c.comida === 'desayuno' ? 'desayunar' : c.comida === 'almuerzo' ? 'almorzar' : c.comida === 'merienda' ? 'merendar' : 'cenar');
   return n + ' ' + t.nombre.toLowerCase();
 }
@@ -219,6 +219,31 @@ function cuposHtml(fecha) {
   });
   return h + '</div>';
 }
+/* Camino a la sesión con Ari: cuántos días faltan y cómo venís. El peso no se mide en el medio,
+   así que lo que se puede ver es la constancia: cada día con estrella es lo que te lleva. */
+function caminoHtml(h) {
+  const ses = limite(), faltan = Plan.diasEntre(h, ses), ini = inicio();
+  const hasta = Plan.diasEntre(ini, h) >= 0 ? h : ini;
+  const ayer = Plan.sumarDias(hasta, -1), hoyEstrella = dia(hasta).estrella;
+  const cerrados = Math.max(0, Plan.diasEntre(ini, hasta)) + (hoyEstrella ? 1 : 0);
+  const est = Plan.estrellas(state.comidas, ini, hoyEstrella ? hasta : ayer);
+  const pct = cerrados ? Math.round(est / cerrados * 100) : 0, r = Plan.racha(state.comidas, h);
+  const total = Math.max(1, Plan.diasEntre(ini, ses)), hechos = Math.min(total, Math.max(0, Plan.diasEntre(ini, h)));
+  let msg;
+  if (faltan < 0) msg = 'La sesión ya pasó: poné la próxima en Ajustes → Objetivo y fechas.';
+  else if (!cerrados) msg = 'Cada día con estrella te acerca. Arrancá hoy.';
+  else if (pct >= 90) msg = 'Así se llega. Con esta constancia vas a la sesión con lo mejor posible. No aflojes ahora: lo que queda es lo que más se nota.';
+  else if (pct >= 70) msg = 'Vas bien. Cada día con estrella que sumes de acá a la sesión se ve en la balanza.';
+  else msg = 'Todavía estás a tiempo: lo que cuenta son los días que quedan. Hoy, estrella.';
+  const rTxt = r >= 2 ? '<p class="camino__r">' + icon('star') + '<span><b>' + r + ' días seguidos.</b> ' + (r >= 7 ? 'Eso ya es un hábito. Cuidalo como un tesoro.' : 'No cortes la racha hoy.') + '</span></p>' : '';
+  return '<section class="section"><div class="section__h"><span>Camino a la sesión</span><span class="section__sub">Ari · ' + fechaCorta(ses) + '</span></div>' +
+    '<div class="card camino"><div class="camino__top"><div><span class="camino__n">' + Math.max(0, faltan) + '</span><span class="camino__u">' + (faltan === 1 ? 'día' : 'días') + '</span></div>' +
+    '<div class="camino__obj">Objetivo <b>' + objetivo() + ' kg</b><br>Meta final <b>' + (meta()[0] === meta()[1] ? meta()[0] : meta()[0] + ' a ' + meta()[1]) + ' kg</b></div></div>' +
+    '<div class="bar"><div class="bar__f" style="width:' + Math.round(hechos / total * 100) + '%"></div></div>' +
+    '<div class="bar__l"><span>' + fechaCorta(ini) + '</span><span>' + hechos + ' de ' + total + ' días</span><span>' + fechaCorta(ses) + '</span></div>' +
+    (cerrados ? '<p class="camino__s"><b>' + est + ' de ' + cerrados + '</b> días con estrella (' + pct + '%).</p>' : '') + rTxt +
+    '<p class="camino__m">' + esc(msg) + '</p><p class="camino__p">En el medio no te pesás: el peso se ve en la sesión.</p></div></section>';
+}
 function renderInicio() {
   const h = hoy();
   setHeader('Hoy', cap(fechaLarga(h)), null);
@@ -232,8 +257,7 @@ function renderInicio() {
   html += '<section class="section"><div class="stats"><div class="stat"><div class="stat__v">' + icon('star') + r + '</div><div class="stat__k">' + (r === 1 ? 'día seguido' : 'días seguidos') + '</div></div><div class="stat"><div class="stat__v">' + tot + '</div><div class="stat__k">' + (tot === 1 ? 'estrella' : 'estrellas') + ' en ' + diasPlan + (diasPlan === 1 ? ' día' : ' días') + '</div></div></div></section>';
   html += '<section class="section"><div class="card"><button type="button" class="entry" data-ideas>' + icon('bulb') + '<span>¿Qué como?<small>Ideas dentro del plan' + (ui.ia && sync.on ? ', con la IA' : '') + '</small></span>' + icon('chevR') + '</button>' +
     '<button type="button" class="entry" data-check>' + icon('help') + '<span>¿Esto va?<small>Preguntá antes de comer</small></span>' + icon('chevR') + '</button></div></section>';
-  const dias = Plan.diasEntre(h, limite());
-  html += '<p class="note" style="margin:22px 4px 0;text-align:center">Para la sesión con Ari' + (state.ajustes.sesion ? '' : ' (en un mes)') + ': <b>' + objetivo() + ' kg</b>' + (dias > 0 ? ', el ' + fechaCorta(limite()) + ', en ' + dias + (dias === 1 ? ' día' : ' días') : dias === 0 ? ', hoy' : ' (la fecha ya pasó: cambiala en Ajustes)') + '. En el medio no te pesás.<br>Meta final: <b>' + metaTexto() + '</b>, bajando grasa y manteniendo el músculo.</p>';
+  html += caminoHtml(h);
   $('#main').innerHTML = html;
   if (ui.pop) { ui.pop = false; const s = $('#dayStar'); if (s) s.classList.add('is-pop'); }
 }
@@ -565,7 +589,7 @@ function renderCheck(busy) {
       html += '<div class="verdict ' + (r.va ? 'is-ok' : 'is-no') + '"><div class="verdict__h">' + icon(r.va ? 'check' : 'x') + '<span>' + (r.va ? 'Va' : 'No va') + '</span>' + tag(r.tipo, r.tipo === 'plan' ? 'Plan' : r.tipo === 'carbo' ? 'Con carbo' : r.tipo === 'libre' ? 'Libre' : 'Fuera del plan') + '</div>' +
         '<p class="verdict__t">' + esc(r.veredicto) + '</p>' + (r.alternativa ? '<p class="verdict__alt"><b>Mejor así:</b> ' + esc(r.alternativa) + '</p>' : '') +
         '<div class="chips chips--acts" style="margin-top:4px">' + (r.va ? '<button type="button" class="chip--btn" data-cargar-idea data-comida="' + cid + '" data-tipo="' + r.tipo + '" data-que="' + esc(ui.checkTexto) + '">Cargarlo así</button>' : '') +
-        (r.alternativa ? '<button type="button" class="chip--btn" data-cargar-idea data-comida="' + cid + '" data-tipo="plan" data-que="' + esc(r.alternativa) + '">Cargar la alternativa</button>' : '') + '</div></div>';
+        (r.alternativa ? '<button type="button" class="chip--btn" data-cargar-alt data-comida="' + cid + '" data-que="' + esc(r.alternativa) + '">Comer la alternativa</button>' : '') + '</div></div>';
     }
   } else {
     html += '<p class="note" style="margin-top:16px">' + (sync.on ? 'La IA no está disponible ahora. Mientras tanto, la regla: proteína y vegetales va siempre; con carbo y libre solo si queda cupo; postres, frutas y extras no van.' : 'Para preguntar hace falta la IA: conectá el respaldo en Ajustes con la misma clave que usás en Pendientes.') + '</p>';
@@ -946,6 +970,7 @@ function init() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.checkComida) { ui.checkComida = b.dataset.checkComida; ui.checkRes = null; renderCheck(); }
     else if (b.hasAttribute('data-check-ia')) preguntarCheck();
+    else if (b.hasAttribute('data-cargar-alt')) openForm({ comida: b.dataset.comida, tipo: 'plan', que: b.dataset.que });
     else if (b.hasAttribute('data-cargar-idea')) openForm({ comida: b.dataset.comida, tipo: b.dataset.tipo, que: b.dataset.que, directo: true });
   });
   $('#checkBody').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'c_texto') { e.preventDefault(); preguntarCheck(); } });
