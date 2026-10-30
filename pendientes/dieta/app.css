@@ -214,6 +214,24 @@ main{padding-top:14px}
 .del{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-3)}
 .del:hover{background:var(--danger-soft);color:var(--danger)}
 
+/* ---------- Interruptor ---------- */
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.switch input{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:52px;height:32px;margin:0;border-radius:999px;background:var(--surface-3);transition:background .15s;cursor:pointer}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch input:checked{background:var(--ok)}
+.switch input:checked::after{transform:translateX(20px)}
+
+/* ---------- Lo que me dijo Ari ---------- */
+.reglas{list-style:none;padding:0;margin:0}
+.regla{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:12px 8px 12px 16px;border-top:1px solid var(--line)}
+.reglas>.regla:first-child{border-top:0}
+.verdict .regla{padding:4px 0;border:0}
+.regla__t{font-size:1.0625rem;line-height:1.4;overflow-wrap:anywhere}
+.regla__c{display:flex;gap:6px;align-items:flex-start;margin-top:4px;font-size:.875rem;font-weight:600;color:var(--ok)}
+.regla__c .ico{flex:none;width:1rem;height:1rem;margin-top:1px;fill:currentColor}
+.regla__c.is-ia{color:var(--ink-3)}
+.regla__c.is-ia .ico{fill:none;color:var(--link)}
+
 /* ---------- Camino a la sesión ---------- */
 .camino{padding:18px}
 .camino__top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}

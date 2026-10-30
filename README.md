@@ -239,6 +239,19 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
 - **Preguntale a la dieta** (ícono de mensaje, con IA): preguntas con sus datos («¿cómo vengo esta
   semana?», «¿cuánto bajé?»).
 
+**Lo que me dijo Ari** (Hoy y Ajustes): reglas que Ale escribe como le salen. La IA (acción `regla`)
+las pasa en limpio y dice qué cambian: cupos, libres fijos, comidas que un día no hacen falta.
+`plan.js` arma con ellas la configuración de las estrellas (`config` / `usar`), y la IA las recibe
+en cada pedido (valen más que el plan base). Las de siempre (kosher, proteína, 4 huevos, Shabat,
+libres fijos) vienen en `REGLAS_BASE` y se pueden borrar o cambiar. Se guardan en *Ajustes*, fila
+«dieta», con el resto de los ajustes.
+
+**Avisos en el iPhone**: salen por el calendario suscrito de Pendientes (`avisosDieta` en
+`api/calendario.js`): antes de la merienda (con «cargá el almuerzo» si falta), a la noche si falta
+cargar algo (con la racha), el viernes a las 17 con los libres de Shabat y el sábado a las 21:15
+para cargar lo de Shabat. En Shabat no suena nada. Lo de hoy mira lo cargado: si está todo, el
+aviso desaparece cuando el Calendario se actualiza. Horarios y on/off en Ajustes → Avisos.
+
 **Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
 desayuno de huevos (2 y 2 claras, o 4 enteros: las claras son solo por el colesterol), salvo los
 sábados: en Shabat Ale reza a la mañana y no desayuna, y eso cuenta como cumplido; almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
