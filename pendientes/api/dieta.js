@@ -42,15 +42,18 @@ function sistema(hoy) {
 
 function semanaTexto(s) {
   if (!s || typeof s !== 'object') return '';
-  const f = (cid, nombre) => {
+  const nombre = t => (t === 'carbo' ? 'con carbo' : t === 'libre' ? 'libre' : String(t || '').slice(0, 20));
+  const f = (cid, titulo) => {
     const l = Array.isArray(s[cid]) ? s[cid] : [];
     if (!l.length) return '';
-    return nombre + ': ' + l.map(c => {
-      const q = Math.max(0, (Number(c.cupo) || 0) - (Number(c.usado) || 0));
-      return (c.tipo === 'carbo' ? 'con carbo' : c.tipo === 'libre' ? 'libre' : String(c.tipo || '').slice(0, 20)) + ' ' + (q ? 'quedan ' + q : 'no queda');
+    return titulo + ': ' + l.map(c => {
+      const q = typeof c.quedan === 'number' ? Math.max(0, c.quedan) : Math.max(0, (Number(c.cupo) || 0) - (Number(c.usado) || 0));
+      const fijos = (Array.isArray(c.fijos) ? c.fijos : []).map(x => String(x).slice(0, 30));
+      return nombre(c.tipo) + ' ' + (q ? 'quedan ' + q + ' para cualquier día' : 'no queda para cualquier día') + (fijos.length ? ' (reservado: ' + fijos.join(', ') + ')' : '');
     }).join(', ');
   };
-  return [f('almuerzo', 'Almuerzos'), f('cena', 'Cenas')].filter(Boolean).join('. ');
+  const dia = typeof s.hoy === 'string' ? 'Hoy es ' + s.hoy.slice(0, 12) + '. ' : '';
+  return dia + [f('almuerzo', 'Almuerzos'), f('cena', 'Cenas')].filter(Boolean).join('. ');
 }
 
 function limpiarTexto(v, n) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n || 300); }
@@ -114,7 +117,7 @@ async function evaluar(b, hoy, hora) {
     },
     content: [{ type: 'text', text: 'Ale pregunta si esto va para ' + (cid === 'desayuno' ? 'el desayuno' : cid === 'almuerzo' ? 'el almuerzo' : cid === 'merienda' ? 'la merienda' : 'la cena') + ': «' + texto + '».\n' +
       (semana ? 'Cupos que quedan esta semana: ' + semana + '.\n' : '') +
-      'Decidí el tipo según el plan. Si es carbo o libre y no queda cupo, entonces tipo nova y va=false, y decile que ya usó el cupo. ' +
+      'Decidí el tipo según el plan. Si es carbo o libre y no queda cupo para hoy, entonces tipo nova y va=false: decile que ya usó el cupo, o que ese libre está reservado para el viernes a la noche o el sábado al mediodía (si hoy es justo ese día y comida, el libre va). ' +
       'Si el desayuno no es huevos y claras, o la merienda no es un pan turco con algo del plan, es nova. Postre, fruta o picoteo: nova. ' +
       'Si no es kosher (cerdo, mariscos, carne con lácteos), es nova aunque sea proteína y vegetales: decilo y proponé la versión kosher. ' +
       'Regla general de Ari: proteína y vegetales es siempre plan, en cualquier comida, aunque el plan permita pan o hidrato ahí (es mejor todavía). Nunca le propongas agregar pan o hidrato a algo que ya es proteína y vegetales. ' +

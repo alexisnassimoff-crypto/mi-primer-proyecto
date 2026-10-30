@@ -82,41 +82,73 @@
     return 'cena';
   }
 
+  /* ---------- Libres fijos ----------
+     Ale usa siempre los mismos permitidos: el viernes a la noche (cena de Shabat) y el sábado al
+     mediodía. Quedan reservados: un libre en otro día que se come uno de estos es un error. */
+  const RESERVAS = [
+    { dia: 5, comida: 'cena', tipo: 'libre', nombre: 'viernes a la noche' },
+    { dia: 6, comida: 'almuerzo', tipo: 'libre', nombre: 'sábado al mediodía' }
+  ];
+  const fechaReserva = (lunes, r) => sumarDias(lunes, (r.dia + 6) % 7);
+  const reservaDe = (fecha, cid, tid) => RESERVAS.find(r => r.comida === cid && r.tipo === tid && deYmd(fecha).getDay() === r.dia) || null;
+
   /* ---------- Evaluar la semana ----------
      Devuelve cada comida (solo las que no son extra) con su estado:
        ok        cumple el plan
-       excedido  era carbo o libre, pero ya se había usado el cupo de la semana
+       excedido  era carbo o libre, pero ya no quedaba cupo (motivo 'reserva' si se comió un libre fijo)
        nova      se salió
        nada      no comió (y la comida era obligatoria)
-     y los cupos usados por comida y tipo. El orden para repartir el cupo es por fecha y
-     después por el momento de carga, así el primero que se cargó es el que vale. */
-  function evaluarSemana(comidas, lunes) {
+     Primero se asignan los libres fijos a su día; el resto del cupo se reparte por fecha y orden de
+     carga. Un libre fijo que todavía no pasó (o que ya se usó) queda apartado; si su día pasó sin
+     usarlo, se libera. «hoy» decide qué está por venir. */
+  function evaluarSemana(comidas, lunes, hoy) {
+    hoy = hoy || ymd(new Date());
     const fin = sumarDias(lunes, 6);
     const dentro = comidas.filter(c => c.fecha >= lunes && c.fecha <= fin && c.comida !== 'extra')
       .slice().sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
-    const usados = {}, estados = {};
+    const usados = {}, estados = {}, motivos = {}, asignadas = new Set(), apartados = {};
+    const suma = (o, cid, tid) => { o[cid] = o[cid] || {}; o[cid][tid] = (o[cid][tid] || 0) + 1; };
+    const reservas = RESERVAS.map(r => {
+      const f = fechaReserva(lunes, r);
+      const c = dentro.find(x => x.fecha === f && x.comida === r.comida && x.tipo === r.tipo);
+      if (c) { asignadas.add(c.id); estados[c.id] = 'ok'; suma(usados, r.comida, r.tipo); }
+      const pendiente = !c && f >= hoy;
+      if (c || pendiente) suma(apartados, r.comida, r.tipo);
+      return Object.assign({}, r, { fecha: f, usada: !!c, pendiente });
+    });
+    const flex = {};
     dentro.forEach(c => {
+      if (asignadas.has(c.id)) return;
       const t = tipo(c.comida, c.tipo);
       if (!t) { estados[c.id] = 'nova'; return; }
       if (!t.ok) { estados[c.id] = t.id === 'nada' ? (c.comida === 'desayuno' && esSabado(c.fecha) ? 'ok' : 'nada') : 'nova'; return; }
       if (!t.cupo) { estados[c.id] = 'ok'; return; }
-      usados[c.comida] = usados[c.comida] || {};
-      usados[c.comida][t.id] = (usados[c.comida][t.id] || 0) + 1;
-      estados[c.id] = usados[c.comida][t.id] <= t.cupo ? 'ok' : 'excedido';
+      suma(usados, c.comida, t.id); suma(flex, c.comida, t.id);
+      const libres = t.cupo - ((apartados[c.comida] && apartados[c.comida][t.id]) || 0);
+      if (flex[c.comida][t.id] <= libres) estados[c.id] = 'ok';
+      else { estados[c.id] = 'excedido'; if (libres < t.cupo) motivos[c.id] = 'reserva'; }
     });
     const cupos = {};
     ['almuerzo', 'cena'].forEach(cid => {
-      cupos[cid] = TIPOS[cid].filter(t => t.cupo).map(t => ({ tipo: t.id, nombre: t.nombre, cupo: t.cupo, usado: (usados[cid] && usados[cid][t.id]) || 0 }));
+      cupos[cid] = TIPOS[cid].filter(t => t.cupo).map(t => {
+        const ap = (apartados[cid] && apartados[cid][t.id]) || 0, fx = (flex[cid] && flex[cid][t.id]) || 0;
+        return { tipo: t.id, nombre: t.nombre, cupo: t.cupo, usado: (usados[cid] && usados[cid][t.id]) || 0,
+          quedan: Math.max(0, t.cupo - ap - fx), reservas: reservas.filter(r => r.comida === cid && r.tipo === t.id) };
+      });
     });
-    return { lunes, fin, estados, cupos };
+    return { lunes, fin, estados, motivos, cupos, reservas };
   }
 
-  /* Cuántos quedan de un tipo con cupo en la semana de esa fecha */
-  function quedan(comidas, fecha, cid, tid) {
-    const ev = evaluarSemana(comidas, lunesDe(fecha));
+  /* Para cargar una comida (sin contar la que se está editando): ¿queda ese tipo para ese día? */
+  function disponible(comidas, fecha, cid, tid, hoy) {
+    const ev = evaluarSemana(comidas, lunesDe(fecha), hoy);
     const c = (ev.cupos[cid] || []).find(x => x.tipo === tid);
-    return c ? Math.max(0, c.cupo - c.usado) : 0;
+    if (!c) return { ok: true };
+    const r = reservaDe(fecha, cid, tid);
+    if (r) return { ok: !c.reservas.some(x => x.fecha === fecha && x.usada), fijo: r, quedan: c.quedan };
+    return { ok: c.quedan > 0, quedan: c.quedan, pendientes: c.reservas.filter(x => x.pendiente) };
   }
+  const quedan = (comidas, fecha, cid, tid) => { const d = disponible(comidas, fecha, cid, tid); return d.fijo ? (d.ok ? 1 : 0) : (d.quedan || 0); };
 
   /* ---------- Evaluar un día ----------
      estrella: desayuno, almuerzo y cena cargados y bien, la merienda (si se cargó) bien y ningún extra. */
@@ -131,7 +163,7 @@
       const filas = porComida[c.id];
       if (!filas.length) { if (c.obligatoria && !(c.id === 'desayuno' && esSabado(fecha))) faltan.push(c.id); return; }
       cargadas++;
-      filas.forEach(f => { if (ev.estados[f.id] !== 'ok') fallas.push({ comida: c.id, estado: ev.estados[f.id], tipo: f.tipo }); });
+      filas.forEach(f => { if (ev.estados[f.id] !== 'ok') fallas.push({ comida: c.id, estado: ev.estados[f.id], tipo: f.tipo, motivo: ev.motivos[f.id] }); });
     });
     porComida.extra.forEach(() => fallas.push({ comida: 'extra', estado: 'nova', tipo: 'nova' }));
     const completo = !faltan.length;
@@ -213,8 +245,9 @@
     'No postres. No frutas. No extras.',
     'Los sábados (Shabat) Ale reza a la mañana y no desayuna: eso está bien, no es salirse del plan.',
     'Ale come kosher: nada de cerdo ni mariscos; pescado solo con escamas (merluza, salmón, atún, lenguado); y nunca carne o pollo junto con lácteos en la misma comida (pastrón con queso, carne con crema o con manteca, no van). Toda idea o sugerencia tiene que respetarlo.',
-    'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
+    'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.',
+    'Libres fijos de Ale: la cena del viernes (Shabat) y el almuerzo del sábado. Quedan reservados: de lunes a jueves y el domingo no hay libre de almuerzo, y de cena queda uno solo. Lo que sí queda para la semana: 1 almuerzo con carbo, 1 cena con carbo y 1 cena libre.'
   ];
 
-  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, evaluarSemana, quedan, evaluarDia, racha, estrellas, ideas, frase };
+  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, RESERVAS, reservaDe, evaluarSemana, disponible, quedan, evaluarDia, racha, estrellas, ideas, frase };
 }));
