@@ -12,6 +12,7 @@
         accion 'evaluar'  { texto, comida, semana }                 → { tipo, va, veredicto, alternativa }
         accion 'clasificar' { texto, comida }                        → { tipo, nota }   cómo cuenta lo que ya comió
         accion 'regla'    { texto }                                  → { resumen, cambios }  entender algo que dijo Ari
+        accion 'informe'  { datos }                                  → { para_ari, para_ale: [...] }  el informe y tus patrones
    Todas reciben además { reglas: [{ texto, cambios }] }: lo que le dijo Ari, que vale más que el plan base.
         accion 'preguntar'{ pregunta, datos }                        → { respuesta }
    ============================================================ */
@@ -220,7 +221,29 @@ async function regla(b, hoy) {
   return { status: 200, body: { ok: true, texto: limpiarTexto(d && d.texto, 400) || texto, resumen: limpiarTexto(d && d.resumen, 300), cambios, cambiosTexto: cambios.map(Plan.cambioTexto), duda: limpiarTexto(d && d.duda, 300) } };
 }
 
-const ACCIONES = { sugerir, evaluar, clasificar, regla, preguntar };
+/* Mira todo el historial: un resumen para Ari (la nutricionista) y consejos concretos para Ale */
+async function informe(b, hoy) {
+  const datos = String(b.datos || '').slice(0, 60000);
+  if (!datos.trim()) return { status: 400, body: { error: 'pedido' } };
+  const d = await pedir({
+    system: sistema(hoy, b), effort: 'medium', maxTokens: 2500,
+    schema: {
+      type: 'object',
+      properties: {
+        para_ari: { type: 'string', description: 'resumen para la nutricionista, en tercera persona («Ale cumplió…»), de 4 a 7 oraciones: constancia, cómo usó los cupos, dónde aflojó y patrones, sin juicios ni adornos; sin markdown' },
+        para_ale: { type: 'array', items: { type: 'string' }, description: 'de 2 a 4 consejos concretos para Ale, uno por patrón que veas en los datos, hablándole de vos, cada uno en una o dos oraciones, dentro del plan y las reglas de Ari' }
+      },
+      required: ['para_ari', 'para_ale'], additionalProperties: false
+    },
+    content: [{ type: 'text', text: 'Estos son los datos de Ale desde que arrancó el plan (días, comidas, cupos, patrones que ya calculó la app):\n\n' + datos + '\n\n' +
+      'Escribí dos cosas. Para Ari: un resumen honesto y útil para la sesión, basado solo en los datos. Para Ale: consejos concretos para lo que viene, mirando los patrones ' +
+      '(qué día, qué comida, qué horario o situación se le complica, qué le funciona). Nada genérico: cada consejo tiene que salir de algo que se ve en los datos. ' +
+      'Si los datos son pocos, decilo en el resumen para Ari.' }]
+  });
+  return { status: 200, body: { ok: true, para_ari: limpiarTexto(d && d.para_ari, 1500), para_ale: (Array.isArray(d && d.para_ale) ? d.para_ale : []).map(x => limpiarTexto(x, 300)).filter(Boolean).slice(0, 4) } };
+}
+
+const ACCIONES = { sugerir, evaluar, clasificar, regla, informe, preguntar };
 
 /* en el respaldo solo entra la fila «dieta» de Ajustes */
 function soloDieta(filas) {

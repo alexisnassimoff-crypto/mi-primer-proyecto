@@ -52,6 +52,9 @@ const ICONS = {
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
   book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5V4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5z"/>',
   msg: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.6-.8L3 21l1.9-5.4A8.4 8.4 0 0 1 3 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 9 8.4z"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  printer: '<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/>',
+  chart: '<path d="M3 3v18h18M7 15l4-4 3 3 5-6"/>',
   bulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V18h6v-1.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/>'
 };
 const icon = n => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
@@ -152,6 +155,7 @@ function render() {
   if (ui.view === 'historial') return renderHistorial();
   if (ui.view === 'dia' && ui.dia) return renderDia(ui.dia);
   if (ui.view === 'peso') return renderPeso();
+  if (ui.view === 'informe') return renderInforme();
   return renderInicio();
 }
 
@@ -243,8 +247,95 @@ function cuposHtml(fecha) {
   });
   return h + '</div>';
 }
+/* ---------- Tus patrones e informe para Ari ---------- */
+const analisis = () => Plan.analizar(state.comidas, inicio() <= hoy() ? inicio() : hoy(), hoy());
+const IAINF_KEY = 'dieta.iaInforme';
+/* lo último que escribió la IA (se guarda en el teléfono para no pedirlo de nuevo cada vez) */
+function iaInforme() { try { const v = JSON.parse(lsGet(IAINF_KEY) || 'null'); return v && v.fecha ? v : null; } catch (e) { return null; } }
+function patronesHtml(a, conInforme) {
+  const falta = 7 - a.total;
+  let h = '<section class="section"><div class="section__h"><span>Tus patrones</span><span class="section__sub">' + a.total + (a.total === 1 ? ' día' : ' días') + '</span></div><div class="card patrones">';
+  if (falta > 0) h += '<p class="empty">Con una semana de datos la app te muestra dónde aflojás y qué te funciona. ' + (falta === 1 ? 'Falta 1 día.' : 'Faltan ' + falta + ' días.') + '</p>';
+  else h += '<ul class="pats">' + a.patrones.map(p => '<li class="pat pat--' + p.tono + '">' + icon(p.tono === 'ok' ? 'check' : 'alert') + '<span>' + esc(p.texto) + '</span></li>').join('') + '</ul>';
+  const inf = iaInforme();
+  if (inf && inf.para_ale && inf.para_ale.length) h += '<div class="ai" style="margin:0 16px;padding-bottom:14px"><div class="ai__k">' + icon('sparkles') + 'Lo que ve la IA · ' + esc(fechaCorta(inf.fecha)) + '</div><ul class="pats">' + inf.para_ale.map(t => '<li class="pat pat--ia">' + icon('bulb') + '<span>' + esc(t) + '</span></li>').join('') + '</ul></div>';
+  if (iaOn() && a.total >= 3) h += '<div style="padding:0 16px 14px"><button type="button" class="btn btn--secondary btn--block" data-ia-informe' + (ui.informeBusy ? ' disabled' : '') + '>' + icon('sparkles') + (ui.informeBusy ? 'Mirando tu historial…' : inf ? 'Que la IA vuelva a mirar' : 'Que la IA mire tus patrones') + '</button></div>';
+  h += '</div>';
+  if (conInforme) h += '<div class="actions" style="margin-top:12px"><button type="button" class="btn btn--primary btn--block" data-go="informe">' + icon('chart') + 'Informe para la sesión con Ari</button></div>';
+  return h + '</section>';
+}
+/* Todo en texto: para mandarle a Ari por WhatsApp y para que la IA lo lea */
+function informeTexto(a, conIa) {
+  const L = [], inf = conIa ? iaInforme() : null;
+  L.push('Informe de alimentación de ' + (state.ajustes.nombre || 'Ale') + ' · del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta));
+  L.push('Objetivo para la sesión del ' + fechaCorta(limite()) + ': ' + objetivo() + ' kg. Meta final: ' + metaTexto() + '.');
+  L.push('Días con estrella (plan cumplido): ' + a.conEstrella + ' de ' + a.total + ' (' + a.pct + '%). Mejor racha: ' + a.rachaMax + ' días. Racha actual: ' + a.racha + '.');
+  L.push('Extras: ' + a.extras + '. Días sin cargar del todo: ' + (a.sinCerrar + a.sinCargar) + '.');
+  if (inf && inf.para_ari) L.push('', 'Resumen: ' + inf.para_ari);
+  L.push('', 'Por semana (lunes a domingo):');
+  a.semanas.forEach(w => L.push('• Semana del ' + fechaCorta(w.lunes) + ': ' + w.estrellas + ' de ' + w.dias + ' con estrella · con carbo ' + w.carbo + ' · libres ' + w.libre + ' · fuera del plan ' + w.fuera + ' · extras ' + w.extras));
+  if (a.patrones.length) { L.push('', 'Patrones:'); a.patrones.forEach(p => L.push('• ' + p.texto)); }
+  const tropiezos = a.fallas.filter(x => x.estado !== 'falta');
+  if (tropiezos.length) { L.push('', 'Dónde aflojó:'); tropiezos.forEach(x => L.push('• ' + fechaDia(x.fecha) + ', ' + nombreDe(x.comida).toLowerCase() + ': ' + (x.que ? '«' + x.que + '» ' : '') + '(' + motivoTexto(x) + ')')); }
+  L.push('', 'Reglas que sigue:'); reglas().forEach(r => L.push('• ' + r.texto));
+  L.push('', 'Día por día:');
+  a.dias.forEach(d => {
+    const cs = Plan.COMIDAS.map(c => d.porComida[c.id].map(x => nombreDe(c.id) + ': ' + (x.que || tipoCorto(x)) + (x.tipo === 'carbo' || x.tipo === 'libre' ? ' [' + (x.tipo === 'carbo' ? 'con carbo' : 'libre') + ']' : '')).join('; ')).filter(Boolean);
+    L.push('• ' + fechaDia(d.fecha) + (d.estrella ? ' ★' : '') + ' — ' + (cs.length ? cs.join(' · ') : 'sin cargar'));
+  });
+  return L.join('\n');
+}
+const motivoTexto = x => (x.estado === 'excedido' ? (x.motivo === 'reserva' ? 'usó un libre del finde' : 'cupo de la semana ya usado') : x.estado === 'nada' ? 'no comió' : x.comida === 'extra' ? 'extra' : 'fuera del plan');
+function renderInforme() {
+  const a = analisis(), inf = iaInforme();
+  setHeader('Informe para Ari', 'Del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta) + ' · sesión del ' + fechaCorta(limite()), history.state && history.state.from === 'historial' ? 'Historial' : 'Inicio');
+  let h = '<div class="actions no-print" style="margin-top:0;grid-template-columns:1fr 1fr"><button type="button" class="btn btn--primary" data-informe-mandar>' + icon('share') + 'Mandar</button><button type="button" class="btn btn--secondary" data-informe-pdf>' + icon('printer') + 'PDF</button></div>';
+  h += '<section class="section"><div class="stats inf__stats"><div class="stat"><div class="stat__v">' + icon('star') + a.conEstrella + '<small>/' + a.total + '</small></div><div class="stat__k">días con estrella (' + a.pct + '%)</div></div>' +
+    '<div class="stat"><div class="stat__v">' + a.rachaMax + '</div><div class="stat__k">mejor racha</div></div>' +
+    '<div class="stat"><div class="stat__v">' + a.extras + '</div><div class="stat__k">extras</div></div>' +
+    '<div class="stat"><div class="stat__v">' + (a.sinCerrar + a.sinCargar) + '</div><div class="stat__k">días sin cargar del todo</div></div></div></section>';
+  h += '<section class="section"><div class="section__h"><span>Resumen para Ari</span></div><div class="card inf__card">' +
+    (inf && inf.para_ari ? '<p class="inf__p">' + esc(inf.para_ari) + '</p><p class="inf__k no-print">' + icon('sparkles') + 'Lo escribió la IA el ' + esc(fechaCorta(inf.fecha)) + '</p>' : '<p class="inf__p inf__k">' + (iaOn() ? 'Todavía no hay resumen escrito.' : 'Conectá el respaldo en Ajustes para que la IA escriba el resumen.') + '</p>') +
+    (iaOn() ? '<button type="button" class="linkbtn no-print" data-ia-informe' + (ui.informeBusy ? ' disabled' : '') + '>' + icon('sparkles') + (ui.informeBusy ? 'Escribiendo…' : inf ? 'Volver a escribirlo' : 'Escribirlo con la IA') + '</button>' : '') + '</div></section>';
+  h += '<section class="section"><div class="section__h"><span>Por semana</span><span class="section__sub">lunes a domingo</span></div><div class="card"><table class="inf__t"><thead><tr><th>Semana</th><th>★</th><th>Carbo</th><th>Libres</th><th>Fuera</th><th>Extras</th></tr></thead><tbody>' +
+    a.semanas.map(w => '<tr><td>' + fechaCorta(w.lunes) + '</td><td>' + w.estrellas + '/' + w.dias + '</td><td>' + w.carbo + '</td><td>' + w.libre + '</td><td>' + w.fuera + '</td><td>' + w.extras + '</td></tr>').join('') + '</tbody></table></div></section>';
+  if (a.patrones.length) h += '<section class="section"><div class="section__h"><span>Patrones</span></div><div class="card"><ul class="pats">' + a.patrones.map(p => '<li class="pat pat--' + p.tono + '">' + icon(p.tono === 'ok' ? 'check' : 'alert') + '<span>' + esc(p.texto) + '</span></li>').join('') + '</ul></div></section>';
+  const tropiezos = a.fallas.filter(x => x.estado !== 'falta');
+  h += '<section class="section"><div class="section__h"><span>Dónde aflojó</span><span class="section__sub">' + tropiezos.length + '</span></div><div class="card">' +
+    (tropiezos.length ? '<ul class="list">' + tropiezos.map(x => '<li class="inf__f"><span class="inf__d">' + esc(fechaDia(x.fecha)) + '</span><span><b>' + esc(nombreDe(x.comida)) + '</b>' + (x.que ? ': ' + esc(x.que) : '') + '<small>' + esc(motivoTexto(x)) + '</small></span></li>').join('') + '</ul>' : '<p class="empty">Ningún tropiezo en el período.</p>') + '</div></section>';
+  h += '<section class="section"><div class="section__h"><span>Lo que más come</span></div><div class="card inf__card">' + ['desayuno', 'almuerzo', 'merienda', 'cena'].map(c => a.repetidas[c].length ? '<p class="inf__p"><b>' + esc(nombreDe(c)) + ':</b> ' + a.repetidas[c].slice(0, 3).map(r => esc(r.que) + (r.n > 1 ? ' (' + r.n + ')' : '')).join(' · ') + '</p>' : '').join('') + '</div></section>';
+  h += '<section class="section"><div class="section__h"><span>Reglas que sigue</span></div><div class="card inf__card">' + reglas().map(r => '<p class="inf__p">• ' + esc(r.texto) + '</p>').join('') + '</div></section>';
+  h += '<section class="section"><div class="section__h"><span>Día por día</span></div><div class="card"><ul class="list">' + a.dias.slice().reverse().map(d =>
+    '<li class="inf__dia"><div class="inf__dh"><b>' + esc(fechaDia(d.fecha)) + '</b>' + (d.estrella ? '<span class="inf__star">' + icon('star') + '</span>' : d.fallas.length ? '<span class="inf__x">sin estrella</span>' : '') + '</div>' +
+    Plan.COMIDAS.map(c => d.porComida[c.id].map(x => '<p><span>' + esc(nombreDe(c.id)) + '</span>' + esc(x.que || tipoCorto(x)) + (x.tipo === 'carbo' || x.tipo === 'libre' ? ' <i>' + (x.tipo === 'carbo' ? 'con carbo' : 'libre') + '</i>' : '') + '</p>').join('')).join('') + (d.cargadas || d.extras ? '' : '<p class="inf__k">Sin cargar</p>') + '</li>').join('') + '</ul></div></section>';
+  $('#main').innerHTML = h;
+}
+async function pedirInforme() {
+  if (ui.informeBusy) return;
+  ui.informeBusy = true; render();
+  try {
+    const a = analisis();
+    const r = await ia({ accion: 'informe', datos: informeTexto(a, false) + '\n\nConfiguración: ' + Plan.configTexto() });
+    lsSet(IAINF_KEY, JSON.stringify({ fecha: hoy(), para_ari: r.para_ari, para_ale: r.para_ale }));
+    toast('Listo: la IA miró tu historial.');
+  } catch (e) { toast(iaMsg(e)); }
+  ui.informeBusy = false; render();
+}
+async function mandarInforme() {
+  const texto = informeTexto(analisis(), true);
+  try { if (navigator.share) { await navigator.share({ title: 'Informe para Ari', text: texto }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto); toast('Copiado: pegalo en el chat con Ari.'); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(texto.slice(0, 6000)); }
+}
+
 /* Camino a la sesión con Ari: cuántos días faltan y cómo venís. El peso no se mide en el medio,
    así que lo que se puede ver es la constancia: cada día con estrella es lo que te lleva. */
+/* si hoy es el día que más te cuesta, te lo dice */
+function diaFlojoHtml(h) {
+  const a = analisis(), dow = Plan.deYmd(h).getDay();
+  if (a.diaFlojo !== dow || dia(h).estrella) return '';
+  const w = a.porDow[dow];
+  return '<p class="camino__o">' + icon('alert') + '<span><b>Hoy es ' + Plan.DIAS[dow] + ':</b> tu día más flojo (' + w.estrellas + ' de ' + w.dias + ' con estrella). Anticipate a la tarde.</span></p>';
+}
 function caminoHtml(h) {
   const ses = limite(), faltan = Plan.diasEntre(h, ses), ini = inicio();
   const hasta = Plan.diasEntre(ini, h) >= 0 ? h : ini;
@@ -266,7 +357,8 @@ function caminoHtml(h) {
     '<div class="bar"><div class="bar__f" style="width:' + Math.round(hechos / total * 100) + '%"></div></div>' +
     '<div class="bar__l"><span>' + fechaCorta(ini) + '</span><span>' + hechos + ' de ' + total + ' días</span><span>' + fechaCorta(ses) + '</span></div>' +
     (cerrados ? '<p class="camino__s"><b>' + est + ' de ' + cerrados + '</b> días con estrella (' + pct + '%).</p>' : '') + rTxt +
-    '<p class="camino__m">' + esc(msg) + '</p><p class="camino__p">En el medio no te pesás: el peso se ve en la sesión.</p></div></section>';
+    diaFlojoHtml(h) + '<p class="camino__m">' + esc(msg) + '</p><p class="camino__p">En el medio no te pesás: el peso se ve en la sesión.</p>' +
+    '<button type="button" class="linkbtn" data-go="informe" style="margin-top:6px">' + icon('chart') + 'Informe para la sesión</button></div></section>';
 }
 function renderInicio() {
   const h = hoy();
@@ -308,7 +400,7 @@ function renderHistorial() {
     f = Plan.sumarDias(f, -1);
   }
   cerrar();
-  $('#main').innerHTML = html || '<div class="card empty">Todavía no hay días cargados.</div>';
+  $('#main').innerHTML = patronesHtml(analisis(), true) + (html || '<div class="card empty">Todavía no hay días cargados.</div>');
 }
 function chartHtml(ps) {
   if (ps.length < 2) return '';
@@ -543,6 +635,8 @@ function datosTexto() {
   L.push('Racha: ' + Plan.racha(state.comidas, h) + ' días seguidos con estrella. Estrellas desde el inicio: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
   const ev = semana(h);
   L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ': ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + cupoTexto(c)).join(', ')).join('; ') + '. ' + Plan.configTexto());
+  const pat = analisis().patrones;
+  if (pat.length) L.push('Patrones que ve la app: ' + pat.map(p => p.texto).join(' '));
   L.push('Comidas de los últimos 21 días:');
   for (let i = 0; i < 21; i++) {
     const f = Plan.sumarDias(h, -i), d = dia(f), cs = comidasDe(f);
@@ -744,6 +838,7 @@ function renderSettings() {
     '<p class="set__note">Llegan por el calendario de Pendientes que tenés suscripto en el iPhone. También: el viernes a las 17, antes de Shabat, y el sábado a las 21:15 para cargar lo de Shabat. En Shabat no suena nada. Si cargaste todo, el aviso de la noche desaparece solo.</p><p class="set__note">Si no suenan: en el Calendario del iPhone, en la suscripción de Pendientes, apagá «Eliminar alarmas».</p></div></details>' +
     '<button type="button" class="set set--btn" data-reglas>' + icon('book') + 'Lo que me dijo Ari</button>' +
     '<button type="button" class="set set--btn" data-plan>' + icon('book') + 'El plan de Ari</button>' +
+    '<button type="button" class="set set--btn" data-informe>' + icon('chart') + 'Informe para Ari</button>' +
     '<button type="button" class="set set--btn" data-go-peso>' + icon('scale') + 'Peso (para el pesaje de fin de mes)</button>' +
     '<div class="set set--row"><span>Aspecto</span><div class="seg3" role="radiogroup" aria-label="Aspecto"><button type="button" role="radio" aria-checked="' + (t === 'auto') + '" data-theme="auto">Auto</button><button type="button" role="radio" aria-checked="' + (t === 'light') + '" data-theme="light">Claro</button><button type="button" role="radio" aria-checked="' + (t === 'dark') + '" data-theme="dark">Oscuro</button></div></div>' +
     '<button type="button" class="set set--btn" data-export>' + icon('download') + 'Guardar una copia (.json)</button>' +
@@ -1013,6 +1108,9 @@ function init() {
     else if (b.dataset.editar) { const c = byId(b.dataset.editar); if (c) openForm(c); }
     else if (b.dataset.dia) go('dia', b.dataset.dia);
     else if (b.dataset.go) go(b.dataset.go);
+    else if (b.hasAttribute('data-ia-informe')) pedirInforme();
+    else if (b.hasAttribute('data-informe-mandar')) mandarInforme();
+    else if (b.hasAttribute('data-informe-pdf')) window.print();
     else if (b.hasAttribute('data-ideas')) openIdeas();
     else if (b.hasAttribute('data-check')) openCheck();
     else if (b.hasAttribute('data-plan')) openPlan();
@@ -1096,6 +1194,7 @@ function init() {
     else if (b.hasAttribute('data-sync-now')) { runSync(true); renderSyncBox(); }
     else if (b.hasAttribute('data-plan')) openPlan();
     else if (b.hasAttribute('data-reglas')) openReglas();
+    else if (b.hasAttribute('data-informe')) { closeSheet($('#settingsSheet')); setTimeout(() => go('informe'), 50); }
     else if (b.hasAttribute('data-go-peso')) { closeSheet($('#settingsSheet')); setTimeout(() => go('peso'), 50); }
     else if (b.dataset.theme) { lsSet(THEME_KEY, b.dataset.theme === 'auto' ? '' : b.dataset.theme); applyTheme(); renderSettings(); }
     else if (b.hasAttribute('data-export')) exportar();

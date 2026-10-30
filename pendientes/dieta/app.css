@@ -232,6 +232,47 @@ main{padding-top:14px}
 .regla__c.is-ia{color:var(--ink-3)}
 .regla__c.is-ia .ico{fill:none;color:var(--link)}
 
+/* ---------- Patrones e informe ---------- */
+.pats{list-style:none;padding:6px 0;margin:0}
+.pat{display:flex;gap:12px;align-items:flex-start;padding:10px 16px;font-size:1rem;line-height:1.45}
+.pat .ico{flex:none;margin-top:2px;width:1.15rem;height:1.15rem}
+.pat--ok .ico{color:var(--ok)}
+.pat--ojo .ico{color:var(--carbo)}
+.pat--ia .ico{color:var(--link)}
+.ai .pats{padding:0}
+.ai .pat{padding:6px 0}
+.camino__o{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--carbo-soft);line-height:1.45}
+.camino__o .ico{flex:none;margin-top:2px;color:var(--carbo)}
+.inf__stats{grid-template-columns:1fr 1fr}
+.stat__v small{font-size:1rem;font-weight:600;color:var(--ink-3)}
+.inf__card{padding:14px 16px;display:grid;gap:8px}
+.inf__p{line-height:1.5}
+.inf__k{display:flex;gap:6px;align-items:center;font-size:.875rem;color:var(--ink-3)}
+.inf__k .ico{width:1rem;height:1rem;color:var(--link)}
+.inf__t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9375rem}
+.inf__t th,.inf__t td{padding:10px 8px;text-align:center;border-top:1px solid var(--line)}
+.inf__t th{border-top:0;font-size:.8125rem;font-weight:650;color:var(--ink-3)}
+.inf__t td:first-child,.inf__t th:first-child{text-align:left;padding-left:16px}
+.inf__f{display:grid;grid-template-columns:5.5rem minmax(0,1fr);gap:10px;padding:10px 16px;border-top:1px solid var(--line);line-height:1.4}
+.list>.inf__f:first-child,.list>.inf__dia:first-child{border-top:0}
+.inf__f small{display:block;font-size:.8125rem;color:var(--danger);font-weight:600}
+.inf__d{font-size:.875rem;font-weight:600;color:var(--ink-3)}
+.inf__dia{padding:10px 16px;border-top:1px solid var(--line);font-size:.9375rem;line-height:1.45}
+.inf__dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.inf__dia p span{display:inline-block;min-width:5.5rem;color:var(--ink-3);font-weight:600;font-size:.8125rem}
+.inf__dia i{font-style:normal;font-size:.8125rem;font-weight:650;color:var(--libre)}
+.inf__star .ico{width:1.1rem;height:1.1rem;color:var(--star);fill:currentColor}
+.inf__x{font-size:.8125rem;font-weight:650;color:var(--danger)}
+@media print{
+  .top__row,.tabbar,.no-print,.toast,dialog{display:none!important}
+  body{background:#fff;color:#000;padding:0;font-size:12px}
+  .wrap{max-width:none;padding:0}
+  .card,.stat{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+  .section{margin-top:14px;break-inside:avoid-page}
+  .title{font-size:26px}
+  .inf__dia{break-inside:avoid}
+}
+
 /* ---------- Camino a la sesión ---------- */
 .camino{padding:18px}
 .camino__top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
