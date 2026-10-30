@@ -246,7 +246,9 @@ por semana; merienda proteína y vegetales o pan turco (o nada); cena proteína 
 semana; sin postres, frutas ni extras. **Regla general de Ari**: proteína y vegetales es siempre
 plan, aunque ahí el plan permita pan o hidrato (la IA nunca sugiere agregarlo). Ale come **kosher**: las ideas de la app no llevan cerdo ni
 mariscos ni mezclan carne con lácteos, y la IA tiene la misma regla (lo que no es kosher cuenta
-como fuera del plan). La semana va de lunes a domingo; un «libre» o «con carbo»
+como fuera del plan). **Libres fijos**: la cena del viernes y el almuerzo del sábado quedan reservados (`RESERVAS` en
+`plan.js`); un libre otro día que se come uno de esos queda excedido («Era del finde») y la app
+lo avisa antes de elegirlo. Si el día reservado pasa sin usarlo, se libera. La semana va de lunes a domingo; un «libre» o «con carbo»
 de más (ya usado el cupo) queda **excedido** y no suma. El día gana la estrella cuando desayuno,
 almuerzo y cena están cargados y bien, la merienda (si se cargó) también, y no hay extras.
 

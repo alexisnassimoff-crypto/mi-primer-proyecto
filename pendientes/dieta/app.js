@@ -158,7 +158,7 @@ function textoDia(d, esHoy) {
     const partes = [];
     d.fallas.forEach(f => {
       const n = nombreDe(f.comida).toLowerCase();
-      const p = f.comida === 'extra' ? 'un extra' : f.estado === 'excedido' ? 'el ' + (f.tipo === 'libre' ? 'libre' : 'con carbo') + ' de la ' + (f.comida === 'almuerzo' ? 'semana ya estaba usado (almuerzo)' : 'semana ya estaba usado (cena)') : f.estado === 'nada' ? 'sin ' + n : n + ' fuera del plan';
+      const p = f.comida === 'extra' ? 'un extra' : f.estado === 'excedido' ? (f.tipo === 'libre' && f.motivo === 'reserva' ? n + ' libre: ese era el del ' + (f.comida === 'almuerzo' ? 'sábado al mediodía' : 'viernes a la noche') : 'el ' + (f.tipo === 'libre' ? 'libre' : 'con carbo') + ' de ' + n + ' de la semana ya estaba usado') : f.estado === 'nada' ? 'sin ' + n : n + ' fuera del plan';
       if (partes.indexOf(p) < 0) partes.push(p);
     });
     return { t: esHoy ? 'Hoy no suma estrella' : 'Sin estrella', s: cap(partes.join(', ')) + '.' + (esHoy ? ' Lo que viene, firme.' : '') };
@@ -184,7 +184,7 @@ function dayCardHtml(fecha) {
       const st = ev.estados[f.id], t = Plan.tipo(f.comida, f.tipo);
       const cls = st === 'ok' ? 'is-ok' : st === 'excedido' || st === 'nova' || st === 'nada' ? 'is-bad' : '';
       const cq = st === 'ok' && t && t.cupo ? (ev.cupos[c.id] || []).find(x => x.tipo === t.id) : null;
-      const etiqueta = st === 'ok' ? (f.tipo === 'plan' ? '' : cq ? tag(f.tipo, cq.usado + ' de ' + cq.cupo) : '') : st === 'excedido' ? tag('excedido', 'Cupo usado') : st === 'nada' ? (c.obligatoria ? tag('nada', 'No comí') : '') : tag('nova', 'Fuera del plan');
+      const etiqueta = st === 'ok' ? (f.tipo === 'plan' ? '' : cq ? tag(f.tipo, cq.usado + ' de ' + cq.cupo) : '') : st === 'excedido' ? tag('excedido', ev.motivos[f.id] === 'reserva' ? 'Era del finde' : 'Cupo usado') : st === 'nada' ? (c.obligatoria ? tag('nada', 'No comí') : '') : tag('nova', 'Fuera del plan');
       h += '<li><button type="button" class="meal ' + cls + '" data-editar="' + f.id + '"><span class="meal__ic">' + icon(ICONO_COMIDA[c.id]) + '</span><span class="meal__b"><span class="meal__n">' + esc(c.nombre) + (f.hora ? ' · ' + esc(f.hora) : '') + '</span>' +
         '<span class="meal__t">' + esc(t ? t.nombre : 'Me salí') + '</span>' + (f.que ? '<span class="meal__q">' + esc(f.que) + '</span>' : '') + '</span><span class="meal__e">' + (etiqueta || icon(st === 'ok' ? 'check' : 'chevR')) + '</span></button></li>';
     });
@@ -208,13 +208,19 @@ function weekHtml(fecha) {
   out += '</div><div class="week__foot"><span><b>' + estrellas + '</b> ' + (estrellas === 1 ? 'estrella' : 'estrellas') + ' esta semana</span><span>' + fechaCorta(lunes) + ' al ' + fechaCorta(Plan.sumarDias(lunes, 6)) + '</span></div>';
   return out;
 }
+function cupoTexto(c) {
+  const pend = c.reservas.filter(r => r.pendiente).map(r => r.nombre), partes = [];
+  if (c.quedan) partes.push((c.quedan === 1 ? 'queda 1' : 'quedan ' + c.quedan));
+  if (pend.length) partes.push((c.quedan ? 'y el del ' : 'el del ') + pend.join(' y el del '));
+  return partes.length ? partes.join(' ') : 'no queda';
+}
 function cuposHtml(fecha) {
   const ev = semana(fecha);
   let h = '<div class="cupos"><div class="cupos__k">Te quedan esta semana</div>';
   ['almuerzo', 'cena'].forEach(cid => {
     h += '<div class="cupo"><span class="cupo__k">' + esc(nombreDe(cid)) + '</span><span class="cupo__v">' + ev.cupos[cid].map(c => {
-      const q = Math.max(0, c.cupo - c.usado);
-      return '<span class="tag tag--' + c.tipo + (q ? '' : ' is-out') + '">' + esc(c.nombre) + ' ' + (q ? 'quedan ' + q : 'no queda') + '</span>'.replace('quedan 1', 'queda 1');
+      const algo = c.quedan || c.reservas.some(r => r.pendiente);
+      return '<span class="tag tag--' + c.tipo + (algo ? '' : ' is-out') + '">' + esc(c.nombre) + ': ' + esc(cupoTexto(c)) + '</span>';
     }).join('') + '</span></div>';
   });
   return h + '</div>';
@@ -375,8 +381,11 @@ function renderForm() {
         let cupo = '';
         if (cid === 'desayuno' && t.id === 'nada' && Plan.esSabado(form.fecha)) cupo = '<span class="opt__c">Hoy es Shabat: está bien</span>';
         if (t.cupo) {
-          const c = ev.cupos[cid].find(x => x.tipo === t.id), q = Math.max(0, t.cupo - (c ? c.usado : 0));
-          cupo = q ? '<span class="opt__c">' + (q === 1 ? 'Te queda 1 esta semana' : 'Te quedan ' + q + ' esta semana') + '</span>' : '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
+          const d = Plan.disponible(otras, form.fecha, cid, t.id);
+          if (d.fijo) cupo = d.ok ? '<span class="opt__c">Es tu libre del ' + esc(d.fijo.nombre) + '</span>' : '<span class="opt__c is-out">El del ' + esc(d.fijo.nombre) + ' ya está cargado</span>';
+          else if (d.ok) cupo = '<span class="opt__c">' + (d.quedan === 1 ? 'Te queda 1 esta semana' : 'Te quedan ' + d.quedan + ' esta semana') + '</span>';
+          else if (d.pendientes && d.pendientes.length) cupo = '<span class="opt__c is-out">No: ese es el libre del ' + esc(d.pendientes[0].nombre) + '. Hoy no suma estrella</span>';
+          else cupo = '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
         }
         return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, t.cupo + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
       }).join('') + '</div></div>';
@@ -432,6 +441,7 @@ function guardarComida(o) {
   else if (otraExcedida) { const o2 = byId(otraExcedida); toast('Anotado. Con esta, ' + (o2.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o2.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o2.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
   else if (o.cambiar && estado === 'ok') toast('Contó como ' + como + '. ' + (o.nota || POS[Math.floor(Math.random() * POS.length)]), Object.assign({ ms: 5000 }, cambiar));
   else if (estado === 'ok') toast(c.tipo === 'nada' ? (c.comida === 'desayuno' ? 'Listo. Shabat shalom.' : 'Listo.') : POS[Math.floor(Math.random() * POS.length)]);
+  else if (estado === 'excedido' && semana(c.fecha).motivos[c.id] === 'reserva') toast('Ese libre era el del ' + (c.comida === 'almuerzo' ? 'sábado al mediodía' : 'viernes a la noche') + '. Hoy no suma estrella; el finde, tu permitido sigue en pie.', Object.assign({ ms: 6000 }, cambiar));
   else if (estado === 'excedido') toast('Contó como ' + como + ', y ese cupo ya estaba usado esta semana: hoy no suma estrella.', Object.assign({ ms: 5500 }, cambiar));
   else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.', cambiar);
   else toast((o.cambiar ? 'Contó como fuera del plan. ' : 'Anotado. ') + 'Mañana se arranca firme otra vez.', Object.assign({ ms: 5000 }, cambiar));
@@ -513,7 +523,7 @@ function datosTexto() {
   L.push('Pesos: ' + (ps.length ? ps.map(p => fechaCorta(p.fecha) + ' ' + fmtKg(p.kg) + ' kg').join(', ') : 'todavía no se pesó') + '.');
   L.push('Racha: ' + Plan.racha(state.comidas, h) + ' días seguidos con estrella. Estrellas desde el inicio: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
   const ev = semana(h);
-  L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ' ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + c.usado + ' de ' + c.cupo + ' usados').join(', ')).join('; ') + '.');
+  L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ': ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + cupoTexto(c)).join(', ')).join('; ') + '. Libres fijos: viernes a la noche y sábado al mediodía.');
   L.push('Comidas de los últimos 21 días:');
   for (let i = 0; i < 21; i++) {
     const f = Plan.sumarDias(h, -i), d = dia(f), cs = comidasDe(f);
@@ -533,10 +543,17 @@ function openIdeas(cid) {
 function segHtml(actual, attr) {
   return '<div class="seg" role="radiogroup" aria-label="Comida">' + Plan.COMIDAS.filter(c => c.id !== 'extra').map(c => '<button type="button" role="radio" aria-checked="' + (actual === c.id) + '" data-' + attr + '="' + c.id + '">' + esc(c.nombre) + '</button>').join('') + '</div>';
 }
+/* los cupos para la IA: lo que queda para usar cualquier día y los libres fijos que faltan */
+function cuposIa() {
+  const ev = semana(hoy()), out = {};
+  ['almuerzo', 'cena'].forEach(cid => { out[cid] = ev.cupos[cid].map(c => ({ tipo: c.tipo, quedan: c.quedan, fijos: c.reservas.filter(r => r.pendiente).map(r => r.nombre) })); });
+  out.hoy = DIAS[Plan.deYmd(hoy()).getDay()];
+  return out;
+}
 function cupolineHtml(cid) {
   if (cid !== 'almuerzo' && cid !== 'cena') return '';
   const ev = semana(hoy());
-  return '<p class="cupoline">Esta semana te quedan: ' + ev.cupos[cid].map(c => { const q = Math.max(0, c.cupo - c.usado); return '<b>' + esc(c.nombre.toLowerCase()) + ' ' + q + '</b>'; }).join(' · ') + '.</p>';
+  return '<p class="cupoline">Esta semana: ' + ev.cupos[cid].map(c => '<b>' + esc(c.nombre.toLowerCase()) + '</b> ' + esc(cupoTexto(c))).join(' · ') + '.</p>';
 }
 function ideaHtml(x, cid) {
   return '<li class="idea"><span class="idea__t">' + esc(cap(x.titulo)) + '</span><span class="idea__d">' + esc(x.detalle) + '</span><span class="idea__a">' + tag(x.tipo, x.tipo === 'plan' ? 'Plan' : x.tipo === 'carbo' ? 'Con carbo' : 'Libre') + '<button type="button" class="chip--btn" data-cargar-idea data-tipo="' + x.tipo + '" data-que="' + esc(cap(x.titulo)) + '" data-comida="' + cid + '">Cargar</button></span></li>';
@@ -563,7 +580,7 @@ async function pedirIdeas() {
   const inp = $('#i_pedido'); ui.ideasPedido = inp ? inp.value.trim() : '';
   renderIdeas(true);
   try {
-    const r = await ia({ accion: 'sugerir', comida: ui.ideasComida, pedido: ui.ideasPedido, semana: semana(hoy()).cupos, ultimas: ultimasTexto(5) });
+    const r = await ia({ accion: 'sugerir', comida: ui.ideasComida, pedido: ui.ideasPedido, semana: cuposIa(), ultimas: ultimasTexto(5) });
     if (!r.sugerencias || !r.sugerencias.length) throw new Error('ia');
     ui.ideasIa = r;
   } catch (e) { toast(iaMsg(e)); }
