@@ -266,6 +266,77 @@
     return n;
   }
 
+  /* ---------- Analizar: el historial y tus patrones ----------
+     Mira los días cerrados (hasta ayer, y hoy si ya ganó la estrella) desde «desde».
+     Devuelve los números para el informe de Ari y una lista de patrones en palabras:
+     { tono: 'ojo' | 'ok', texto }. Lo usan la app (Historial, informe) y los avisos del calendario. */
+  const NOMBRE_COMIDA = { desayuno: 'el desayuno', almuerzo: 'el almuerzo', merienda: 'la merienda', cena: 'la cena', extra: 'los extras' };
+  const plural = d => (DIAS[d] === 'sábado' || DIAS[d] === 'domingo' ? DIAS[d] + 's' : DIAS[d]);
+  const normal = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  function analizar(comidas, desde, hoy) {
+    const hasta = evaluarDia(comidas, hoy, null, hoy).estrella ? hoy : sumarDias(hoy, -1);
+    const dias = [], semanas = {};
+    for (let f = desde; f <= hasta; f = sumarDias(f, 1)) {
+      const d = evaluarDia(comidas, f, null, hoy);
+      dias.push(Object.assign({ dow: deYmd(f).getDay() }, d));
+    }
+    const out = { desde, hasta, dias, total: dias.length, conEstrella: 0, sinCargar: 0, sinCerrar: 0, extras: 0, rachaMax: 0, racha: racha(comidas, hoy),
+      porDow: [0, 1, 2, 3, 4, 5, 6].map(dow => ({ dow, dias: 0, estrellas: 0 })), fallasPorComida: {}, fallas: [], libresDelFinde: 0, semanas: [], repetidas: {} };
+    let seguidos = 0;
+    dias.forEach(d => {
+      const w = out.porDow[d.dow]; w.dias++;
+      if (d.estrella) { out.conEstrella++; w.estrellas++; seguidos++; out.rachaMax = Math.max(out.rachaMax, seguidos); } else seguidos = 0;
+      if (!d.cargadas && !d.extras) out.sinCargar++;
+      else if (!d.completo && !d.fallas.length) out.sinCerrar++;
+      out.extras += d.extras;
+      d.fallas.forEach(x => {
+        out.fallasPorComida[x.comida] = (out.fallasPorComida[x.comida] || 0) + 1;
+        if (x.motivo === 'reserva') out.libresDelFinde++;
+        const fila = (d.porComida[x.comida] || []).find(c => c.tipo === x.tipo) || (d.porComida[x.comida] || [])[0];
+        out.fallas.push({ fecha: d.fecha, comida: x.comida, estado: x.estado, motivo: x.motivo || '', que: fila ? String(fila.que || '') : '' });
+      });
+      d.faltan.forEach(c => out.fallas.push({ fecha: d.fecha, comida: c, estado: 'falta', motivo: '', que: '' }));
+      const l = lunesDe(d.fecha);
+      if (!semanas[l]) semanas[l] = { lunes: l, dias: 0, estrellas: 0, carbo: 0, libre: 0, extras: 0, fuera: 0 };
+      const S = semanas[l]; S.dias++; if (d.estrella) S.estrellas++; S.extras += d.extras;
+      ['almuerzo', 'cena'].forEach(c => d.porComida[c].forEach(x => { if (x.tipo === 'carbo') S.carbo++; if (x.tipo === 'libre') S.libre++; }));
+      S.fuera += d.fallas.filter(x => x.comida !== 'extra' && x.estado === 'nova').length;
+    });
+    out.semanas = Object.keys(semanas).sort().map(k => semanas[k]);
+    out.pct = out.total ? Math.round(out.conEstrella / out.total * 100) : 0;
+    /* lo que más repetís, por comida */
+    const enRango = comidas.filter(c => c.fecha >= desde && c.fecha <= hasta && String(c.que || '').trim());
+    ['desayuno', 'almuerzo', 'merienda', 'cena'].forEach(cid => {
+      const cuenta = {};
+      enRango.filter(c => c.comida === cid).forEach(c => { const k = normal(c.que); if (!k) return; cuenta[k] = cuenta[k] || { que: String(c.que).trim(), n: 0 }; cuenta[k].n++; });
+      out.repetidas[cid] = Object.keys(cuenta).map(k => cuenta[k]).sort((a, b) => b.n - a.n).slice(0, 5);
+    });
+    /* los patrones en palabras (los que importan primero) */
+    const P = [];
+    if (out.total >= 7) {
+      const flojo = out.porDow.filter(w => w.dias >= 2).map(w => Object.assign({ pct: w.estrellas / w.dias * 100 }, w)).sort((a, b) => a.pct - b.pct)[0];
+      if (flojo && flojo.pct < out.pct - 15) { out.diaFlojo = flojo.dow; P.push({ tono: 'ojo', clave: 'dia', texto: 'Los ' + plural(flojo.dow) + ' son tu día más flojo: ' + flojo.estrellas + ' de ' + flojo.dias + ' con estrella. Ese día, anticipate.' }); }
+      const fallasComida = Object.keys(out.fallasPorComida).filter(c => c !== 'extra').sort((a, b) => out.fallasPorComida[b] - out.fallasPorComida[a]);
+      const totF = fallasComida.reduce((n, c) => n + out.fallasPorComida[c], 0);
+      if (fallasComida.length && out.fallasPorComida[fallasComida[0]] >= 2) { out.comidaFloja = fallasComida[0]; P.push({ tono: 'ojo', clave: 'comida', texto: 'Donde más aflojás es ' + NOMBRE_COMIDA[fallasComida[0]] + ': ' + out.fallasPorComida[fallasComida[0]] + ' de tus ' + totF + ' tropiezos.' }); }
+      if (out.libresDelFinde) P.push({ tono: 'ojo', clave: 'finde', texto: 'Usaste ' + out.libresDelFinde + (out.libresDelFinde === 1 ? ' vez' : ' veces') + ' en la semana un libre que era del finde.' });
+      if (out.extras) P.push({ tono: 'ojo', clave: 'extras', texto: out.extras === 1 ? 'Hubo 1 extra (postre, fruta o picoteo). Uno solo: bien, que no se haga costumbre.' : 'Hubo ' + out.extras + ' extras (postre, fruta o picoteo). Practicá el «no, gracias».' });
+      if (out.sinCerrar + out.sinCargar >= 2) P.push({ tono: 'ojo', clave: 'cargar', texto: (out.sinCerrar + out.sinCargar) + ' días quedaron sin cargar del todo. Cargar todo también es parte del plan: lo que no se anota, se negocia.' });
+      if (out.dias.length >= 14) {
+        const ult = out.dias.slice(-7), ant = out.dias.slice(-14, -7), pu = ult.filter(d => d.estrella).length, pa = ant.filter(d => d.estrella).length;
+        if (pu > pa) P.push({ tono: 'ok', clave: 'tendencia', texto: 'Esta última semana vas mejor que la anterior: ' + pu + ' contra ' + pa + ' días con estrella.' });
+        else if (pu < pa) P.push({ tono: 'ojo', clave: 'tendencia', texto: 'Esta última semana aflojaste un poco: ' + pu + ' días con estrella contra ' + pa + ' la anterior. Volvé a lo que te funcionaba.' });
+      }
+      const carbo = out.semanas.reduce((n, w) => n + w.carbo, 0);
+      if (out.semanas.length >= 2 && carbo <= out.semanas.length / 2) P.push({ tono: 'ok', clave: 'carbo', texto: 'Casi no usás el «con carbo»: proteína y vegetales es mejor todavía. Bien ahí.' });
+      ['almuerzo', 'cena'].forEach(cid => { const r = out.repetidas[cid][0]; if (r && r.n >= 4) P.push({ tono: 'ok', clave: 'repite-' + cid, texto: 'En ' + NOMBRE_COMIDA[cid] + ' repetís mucho «' + r.que + '» (' + r.n + ' veces). Si te aburre, en «¿Qué como?» hay ideas.' }); });
+      if (out.rachaMax >= 5) P.push({ tono: 'ok', clave: 'record', texto: 'Tu mejor racha: ' + out.rachaMax + ' días seguidos con estrella.' + (out.racha >= out.rachaMax ? ' Es la de ahora: cuidala.' : ' Podés superarla.') });
+      if (!P.some(x => x.tono === 'ojo')) P.unshift({ tono: 'ok', clave: 'parejo', texto: 'Venís parejo: no hay un día ni una comida que se te complique. Seguí así.' });
+    }
+    out.patrones = P;
+    return out;
+  }
+
   /* ---------- Ideas para cada comida (sin IA) ---------- */
   /* Ale come kosher: sin cerdo ni mariscos, pescado con escamas, y nunca carne con lácteos */
   const PROTE = ['pollo a la plancha', 'bife de carne magra', 'pescado al horno', 'atún al natural', 'tortilla de claras con un huevo', 'milanesa de pollo al horno (sin pan rallado)', 'pavita a la plancha', 'merluza a la plancha', 'pechuga al limón', 'carne al horno', 'salmón', 'hamburguesa casera sin pan', 'pastrón con ensalada'];
@@ -319,5 +390,5 @@
     'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
   ];
 
-  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, DIAS, REGLAS_BASE, limpiarRegla, limpiarCambio, config, usar, cupoDe, obligatoria, cambioTexto, configTexto, reservaDe, evaluarSemana, disponible, quedan, evaluarDia, racha, estrellas, ideas, frase };
+  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, DIAS, REGLAS_BASE, limpiarRegla, limpiarCambio, config, usar, cupoDe, obligatoria, cambioTexto, configTexto, reservaDe, evaluarSemana, disponible, quedan, evaluarDia, racha, estrellas, analizar, ideas, frase };
 }));

@@ -34,7 +34,12 @@ estrella verde).
 10. **Avisos en el iPhone.** Te llegan por el calendario de Pendientes: antes de la merienda, a la
    noche si falta cargar algo, el viernes antes de Shabat y el sábado a la noche. En Shabat no
    suena nada. Horarios en Ajustes → Avisos en el iPhone.
-11. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
+11. **Tus patrones.** Arriba en Historial: qué día y qué comida más te cuestan, y qué te funciona.
+   Con la IA conectada, «Que la IA mire tus patrones» te da consejos concretos. El día que más te
+   cuesta, la app y el aviso de la merienda te lo recuerdan.
+12. **Informe para Ari.** En Historial (o en «Camino a la sesión»): todo lo del mes en una página.
+   «Mandar» te deja elegir WhatsApp y el chat con Ari; «PDF» lo guarda o lo imprime.
+13. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
    eso, además, todo queda guardado en Airtable (tablas Comidas y Peso) por si cambiás de teléfono.
 

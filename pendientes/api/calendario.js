@@ -107,6 +107,9 @@ function avisosDieta(comidasFilas, ajustesFilas, hoy, tz, ahora) {
   const out = [];
   try {
     const racha = Plan.racha(comidas, hoy);
+    /* tus patrones: el día y la comida que más te cuestan */
+    const ini = /^\d{4}-\d{2}-\d{2}$/.test(v.inicio || '') && v.inicio <= hoy ? v.inicio : (comidas.map(c => c.fecha).sort()[0] || hoy);
+    const pat = Plan.analizar(comidas, ini, hoy);
     const ev = (dia, tipo, h, title, description) => {
       const m = dia.split('-').map(Number), start = aUtc(m[0], m[1], m[2], h[0], h[1], tz);
       if (start.getTime() < ahora) return; /* ya pasó */
@@ -120,8 +123,10 @@ function avisosDieta(comidasFilas, ajustesFilas, hoy, tz, ahora) {
       /* antes de la merienda */
       if (!enShabat(mer) && !(esHoy && d.porComida.merienda.length)) {
         const faltaAlm = esHoy && !d.porComida.almuerzo.length && Plan.obligatoria('almuerzo', dia);
-        ev(dia, 'merienda', mer, faltaAlm ? 'Dieta: cargá el almuerzo · merienda de plan' : 'Dieta: merienda de plan',
-          'Proteína y vegetales, o un pan turco con algo del plan. Alejate de lo que no va: «no, gracias».\n\n' + Plan.frase(dia));
+        const ojo = (pat.diaFlojo === dow ? 'Ojo: los ' + Plan.DIAS[dow] + (dow === 0 || dow === 6 ? 's' : '') + ' son tu día más flojo. Hoy, firme.\n' : '') +
+          (pat.comidaFloja === 'merienda' ? 'La merienda es donde más aflojás: decidila antes de tener hambre.\n' : '');
+        ev(dia, 'merienda', mer, faltaAlm ? 'Dieta: cargá el almuerzo · merienda de plan' : pat.diaFlojo === dow ? 'Dieta: hoy es tu día flojo · merienda de plan' : 'Dieta: merienda de plan',
+          ojo + 'Proteína y vegetales, o un pan turco con algo del plan. Alejate de lo que no va: «no, gracias».\n\n' + Plan.frase(dia));
       }
       /* a la noche, si falta algo */
       if (!enShabat(noc) && dow !== 6 && !(esHoy && d.completo)) {

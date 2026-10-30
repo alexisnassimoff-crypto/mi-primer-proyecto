@@ -252,6 +252,19 @@ cargar algo (con la racha), el viernes a las 17 con los libres de Shabat y el s�
 para cargar lo de Shabat. En Shabat no suena nada. Lo de hoy mira lo cargado: si está todo, el
 aviso desaparece cuando el Calendario se actualiza. Horarios y on/off en Ajustes → Avisos.
 
+**Tus patrones** (arriba en Historial): `Plan.analizar` mira los días cerrados desde el inicio y
+devuelve los números (estrellas, rachas, cupos por semana, tropiezos, lo que más se repite) y los
+patrones en palabras: el día de la semana más flojo, la comida donde más afloja, libres del finde
+usados en la semana, extras, días sin cargar, la tendencia contra la semana anterior. Aparecen
+con 7 días de datos. «Que la IA mire tus patrones» (acción `informe`) suma consejos concretos. El
+día flojo también sale en «Camino a la sesión» y en el aviso de la merienda del calendario.
+
+**Informe para Ari** (desde Historial, «Camino a la sesión» o Ajustes): período, días con estrella,
+mejor racha, extras, un resumen para Ari escrito por la IA, tabla por semana (estrellas, con carbo,
+libres, fuera del plan, extras), patrones, dónde aflojó, lo que más come, las reglas que sigue y el
+día por día. «Mandar» lo comparte como texto (WhatsApp) y «PDF» lo imprime o guarda con un diseño
+para papel.
+
 **Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
 desayuno de huevos (2 y 2 claras, o 4 enteros: las claras son solo por el colesterol), salvo los
 sábados: en Shabat Ale reza a la mañana y no desayuna, y eso cuenta como cumplido; almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
