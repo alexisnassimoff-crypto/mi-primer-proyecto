@@ -28,7 +28,13 @@ estrella verde).
    ejemplo, en la merienda), cuenta como plan: es mejor todavía.
 8. **¿Qué como?** Ideas dentro del plan para la comida que toca. Todo kosher: sin cerdo ni
    mariscos, y sin mezclar carne con lácteos (la IA también lo sabe).
-9. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
+9. **Lo que me dijo Ari.** En Hoy, abajo de «¿Esto va?». Escribí lo que te dijo Ari como te sale
+   («los domingos el almuerzo puede ser con carbo»), tocá Agregar, revisá lo que entendió y
+   Guardar. Desde ese momento vale para las estrellas y para todo lo que te sugiere la app.
+10. **Avisos en el iPhone.** Te llegan por el calendario de Pendientes: antes de la merienda, a la
+   noche si falta cargar algo, el viernes antes de Shabat y el sábado a la noche. En Shabat no
+   suena nada. Horarios en Ajustes → Avisos en el iPhone.
+11. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
    eso, además, todo queda guardado en Airtable (tablas Comidas y Peso) por si cambiás de teléfono.
 

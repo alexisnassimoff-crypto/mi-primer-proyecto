@@ -72,6 +72,13 @@ function load() {
   return out;
 }
 function persist() { try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { toast('No se pudo guardar en este navegador'); } }
+/* Lo que me dijo Ari: las reglas (si nunca se tocaron, las de siempre) y la configuración que arman */
+const reglas = () => (Array.isArray(state.ajustes.reglas) ? state.ajustes.reglas : Plan.REGLAS_BASE.map(r => Object.assign({}, r)));
+const aplicarReglas = () => Plan.usar(Plan.config(reglas()));
+/* Avisos en el iPhone (salen por el calendario de Pendientes) */
+const AVISOS_DEF = { on: true, merienda: '16:30', noche: '21:45' };
+const avisos = () => Object.assign({}, AVISOS_DEF, state.ajustes.avisos || {});
+aplicarReglas();
 const byId = id => state.comidas.find(c => c.id === id) || null;
 const comidasDe = f => state.comidas.filter(c => c.fecha === f);
 const semana = f => Plan.evaluarSemana(state.comidas, Plan.lunesDe(f));
@@ -98,10 +105,14 @@ let toastTimer = null;
 function toast(msg, o) {
   o = o || {};
   const t = $('#toast');
+  /* con una hoja abierta, lo de afuera no se puede tocar: el aviso va dentro de la hoja */
+  const host = $$('dialog[open]').pop() || document.body;
+  if (t.parentElement !== host) host.appendChild(t);
   t.className = 'toast' + (o.star ? ' is-star' : '');
   t.innerHTML = '<span class="toast__msg">' + esc(msg) + '</span>' + (o.action ? '<span class="toast__acts"><button type="button" id="toastAct">' + esc(o.action) + '</button></span>' : '');
   const pop = 'showPopover' in t;
-  if (pop) { t.setAttribute('popover', 'manual'); t.hidden = false; try { if (!t.matches(':popover-open')) t.showPopover(); } catch (e) {} } else t.hidden = false;
+  /* si ya estaba a la vista, se vuelve a abrir para quedar arriba de cualquier hoja abierta después */
+  if (pop) { t.setAttribute('popover', 'manual'); t.hidden = false; try { if (t.matches(':popover-open')) t.hidePopover(); t.showPopover(); } catch (e) {} } else t.hidden = false;
   const hide = () => { if (pop) { try { t.hidePopover(); } catch (e) {} } t.hidden = true; };
   if (o.action) $('#toastAct').onclick = () => { hide(); if (o.onAction) o.onAction(); };
   clearTimeout(toastTimer);
@@ -116,7 +127,8 @@ function go(view, extra, replace) {
   render(); window.scrollTo(0, 0);
 }
 function openSheet(d) { if (d.open) return; history.pushState({ view: ui.view, dia: ui.dia, sheet: d.id }, ''); d.showModal(); const b = $('.sheet__body', d); if (b) b.scrollTop = 0; const f = $('[tabindex="-1"]', d); if (f) f.focus(); }
-function closeSheet(d) { if (!d.open) return; if (history.state && history.state.sheet === d.id) history.back(); else d.close(); }
+/* se cierra ya (así lo que venga después, como un aviso, no queda adentro) y se saca su paso del historial */
+function closeSheet(d) { if (!d.open) return; const propio = history.state && history.state.sheet === d.id; d.close(); if (propio) history.back(); }
 window.addEventListener('popstate', () => {
   const st = history.state || { view: 'inicio' };
   $$('dialog[open]').forEach(d => { if (st.sheet !== d.id) d.close(); });
@@ -152,13 +164,18 @@ function tipoCorto(c) {
   if (t.id === 'nada') return 'Sin ' + (c.comida === 'desayuno' ? 'desayunar' : c.comida === 'almuerzo' ? 'almorzar' : c.comida === 'merienda' ? 'merendar' : 'cenar');
   return n + ' ' + t.nombre.toLowerCase();
 }
+/* «sábado al mediodía»: los libres fijos de esa comida en esa semana */
+function fijosDe(fecha, cid) {
+  const c = (semana(fecha).cupos[cid] || []).find(x => x.tipo === 'libre');
+  return (c && c.reservas.map(r => r.nombre).join(' y el del ')) || 'finde';
+}
 function textoDia(d, esHoy) {
   if (d.estrella) return { t: esHoy ? '¡Día cumplido!' : 'Día cumplido', s: esHoy ? 'Una estrella más. Felicitate.' : 'Con estrella.' };
   if (d.fallas.length) {
     const partes = [];
     d.fallas.forEach(f => {
       const n = nombreDe(f.comida).toLowerCase();
-      const p = f.comida === 'extra' ? 'un extra' : f.estado === 'excedido' ? (f.tipo === 'libre' && f.motivo === 'reserva' ? n + ' libre: ese era el del ' + (f.comida === 'almuerzo' ? 'sábado al mediodía' : 'viernes a la noche') : 'el ' + (f.tipo === 'libre' ? 'libre' : 'con carbo') + ' de ' + n + ' de la semana ya estaba usado') : f.estado === 'nada' ? 'sin ' + n : n + ' fuera del plan';
+      const p = f.comida === 'extra' ? 'un extra' : f.estado === 'excedido' ? (f.tipo === 'libre' && f.motivo === 'reserva' ? n + ' libre: ese era el del ' + fijosDe(d.fecha, f.comida) : 'el ' + (f.tipo === 'libre' ? 'libre' : 'con carbo') + ' de ' + n + ' de la semana ya estaba usado') : f.estado === 'nada' ? 'sin ' + n : n + ' fuera del plan';
       if (partes.indexOf(p) < 0) partes.push(p);
     });
     return { t: esHoy ? 'Hoy no suma estrella' : 'Sin estrella', s: cap(partes.join(', ')) + '.' + (esHoy ? ' Lo que viene, firme.' : '') };
@@ -166,8 +183,9 @@ function textoDia(d, esHoy) {
   if (!d.cargadas) return { t: esHoy ? 'Todavía no cargaste nada' : 'Sin cargar', s: esHoy ? 'Arrancá con el desayuno.' : '' };
   const faltan = d.faltan.map(c => nombreDe(c).toLowerCase());
   if (!faltan.length && !d.porComida.merienda.length) faltan.push('merienda (si merendás)');
-  const total = Plan.esSabado(d.fecha) && !d.porComida.desayuno.length ? 3 : 4;
-  return { t: 'Vas bien: ' + d.cargadas + ' de ' + total, s: (faltan.length ? 'Falta: ' + faltan.join(', ') + '.' : '') + (total === 3 ? ' Shabat: sin desayuno, está bien.' : '') };
+  const libres = ['desayuno', 'almuerzo', 'cena'].filter(c => !Plan.obligatoria(c, d.fecha) && !d.porComida[c].length);
+  const total = 4 - libres.length;
+  return { t: 'Vas bien: ' + d.cargadas + ' de ' + total, s: (faltan.length ? 'Falta: ' + faltan.join(', ') + '.' : '') + (libres.length ? ' Hoy ' + libres.map(c => nombreDe(c).toLowerCase()).join(' y ') + (libres.length > 1 ? ' no hacen' : ' no hace') + ' falta' + (Plan.esSabado(d.fecha) ? ' (Shabat).' : '.') : '') };
 }
 function dayCardHtml(fecha) {
   const ev = semana(fecha), d = dia(fecha, ev), esHoy = fecha === hoy(), tx = textoDia(d, esHoy);
@@ -262,7 +280,8 @@ function renderInicio() {
   html += '<section class="section"><div class="section__h"><span>Esta semana</span><span class="section__sub">Lunes a domingo</span></div><div class="card">' + weekHtml(h) + cuposHtml(h) + '</div></section>';
   html += '<section class="section"><div class="stats"><div class="stat"><div class="stat__v">' + icon('star') + r + '</div><div class="stat__k">' + (r === 1 ? 'día seguido' : 'días seguidos') + '</div></div><div class="stat"><div class="stat__v">' + tot + '</div><div class="stat__k">' + (tot === 1 ? 'estrella' : 'estrellas') + ' en ' + diasPlan + (diasPlan === 1 ? ' día' : ' días') + '</div></div></div></section>';
   html += '<section class="section"><div class="card"><button type="button" class="entry" data-ideas>' + icon('bulb') + '<span>¿Qué como?<small>Ideas dentro del plan' + (ui.ia && sync.on ? ', con la IA' : '') + '</small></span>' + icon('chevR') + '</button>' +
-    '<button type="button" class="entry" data-check>' + icon('help') + '<span>¿Esto va?<small>Preguntá antes de comer</small></span>' + icon('chevR') + '</button></div></section>';
+    '<button type="button" class="entry" data-check>' + icon('help') + '<span>¿Esto va?<small>Preguntá antes de comer</small></span>' + icon('chevR') + '</button>' +
+    '<button type="button" class="entry" data-reglas>' + icon('book') + '<span>Lo que me dijo Ari<small>' + reglas().length + (reglas().length === 1 ? ' regla' : ' reglas') + ': agregá o cambiá</small></span>' + icon('chevR') + '</button></div></section>';
   html += caminoHtml(h);
   $('#main').innerHTML = html;
   if (ui.pop) { ui.pop = false; const s = $('#dayStar'); if (s) s.classList.add('is-pop'); }
@@ -379,7 +398,7 @@ function renderForm() {
       const otras = state.comidas.filter(c => c.id !== form.id), ev = Plan.evaluarSemana(otras, Plan.lunesDe(form.fecha));
       html += '<div class="q"><label class="q__label">¿Cómo fue?<small>' + (form.id ? 'Tocá otra opción para cambiarla.' : 'Tocá una y queda guardada.') + '</small></label><div class="opts opts--1">' + Plan.TIPOS[cid].map(t => {
         let cupo = '';
-        if (cid === 'desayuno' && t.id === 'nada' && Plan.esSabado(form.fecha)) cupo = '<span class="opt__c">Hoy es Shabat: está bien</span>';
+        if (t.id === 'nada' && !Plan.obligatoria(cid, form.fecha)) cupo = '<span class="opt__c">' + (Plan.esSabado(form.fecha) && cid === 'desayuno' ? 'Hoy es Shabat: está bien' : 'Hoy no hace falta: está bien') + '</span>';
         if (t.cupo) {
           const d = Plan.disponible(otras, form.fecha, cid, t.id);
           if (d.fijo) cupo = d.ok ? '<span class="opt__c">Es tu libre del ' + esc(d.fijo.nombre) + '</span>' : '<span class="opt__c is-out">El del ' + esc(d.fijo.nombre) + ' ya está cargado</span>';
@@ -387,7 +406,7 @@ function renderForm() {
           else if (d.pendientes && d.pendientes.length) cupo = '<span class="opt__c is-out">No: ese es el libre del ' + esc(d.pendientes[0].nombre) + '. Hoy no suma estrella</span>';
           else cupo = '<span class="opt__c is-out">Ya usaste el de esta semana: no sumaría estrella</span>';
         }
-        return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, t.cupo + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
+        return '<button type="button" class="opt opt--big" data-tipo="' + t.id + '" aria-pressed="' + (form.tipo === t.id) + '"><span class="opt__n">' + esc(t.nombre) + (t.cupo ? tag(t.id, Plan.cupoDe(cid, t.id) + ' por semana') : '') + '</span><span class="opt__d">' + esc(t.detalle) + '</span>' + cupo + '</button>';
       }).join('') + '</div></div>';
     } else {
       html += '<p class="note" style="margin-top:16px">' + icon('sparkles') + ' Tocá <b>Listo</b> y la app ve sola cómo cuenta en el plan. <button type="button" class="linkbtn" data-elegir style="min-height:0;display:inline">Prefiero elegirlo yo</button></p>';
@@ -440,8 +459,8 @@ function guardarComida(o) {
   else if (c.comida === 'extra') toast('Anotado. Lo importante es que lo cargaste. Ahora: no, gracias.');
   else if (otraExcedida) { const o2 = byId(otraExcedida); toast('Anotado. Con esta, ' + (o2.tipo === 'libre' ? 'el libre' : 'el con carbo') + ' que cargaste ' + (o2.fecha === hoy() ? 'hoy' : 'el ' + fechaDia(o2.fecha).toLowerCase()) + ' queda sin cupo: ese día no suma estrella.', { ms: 5500 }); }
   else if (o.cambiar && estado === 'ok') toast('Contó como ' + como + '. ' + (o.nota || POS[Math.floor(Math.random() * POS.length)]), Object.assign({ ms: 5000 }, cambiar));
-  else if (estado === 'ok') toast(c.tipo === 'nada' ? (c.comida === 'desayuno' ? 'Listo. Shabat shalom.' : 'Listo.') : POS[Math.floor(Math.random() * POS.length)]);
-  else if (estado === 'excedido' && semana(c.fecha).motivos[c.id] === 'reserva') toast('Ese libre era el del ' + (c.comida === 'almuerzo' ? 'sábado al mediodía' : 'viernes a la noche') + '. Hoy no suma estrella; el finde, tu permitido sigue en pie.', Object.assign({ ms: 6000 }, cambiar));
+  else if (estado === 'ok') toast(c.tipo === 'nada' ? (c.comida === 'desayuno' && Plan.esSabado(c.fecha) ? 'Listo. Shabat shalom.' : 'Listo.') : POS[Math.floor(Math.random() * POS.length)]);
+  else if (estado === 'excedido' && semana(c.fecha).motivos[c.id] === 'reserva') toast('Ese libre era el del ' + fijosDe(c.fecha, c.comida) + '. Hoy no suma estrella; tu permitido sigue en pie.', Object.assign({ ms: 6000 }, cambiar));
   else if (estado === 'excedido') toast('Contó como ' + como + ', y ese cupo ya estaba usado esta semana: hoy no suma estrella.', Object.assign({ ms: 5500 }, cambiar));
   else if (estado === 'nada') toast('Anotado. Ari pide las 4 comidas.', cambiar);
   else toast((o.cambiar ? 'Contó como fuera del plan. ' : 'Anotado. ') + 'Mañana se arranca firme otra vez.', Object.assign({ ms: 5000 }, cambiar));
@@ -501,7 +520,7 @@ const localTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().tim
 async function ia(body) {
   let r, j = null;
   try {
-    r = await fetch('/api/dieta', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify(Object.assign({ tz: localTz() }, body)) });
+    r = await fetch('/api/dieta', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify(Object.assign({ tz: localTz(), reglas: reglas().map(r => ({ texto: r.texto, cambios: r.cambios })) }, body)) });
   } catch (e) { const er = new Error('red'); er.code = 'red'; throw er; }
   try { j = await r.json(); } catch (e) { j = null; }
   if (!r.ok || !j || !j.ok) { const er = new Error('ia'); er.code = (j && j.error) || (r.status === 404 ? 'sin-api' : 'ia'); throw er; }
@@ -523,7 +542,7 @@ function datosTexto() {
   L.push('Pesos: ' + (ps.length ? ps.map(p => fechaCorta(p.fecha) + ' ' + fmtKg(p.kg) + ' kg').join(', ') : 'todavía no se pesó') + '.');
   L.push('Racha: ' + Plan.racha(state.comidas, h) + ' días seguidos con estrella. Estrellas desde el inicio: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
   const ev = semana(h);
-  L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ': ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + cupoTexto(c)).join(', ')).join('; ') + '. Libres fijos: viernes a la noche y sábado al mediodía.');
+  L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ': ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + cupoTexto(c)).join(', ')).join('; ') + '. ' + Plan.configTexto());
   L.push('Comidas de los últimos 21 días:');
   for (let i = 0; i < 21; i++) {
     const f = Plan.sumarDias(h, -i), d = dia(f), cs = comidasDe(f);
@@ -638,9 +657,55 @@ async function preguntar(q) {
   catch (e) { $('#askAnswer').innerHTML = '<div class="ask__q">' + esc(q) + '</div><div class="ask__a is-err">' + esc(iaMsg(e)) + '</div>'; }
 }
 
+/* ---------- Lo que me dijo Ari ----------
+   Escribís la regla como te sale; la IA la pasa en limpio y dice qué cambia (cupos, libres fijos,
+   comidas que un día no hacen falta). Desde ahí vale para las estrellas y para todo lo que dice la IA. */
+const reglasUi = { busy: false, nueva: null, texto: '' };
+function openReglas() { reglasUi.nueva = null; reglasUi.busy = false; renderReglas(); openSheet($('#reglasSheet')); }
+function reglaHtml(r, i, nueva) {
+  const cambios = (r.cambios || []).map(Plan.cambioTexto);
+  return '<li class="regla' + (nueva ? ' is-new' : '') + '"><div class="regla__b"><p class="regla__t">' + esc(r.texto) + '</p>' +
+    (cambios.length ? '<p class="regla__c">' + icon('star') + esc(cambios.join(' · ')) + '</p>' : '<p class="regla__c is-ia">' + icon('sparkles') + 'La IA la tiene en cuenta siempre</p>') + '</div>' +
+    (nueva ? '' : '<button type="button" class="del" data-borrar-regla="' + i + '" aria-label="Borrar esta regla">' + icon('trash') + '</button>') + '</li>';
+}
+function renderReglas() {
+  const lista = reglas(), n = reglasUi.nueva;
+  let h = '<p class="note" style="margin-top:6px">Lo que te diga Ari (o una regla tuya), escrito como te sale. La app lo aplica desde ese momento: en las estrellas y en todo lo que te sugiere la IA.</p>';
+  if (n) {
+    h += '<div class="verdict is-ok" style="margin-top:14px"><div class="verdict__h">' + icon('check') + '<span>Entendí</span></div><ul class="reglas">' + reglaHtml(n, -1, true) + '</ul>' +
+      (n.resumen ? '<p class="verdict__t">' + esc(n.resumen) + '</p>' : '') + (n.duda ? '<p class="verdict__alt"><b>Una duda:</b> ' + esc(n.duda) + '</p>' : '') +
+      '<div class="actions" style="margin-top:4px"><button type="button" class="btn btn--primary btn--block" data-regla-ok>Guardar la regla</button><button type="button" class="btn btn--secondary btn--block" data-regla-otra>Corregir</button></div></div>';
+  } else {
+    h += '<div class="q"><label class="q__label" for="r_texto">Ari me dijo que…</label><textarea class="q__input" id="r_texto" rows="3" placeholder="Los domingos el almuerzo puede ser con carbo" autocapitalize="sentences" style="min-height:96px;resize:vertical">' + esc(reglasUi.texto) + '</textarea>' +
+      '<div class="actions" style="margin-top:12px"><button type="button" class="btn btn--primary btn--block" data-regla-nueva' + (reglasUi.busy ? ' disabled' : '') + '>' + (reglasUi.busy ? 'Entendiendo…' : 'Agregar') + '</button></div>' +
+      (iaOn() ? '' : '<p class="note" style="margin-top:10px">Sin la IA conectada la regla se guarda como texto: la vas a ver acá, pero no cambia las estrellas. Conectá el respaldo en Ajustes para que la app la entienda.</p>') + '</div>';
+  }
+  h += '<section class="section"><div class="section__h"><span>Tus reglas</span><span class="section__sub">' + lista.length + '</span></div><ul class="reglas card">' + lista.map((r, i) => reglaHtml(r, i)).join('') + '</ul></section>';
+  if (Array.isArray(state.ajustes.reglas)) h += '<button type="button" class="linkbtn" data-reglas-base style="margin-top:12px">Volver a las reglas de siempre</button>';
+  $('#reglasBody').innerHTML = h;
+}
+function guardarReglas(lista, msg) {
+  state.ajustes.reglas = lista; state.ajustesAt = Date.now();
+  aplicarReglas(); persist(); queueSync(); render(); renderReglas();
+  if (msg) toast(msg);
+}
+async function nuevaRegla() {
+  const inp = $('#r_texto'), texto = inp ? inp.value.trim() : '';
+  reglasUi.texto = texto;
+  if (!texto) { toast('Escribí qué te dijo Ari.'); return; }
+  if (!iaOn()) { reglasUi.nueva = { id: 'r' + Date.now().toString(36), texto, cambios: [], at: Date.now() }; renderReglas(); return; }
+  reglasUi.busy = true; renderReglas();
+  try {
+    const r = await ia({ accion: 'regla', texto });
+    reglasUi.nueva = { id: 'r' + Date.now().toString(36), texto: r.texto || texto, resumen: r.resumen, duda: r.duda, cambios: r.cambios || [], at: Date.now() };
+  } catch (e) { toast(iaMsg(e)); }
+  reglasUi.busy = false; renderReglas();
+}
+
 /* ---------- El plan de Ari ---------- */
 function openPlan() {
   $('#planBody').innerHTML = '<div class="plan"><h3>La alimentación</h3><ul>' + Plan.PLAN_TEXTO.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>' +
+    '<h3>Lo que me dijo Ari después</h3><ul>' + reglas().map(r => '<li>' + esc(r.texto) + '</li>').join('') + '</ul>' +
     '<h3>Para la cabeza</h3><ul class="frases">' + Plan.FRASES.map(f => '<li>' + esc(f) + '</li>').join('') + '</ul>' +
     '<h3>Las estrellas</h3><p>Un día gana la estrella cuando el desayuno, el almuerzo y la cena están cargados y dentro del plan, la merienda (si la cargaste) también, y no hubo extras. Los «con carbo» y los «libres» cuentan por semana, de lunes a domingo; si ya usaste el cupo, el siguiente no suma.</p></div>';
   openSheet($('#planSheet'));
@@ -672,6 +737,12 @@ function renderSettings() {
     '<div class="field"><span class="field__l">Meta final (kg)</span><div style="display:flex;gap:10px;align-items:center"><input id="s_meta1" type="text" inputmode="decimal" value="' + meta()[0] + '" autocomplete="off" aria-label="Desde" style="flex:1"><span>a</span><input id="s_meta2" type="text" inputmode="decimal" value="' + meta()[1] + '" autocomplete="off" aria-label="Hasta" style="flex:1"></div></div>' +
     '<label class="field"><span class="field__l">Empezaste el plan el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
     '<p class="set__note">Desde ese día se cuentan las estrellas.</p></div></details>' +
+    '<details class="set" id="set-avisos"' + (ab('set-avisos') ? ' open' : '') + '><summary><span class="set__end">Avisos en el iPhone <small>' + (avisos().on ? 'prendidos' : 'apagados') + '</small></span>' + icon('chevR') + '</summary><div class="set__body">' +
+    '<label class="switch"><span>Avisarme</span><input type="checkbox" id="s_avisos"' + (avisos().on ? ' checked' : '') + '></label>' +
+    '<label class="field"><span class="field__l">Antes de la merienda (y si falta el almuerzo)</span><input id="s_av_mer" type="time" value="' + esc(avisos().merienda) + '"></label>' +
+    '<label class="field"><span class="field__l">A la noche, si falta cargar algo</span><input id="s_av_noc" type="time" value="' + esc(avisos().noche) + '"></label>' +
+    '<p class="set__note">Llegan por el calendario de Pendientes que tenés suscripto en el iPhone. También: el viernes a las 17, antes de Shabat, y el sábado a las 21:15 para cargar lo de Shabat. En Shabat no suena nada. Si cargaste todo, el aviso de la noche desaparece solo.</p><p class="set__note">Si no suenan: en el Calendario del iPhone, en la suscripción de Pendientes, apagá «Eliminar alarmas».</p></div></details>' +
+    '<button type="button" class="set set--btn" data-reglas>' + icon('book') + 'Lo que me dijo Ari</button>' +
     '<button type="button" class="set set--btn" data-plan>' + icon('book') + 'El plan de Ari</button>' +
     '<button type="button" class="set set--btn" data-go-peso>' + icon('scale') + 'Peso (para el pesaje de fin de mes)</button>' +
     '<div class="set set--row"><span>Aspecto</span><div class="seg3" role="radiogroup" aria-label="Aspecto"><button type="button" role="radio" aria-checked="' + (t === 'auto') + '" data-theme="auto">Auto</button><button type="button" role="radio" aria-checked="' + (t === 'light') + '" data-theme="light">Claro</button><button type="button" role="radio" aria-checked="' + (t === 'dark') + '" data-theme="dark">Oscuro</button></div></div>' +
@@ -821,6 +892,8 @@ function mergeAjustes(rows) {
   if (typeof v.sesion === 'string') state.ajustes.sesion = /^\d{4}-\d{2}-\d{2}$/.test(v.sesion) ? v.sesion : '';
   if (typeof v.metaMin === 'number' && typeof v.metaMax === 'number' && v.metaMin > 0 && v.metaMax >= v.metaMin) { state.ajustes.metaMin = v.metaMin; state.ajustes.metaMax = v.metaMax; }
   if (typeof v.nombre === 'string') state.ajustes.nombre = v.nombre;
+  if (Array.isArray(v.reglas)) { state.ajustes.reglas = v.reglas.map(Plan.limpiarRegla).filter(Boolean); aplicarReglas(); }
+  if (v.avisos && typeof v.avisos === 'object') state.ajustes.avisos = { on: v.avisos.on !== false, merienda: /^\d{2}:\d{2}$/.test(v.avisos.merienda || '') ? v.avisos.merienda : AVISOS_DEF.merienda, noche: /^\d{2}:\d{2}$/.test(v.avisos.noche || '') ? v.avisos.noche : AVISOS_DEF.noche };
   state.ajustesAt = state.ajustesSy = at;
   return true;
 }
@@ -853,7 +926,8 @@ async function pushDirty(keepalive) {
     .concat(state.pesoTombs.map(t => { const f = {}; f[W.id] = t.id; f[W.deleted] = true; f[W.updatedAt] = iso(t.at); return { rid: t.rid || undefined, fields: f }; }));
   const ajustes = [];
   const ajustesAt = state.ajustesAt || 0;
-  if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), sesion: state.ajustes.sesion || '', metaMin: meta()[0], metaMax: meta()[1], nombre: state.ajustes.nombre || 'Ale', tz: localTz() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
+  if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), sesion: state.ajustes.sesion || '', metaMin: meta()[0], metaMax: meta()[1], nombre: state.ajustes.nombre || 'Ale', tz: localTz(),
+    reglas: reglas().map(r => ({ id: r.id, texto: r.texto, resumen: r.resumen || '', cambios: r.cambios || [], base: !!r.base, at: r.at || 0 })), avisos: avisos() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
   const CHUNK = 150;
   const n = Math.max(1, Math.ceil(Math.max(filasC.length, filasW.length) / CHUNK));
   for (let i = 0; i < n; i++) {
@@ -942,6 +1016,7 @@ function init() {
     else if (b.hasAttribute('data-ideas')) openIdeas();
     else if (b.hasAttribute('data-check')) openCheck();
     else if (b.hasAttribute('data-plan')) openPlan();
+    else if (b.hasAttribute('data-reglas')) openReglas();
     else if (b.hasAttribute('data-pesar')) openPeso();
     else if (b.dataset.borrarPeso) borrarPeso(b.dataset.borrarPeso);
   });
@@ -993,6 +1068,22 @@ function init() {
   $('#checkBody').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'c_texto') { e.preventDefault(); preguntarCheck(); } });
   $('#checkBody').addEventListener('input', e => { if (e.target.id === 'c_texto') ui.checkTexto = e.target.value; });
 
+  /* lo que me dijo Ari */
+  $('#reglasBody').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-regla-nueva')) nuevaRegla();
+    else if (b.hasAttribute('data-regla-ok')) { const n = reglasUi.nueva; reglasUi.nueva = null; reglasUi.texto = ''; guardarReglas(reglas().concat([{ id: n.id, texto: n.texto, resumen: n.resumen || '', cambios: n.cambios, at: n.at }]), 'Regla guardada. Desde ahora vale.'); }
+    else if (b.hasAttribute('data-regla-otra')) { reglasUi.nueva = null; renderReglas(); const i = $('#r_texto'); if (i) i.focus(); }
+    else if (b.dataset.borrarRegla) {
+      const antes = reglas(), i = +b.dataset.borrarRegla, r = antes[i]; if (!r) return;
+      guardarReglas(antes.filter((x, j) => j !== i));
+      toast('Regla borrada', { action: 'Deshacer', onAction: () => guardarReglas(antes) });
+    } else if (b.hasAttribute('data-reglas-base')) {
+      if (confirm('¿Volver a las reglas de siempre? Se borran las que agregaste.')) guardarReglas(Plan.REGLAS_BASE.map(r => Object.assign({}, r)), 'Listo: las reglas de siempre.');
+    }
+  });
+  $('#reglasBody').addEventListener('input', e => { if (e.target.id === 'r_texto') reglasUi.texto = e.target.value; });
+
   /* preguntar */
   $('#askForm').addEventListener('submit', e => { e.preventDefault(); preguntar(); });
   $('#askChips').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) preguntar(b.dataset.q); });
@@ -1004,6 +1095,7 @@ function init() {
     else if (b.hasAttribute('data-sync-off')) disconnectSync();
     else if (b.hasAttribute('data-sync-now')) { runSync(true); renderSyncBox(); }
     else if (b.hasAttribute('data-plan')) openPlan();
+    else if (b.hasAttribute('data-reglas')) openReglas();
     else if (b.hasAttribute('data-go-peso')) { closeSheet($('#settingsSheet')); setTimeout(() => go('peso'), 50); }
     else if (b.dataset.theme) { lsSet(THEME_KEY, b.dataset.theme === 'auto' ? '' : b.dataset.theme); applyTheme(); renderSettings(); }
     else if (b.hasAttribute('data-export')) exportar();
@@ -1017,6 +1109,12 @@ function init() {
       const n = v => Math.round(parseFloat(String(v).replace(',', '.')) * 2) / 2;
       const a = n($('#s_meta1').value), b = n($('#s_meta2').value);
       if (a >= 30 && b >= a && b <= 300) { state.ajustes.metaMin = a; state.ajustes.metaMax = b; state.ajustesAt = Date.now(); persist(); queueSync(); render(); }
+    }
+    if (e.target.id === 's_avisos' || e.target.id === 's_av_mer' || e.target.id === 's_av_noc') {
+      const hm = v => (/^\d{2}:\d{2}$/.test(v) ? v : null);
+      state.ajustes.avisos = { on: $('#s_avisos').checked, merienda: hm($('#s_av_mer').value) || AVISOS_DEF.merienda, noche: hm($('#s_av_noc').value) || AVISOS_DEF.noche };
+      state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings();
+      if (e.target.id === 's_avisos') toast(state.ajustes.avisos.on ? 'Avisos prendidos. Llegan en un rato, cuando el Calendario se actualice.' : 'Avisos apagados.');
     }
     if (e.target.id === 's_inicio') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= hoy()) { state.ajustes.inicio = v; state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render(); } }
   });

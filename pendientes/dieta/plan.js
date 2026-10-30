@@ -30,7 +30,7 @@
     desayuno: [
       { id: 'plan', nombre: 'Huevos', detalle: '2 huevos y 2 claras, o 4 enteros (las claras son solo por el colesterol)', ok: true },
       { id: 'nova', nombre: 'Otra cosa', detalle: 'Algo que no está en el plan', ok: false },
-      { id: 'nada', nombre: 'No desayuné', detalle: 'El plan pide desayunar los 7 días; los sábados, por Shabat, está bien', ok: false }
+      { id: 'nada', nombre: 'No desayuné', detalle: 'El plan pide desayunar todos los días', ok: false }
     ],
     almuerzo: [
       { id: 'plan', nombre: 'Proteína y vegetales', detalle: 'Mitad y mitad', ok: true },
@@ -47,7 +47,7 @@
     cena: [
       { id: 'plan', nombre: 'Proteína y vegetales', detalle: 'La cena perfecta', ok: true },
       { id: 'carbo', nombre: 'Con carbo', detalle: 'Un tercio carbo, un tercio proteína, un tercio vegetales', ok: true, cupo: 1 },
-      { id: 'libre', nombre: 'Libre', detalle: 'Uno de los dos permitidos de la semana', ok: true, cupo: 2 },
+      { id: 'libre', nombre: 'Libre', detalle: 'Un permitido de la semana', ok: true, cupo: 2 },
       { id: 'nova', nombre: 'Me salí', detalle: 'No fue según el plan', ok: false },
       { id: 'nada', nombre: 'No cené', detalle: 'El plan pide las 4 comidas', ok: false }
     ],
@@ -71,8 +71,84 @@
   /* lunes de la semana de esa fecha */
   function lunesDe(s) { const d = deYmd(s), dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); return ymd(d); }
   const diasEntre = (a, b) => Math.round((deYmd(b) - deYmd(a)) / 86400000);
-  /* Shabat: los sábados Ale reza a la mañana y no desayuna. Eso no es salirse del plan. */
   const esSabado = s => deYmd(s).getDay() === 6;
+  const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+  /* ---------- Lo que me dijo Ari: reglas ----------
+     Cada regla tiene el texto (lo lee la IA siempre) y, si hace falta, cambios concretos que
+     mueven las estrellas. Ale las agrega desde la app; estas son las que ya venían.
+     Cambios posibles (se aplican en orden; la última manda):
+       { tipo: 'cupo', comida: 'almuerzo'|'cena', clase: 'carbo'|'libre', cantidad }
+       { tipo: 'libre_fijo' | 'quitar_libre_fijo', comida: 'almuerzo'|'cena', dia: 0-6 }
+       { tipo: 'opcional' | 'obligatoria', comida, dia: 0-6 o -1 (todos los días) } */
+  const REGLAS_BASE = [
+    { id: 'kosher', base: true, texto: 'Como kosher: nada de cerdo ni mariscos, pescado solo con escamas (merluza, salmón, atún, lenguado, trucha) y nunca carne o pollo con lácteos en la misma comida (pastrón con queso, carne con crema o manteca, no van).', cambios: [] },
+    { id: 'proteina', base: true, texto: 'Proteína y vegetales es siempre plan, en cualquier comida, aunque ahí el plan permita pan o hidrato: es mejor todavía. Nunca sugerirme agregar pan o hidrato.', cambios: [] },
+    { id: 'huevos', base: true, texto: 'En el desayuno, 4 huevos enteros también vale: las claras son solo por el colesterol.', cambios: [] },
+    { id: 'shabat', base: true, texto: 'Los sábados (Shabat) rezo a la mañana y no desayuno: está bien, no es salirme del plan.', cambios: [{ tipo: 'opcional', comida: 'desayuno', dia: 6 }] },
+    { id: 'libres', base: true, texto: 'Mis libres fijos son la cena del viernes (Shabat) y el almuerzo del sábado. En la semana no hay que gastarlos.', cambios: [{ tipo: 'libre_fijo', comida: 'cena', dia: 5 }, { tipo: 'libre_fijo', comida: 'almuerzo', dia: 6 }] }
+  ];
+  const COMIDAS_REGLA = ['desayuno', 'almuerzo', 'merienda', 'cena'];
+  /* deja pasar solo cambios bien armados */
+  function limpiarCambio(c) {
+    if (!c || typeof c !== 'object') return null;
+    const dia = Number(c.dia), cant = Number(c.cantidad);
+    if (c.tipo === 'cupo' && (c.comida === 'almuerzo' || c.comida === 'cena') && (c.clase === 'carbo' || c.clase === 'libre') && cant >= 0 && cant <= 7)
+      return { tipo: 'cupo', comida: c.comida, clase: c.clase, cantidad: Math.round(cant) };
+    if ((c.tipo === 'libre_fijo' || c.tipo === 'quitar_libre_fijo') && (c.comida === 'almuerzo' || c.comida === 'cena') && dia >= 0 && dia <= 6)
+      return { tipo: c.tipo, comida: c.comida, dia: Math.round(dia) };
+    if ((c.tipo === 'opcional' || c.tipo === 'obligatoria') && COMIDAS_REGLA.indexOf(c.comida) >= 0 && dia >= -1 && dia <= 6)
+      return { tipo: c.tipo, comida: c.comida, dia: Math.round(dia) };
+    return null;
+  }
+  function limpiarRegla(r) {
+    if (!r || typeof r !== 'object') return null;
+    const texto = String(r.texto || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    if (!texto) return null;
+    return { id: String(r.id || '').slice(0, 40) || ('r' + Date.now().toString(36)), texto, resumen: String(r.resumen || '').trim().slice(0, 300),
+      cambios: (Array.isArray(r.cambios) ? r.cambios : []).map(limpiarCambio).filter(Boolean).slice(0, 10), base: !!r.base, at: Number(r.at) || 0 };
+  }
+  const nombreFijo = (comida, dia) => DIAS[dia] + (comida === 'cena' ? ' a la noche' : ' al mediodía');
+  /* las reglas -> la configuración que usan las estrellas */
+  function config(reglas) {
+    const cfg = { cupos: { almuerzo: { carbo: 1, libre: 1 }, cena: { carbo: 1, libre: 2 } }, reservas: [], dias: {} };
+    (Array.isArray(reglas) ? reglas : REGLAS_BASE).forEach(r => (r && Array.isArray(r.cambios) ? r.cambios : []).forEach(c0 => {
+      const c = limpiarCambio(c0); if (!c) return;
+      if (c.tipo === 'cupo') cfg.cupos[c.comida][c.clase] = c.cantidad;
+      else if (c.tipo === 'libre_fijo') { if (!cfg.reservas.some(x => x.comida === c.comida && x.dia === c.dia)) cfg.reservas.push({ dia: c.dia, comida: c.comida, tipo: 'libre', nombre: nombreFijo(c.comida, c.dia) }); }
+      else if (c.tipo === 'quitar_libre_fijo') cfg.reservas = cfg.reservas.filter(x => !(x.comida === c.comida && x.dia === c.dia));
+      else {
+        const dias = c.dia === -1 ? [0, 1, 2, 3, 4, 5, 6] : [c.dia];
+        dias.forEach(d => { cfg.dias[c.comida + d] = c.tipo === 'obligatoria'; });
+      }
+    }));
+    return cfg;
+  }
+  let CFG = config(REGLAS_BASE);
+  const usar = cfg => { CFG = cfg && cfg.cupos ? cfg : config(REGLAS_BASE); };
+  const cupoDe = (cid, tid) => ((CFG.cupos[cid] || {})[tid]) || 0;
+  /* ¿esa comida hace falta ese día? (regla de Ari, o lo de siempre) */
+  function obligatoria(cid, fecha) {
+    const k = cid + deYmd(fecha).getDay();
+    if (k in CFG.dias) return CFG.dias[k];
+    const c = comida(cid); return !!(c && c.obligatoria);
+  }
+  /* los cambios en palabras: «Libre fijo: viernes a la noche» */
+  function cambioTexto(c) {
+    const n = { desayuno: 'desayuno', almuerzo: 'almuerzo', merienda: 'merienda', cena: 'cena' }[c.comida] || c.comida;
+    const cuando = c.dia === -1 ? 'todos los días' : 'los ' + (DIAS[c.dia] === 'sábado' || DIAS[c.dia] === 'domingo' ? DIAS[c.dia] + 's' : DIAS[c.dia]);
+    if (c.tipo === 'cupo') return n.charAt(0).toUpperCase() + n.slice(1) + ' ' + (c.clase === 'carbo' ? 'con carbo' : 'libre') + ': ' + c.cantidad + ' por semana';
+    if (c.tipo === 'libre_fijo') return 'Libre fijo: ' + nombreFijo(c.comida, c.dia);
+    if (c.tipo === 'quitar_libre_fijo') return 'Ya no es libre fijo: ' + nombreFijo(c.comida, c.dia);
+    if (c.tipo === 'opcional') return n.charAt(0).toUpperCase() + n.slice(1) + ' no hace falta ' + cuando;
+    return n.charAt(0).toUpperCase() + n.slice(1) + ' hace falta ' + cuando;
+  }
+  /* la configuración en palabras, para la IA */
+  function configTexto() {
+    const L = ['Cupos por semana: almuerzo ' + CFG.cupos.almuerzo.carbo + ' con carbo y ' + CFG.cupos.almuerzo.libre + ' libre; cena ' + CFG.cupos.cena.carbo + ' con carbo y ' + CFG.cupos.cena.libre + (CFG.cupos.cena.libre === 1 ? ' libre.' : ' libres.')];
+    if (CFG.reservas.length) L.push('Libres fijos (reservados para ese día): ' + CFG.reservas.map(r => r.nombre).join(', ') + '.');
+    return L.join(' ');
+  }
 
   /* ---------- Qué comida toca ahora ---------- */
   function comidaAhora(hora) {
@@ -85,12 +161,8 @@
   /* ---------- Libres fijos ----------
      Ale usa siempre los mismos permitidos: el viernes a la noche (cena de Shabat) y el sábado al
      mediodía. Quedan reservados: un libre en otro día que se come uno de estos es un error. */
-  const RESERVAS = [
-    { dia: 5, comida: 'cena', tipo: 'libre', nombre: 'viernes a la noche' },
-    { dia: 6, comida: 'almuerzo', tipo: 'libre', nombre: 'sábado al mediodía' }
-  ];
   const fechaReserva = (lunes, r) => sumarDias(lunes, (r.dia + 6) % 7);
-  const reservaDe = (fecha, cid, tid) => RESERVAS.find(r => r.comida === cid && r.tipo === tid && deYmd(fecha).getDay() === r.dia) || null;
+  const reservaDe = (fecha, cid, tid) => CFG.reservas.find(r => r.comida === cid && r.tipo === tid && deYmd(fecha).getDay() === r.dia) || null;
 
   /* ---------- Evaluar la semana ----------
      Devuelve cada comida (solo las que no son extra) con su estado:
@@ -108,7 +180,7 @@
       .slice().sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
     const usados = {}, estados = {}, motivos = {}, asignadas = new Set(), apartados = {};
     const suma = (o, cid, tid) => { o[cid] = o[cid] || {}; o[cid][tid] = (o[cid][tid] || 0) + 1; };
-    const reservas = RESERVAS.map(r => {
+    const reservas = CFG.reservas.map(r => {
       const f = fechaReserva(lunes, r);
       const c = dentro.find(x => x.fecha === f && x.comida === r.comida && x.tipo === r.tipo);
       if (c) { asignadas.add(c.id); estados[c.id] = 'ok'; suma(usados, r.comida, r.tipo); }
@@ -121,19 +193,21 @@
       if (asignadas.has(c.id)) return;
       const t = tipo(c.comida, c.tipo);
       if (!t) { estados[c.id] = 'nova'; return; }
-      if (!t.ok) { estados[c.id] = t.id === 'nada' ? (c.comida === 'desayuno' && esSabado(c.fecha) ? 'ok' : 'nada') : 'nova'; return; }
+      if (!t.ok) { estados[c.id] = t.id === 'nada' ? (obligatoria(c.comida, c.fecha) ? 'nada' : 'ok') : 'nova'; return; }
       if (!t.cupo) { estados[c.id] = 'ok'; return; }
+      const tope = cupoDe(c.comida, t.id);
       suma(usados, c.comida, t.id); suma(flex, c.comida, t.id);
-      const libres = t.cupo - ((apartados[c.comida] && apartados[c.comida][t.id]) || 0);
+      const libres = tope - ((apartados[c.comida] && apartados[c.comida][t.id]) || 0);
       if (flex[c.comida][t.id] <= libres) estados[c.id] = 'ok';
-      else { estados[c.id] = 'excedido'; if (libres < t.cupo) motivos[c.id] = 'reserva'; }
+      else { estados[c.id] = 'excedido'; if (libres < tope && flex[c.comida][t.id] <= tope) motivos[c.id] = 'reserva'; }
     });
     const cupos = {};
     ['almuerzo', 'cena'].forEach(cid => {
       cupos[cid] = TIPOS[cid].filter(t => t.cupo).map(t => {
         const ap = (apartados[cid] && apartados[cid][t.id]) || 0, fx = (flex[cid] && flex[cid][t.id]) || 0;
-        return { tipo: t.id, nombre: t.nombre, cupo: t.cupo, usado: (usados[cid] && usados[cid][t.id]) || 0,
-          quedan: Math.max(0, t.cupo - ap - fx), reservas: reservas.filter(r => r.comida === cid && r.tipo === t.id) };
+        const tope = cupoDe(cid, t.id);
+        return { tipo: t.id, nombre: t.nombre, cupo: tope, usado: (usados[cid] && usados[cid][t.id]) || 0,
+          quedan: Math.max(0, tope - ap - fx), reservas: reservas.filter(r => r.comida === cid && r.tipo === t.id) };
       });
     });
     return { lunes, fin, estados, motivos, cupos, reservas };
@@ -152,8 +226,8 @@
 
   /* ---------- Evaluar un día ----------
      estrella: desayuno, almuerzo y cena cargados y bien, la merienda (si se cargó) bien y ningún extra. */
-  function evaluarDia(comidas, fecha, ev) {
-    ev = ev || evaluarSemana(comidas, lunesDe(fecha));
+  function evaluarDia(comidas, fecha, ev, hoy) {
+    ev = ev || evaluarSemana(comidas, lunesDe(fecha), hoy);
     const del = comidas.filter(c => c.fecha === fecha);
     const porComida = {};
     COMIDAS.forEach(c => { porComida[c.id] = del.filter(x => x.comida === c.id); });
@@ -161,7 +235,7 @@
     let cargadas = 0;
     COMIDAS.filter(c => c.id !== 'extra').forEach(c => {
       const filas = porComida[c.id];
-      if (!filas.length) { if (c.obligatoria && !(c.id === 'desayuno' && esSabado(fecha))) faltan.push(c.id); return; }
+      if (!filas.length) { if (obligatoria(c.id, fecha)) faltan.push(c.id); return; }
       cargadas++;
       filas.forEach(f => { if (ev.estados[f.id] !== 'ok') fallas.push({ comida: c.id, estado: ev.estados[f.id], tipo: f.tipo, motivo: ev.motivos[f.id] }); });
     });
@@ -173,12 +247,12 @@
   /* Días seguidos con estrella, contando desde ayer hacia atrás (y hoy si ya la ganó) */
   function racha(comidas, hoy) {
     let n = 0, f = hoy;
-    const deHoy = evaluarDia(comidas, hoy);
+    const deHoy = evaluarDia(comidas, hoy, null, hoy);
     if (deHoy.estrella) { n++; }
     else if (deHoy.fallas.length) return 0;  /* hoy ya se cortó */
     f = sumarDias(hoy, -1);
     for (let i = 0; i < 400; i++) {
-      const d = evaluarDia(comidas, f);
+      const d = evaluarDia(comidas, f, null, hoy);
       if (!d.estrella) break;
       n++; f = sumarDias(f, -1);
     }
@@ -186,9 +260,9 @@
   }
 
   /* Total de estrellas desde que arrancó */
-  function estrellas(comidas, desde, hasta) {
+  function estrellas(comidas, desde, hasta, hoy) {
     let n = 0, f = desde;
-    while (f <= hasta) { if (evaluarDia(comidas, f).estrella) n++; f = sumarDias(f, 1); }
+    while (f <= hasta) { if (evaluarDia(comidas, f, null, hoy).estrella) n++; f = sumarDias(f, 1); }
     return n;
   }
 
@@ -237,17 +311,13 @@
   /* El plan en texto, para la IA y para la pantalla «El plan» */
   const PLAN_TEXTO = [
     'Objetivo para la próxima sesión con Ari (en un mes): 78 kg. Meta final: quedar entre 70 y 74 kg, bajando grasa y manteniendo la masa muscular.',
-    'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana (4 huevos enteros también cuenta como cumplido; las claras son solo por el colesterol).',
+    'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana.',
     'Almuerzo: 5 veces por semana mitad proteína y mitad vegetales; 1 vez por semana carbohidrato, proteína y vegetales (un tercio cada uno); 1 vez por semana libre (el permitido).',
-    'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema. Sin el pan, solo proteína y vegetales, es mejor todavía.',
-    'REGLA GENERAL de Ari: comer proteína y vegetales es siempre perfecto. Si el plan permite pan o un hidrato y Ale come solo proteína y vegetales, cuenta como plan (es mejor, porque no usa el hidrato). Nunca hay que sugerirle agregar pan o hidrato.',
+    'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',
     'Cena: 4 veces por semana proteína y vegetales (perfecta); 1 vez por semana con carbohidrato (un tercio cada uno); 2 veces por semana libre.',
     'No postres. No frutas. No extras.',
-    'Los sábados (Shabat) Ale reza a la mañana y no desayuna: eso está bien, no es salirse del plan.',
-    'Ale come kosher: nada de cerdo ni mariscos; pescado solo con escamas (merluza, salmón, atún, lenguado); y nunca carne o pollo junto con lácteos en la misma comida (pastrón con queso, carne con crema o con manteca, no van). Toda idea o sugerencia tiene que respetarlo.',
-    'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.',
-    'Libres fijos de Ale: la cena del viernes (Shabat) y el almuerzo del sábado. Quedan reservados: de lunes a jueves y el domingo no hay libre de almuerzo, y de cena queda uno solo. Lo que sí queda para la semana: 1 almuerzo con carbo, 1 cena con carbo y 1 cena libre.'
+    'La semana va de lunes a domingo: los libres y los «con carbo» que no se usan no se acumulan.'
   ];
 
-  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, RESERVAS, reservaDe, evaluarSemana, disponible, quedan, evaluarDia, racha, estrellas, ideas, frase };
+  return { OBJETIVO, META, PLAZO_DIAS, COMIDAS, TIPOS, TIPO_AT, COMIDA_AT, FRASES, PLAN_TEXTO, comida, tipo, ymd, deYmd, sumarDias, lunesDe, diasEntre, esSabado, comidaAhora, DIAS, REGLAS_BASE, limpiarRegla, limpiarCambio, config, usar, cupoDe, obligatoria, cambioTexto, configTexto, reservaDe, evaluarSemana, disponible, quedan, evaluarDia, racha, estrellas, ideas, frase };
 }));

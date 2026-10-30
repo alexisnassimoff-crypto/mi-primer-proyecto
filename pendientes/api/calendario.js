@@ -16,10 +16,11 @@
 'use strict';
 const ICS = require('../ics.js');
 const Avisos = require('../avisos.js');
+const Plan = require('../dieta/plan.js');
 const { CAMPOS, TABLAS, esperar, configurado, tokenOk, listar, airtable } = require('./_airtable.js');
 const { ZONA, zonaValida, aUtc, hoyEn } = require('./_zona.js');
 
-const P = CAMPOS.pendientes, A = CAMPOS.ajustes;
+const P = CAMPOS.pendientes, A = CAMPOS.ajustes, C = CAMPOS.comidas;
 const REPETIR = { 'todos los dias': 'DAILY', 'todas las semanas': 'WEEKLY', 'todos los meses': 'MONTHLY', 'todos los anos': 'YEARLY' };
 const PLATA = [0, 2].map(d => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: d, maximumFractionDigits: d }));
 
@@ -74,6 +75,72 @@ function resumenes(pendientes, aj, hoy) {
     out.push({ uid: 'resumen-' + dia.replace(/-/g, '') + '@pendientes', title: title.slice(0, 300), description: desc.join('\n\n').slice(0, 4000),
       start, end: new Date(start.getTime() + 15 * 60000), allDay: false, alarms: [0], transparent: true });
   }
+  return out;
+}
+
+/* ---- Avisos de la Dieta (pendientes-ale.vercel.app/dieta) ----
+   Eventos cortos con aviso en el momento, para no descarrilar: antes de la merienda (y si falta el
+   almuerzo), a la noche si falta cargar algo, el viernes antes de Shabat y el sábado cuando termina.
+   En Shabat (viernes desde las 18 y sábado hasta las 21) no suena nada. Lo de hoy mira lo que ya
+   está cargado: si cargaste todo, el aviso desaparece cuando el Calendario se actualiza.
+   Los horarios y si están prendidos los guarda la app en Ajustes, fila «dieta». */
+const invertir = o => Object.keys(o).reduce((r, k) => { r[o[k]] = k; return r; }, {});
+const COMIDA_DE = invertir(Plan.COMIDA_AT), TIPO_DE = invertir(Plan.TIPO_AT);
+function hhmm(v, def) { const m = /^(\d{2}):(\d{2})$/.exec(String(v || '')); return m && +m[1] < 24 && +m[2] < 60 ? [+m[1], +m[2]] : def; }
+function avisosDieta(comidasFilas, ajustesFilas, hoy, tz, ahora) {
+  const row = ajustesFilas.find(r => r.fields && r.fields[A.key] === 'dieta');
+  let v = null;
+  try { v = row ? JSON.parse(row.fields[A.value] || '{}') : null; } catch (e) { v = null; }
+  if (!v || typeof v !== 'object') return [];
+  const av = v.avisos && typeof v.avisos === 'object' ? v.avisos : {};
+  if (av.on === false) return [];
+  const mer = hhmm(av.merienda, [16, 30]), noc = hhmm(av.noche, [21, 45]);
+  const reglas = Array.isArray(v.reglas) ? v.reglas.map(Plan.limpiarRegla).filter(Boolean) : Plan.REGLAS_BASE;
+  const comidas = comidasFilas.map(r => {
+    const f = r.fields || {};
+    if (f[C.deleted]) return null;
+    const comida = COMIDA_DE[f[C.comida] && (f[C.comida].name || f[C.comida])], tipo = TIPO_DE[f[C.tipo] && (f[C.tipo].name || f[C.tipo])];
+    if (!comida || !/^\d{4}-\d{2}-\d{2}$/.test(String(f[C.fecha] || ''))) return null;
+    return { id: f[C.id] || r.rid, fecha: f[C.fecha], comida, tipo: comida === 'extra' ? 'nova' : (tipo || 'nova'), createdAt: Date.parse(f[C.createdAt]) || Date.parse(r.creado) || 0 };
+  }).filter(Boolean);
+  Plan.usar(Plan.config(reglas));
+  const out = [];
+  try {
+    const racha = Plan.racha(comidas, hoy);
+    const ev = (dia, tipo, h, title, description) => {
+      const m = dia.split('-').map(Number), start = aUtc(m[0], m[1], m[2], h[0], h[1], tz);
+      if (start.getTime() < ahora) return; /* ya pasó */
+      out.push({ uid: 'dieta-' + tipo + '-' + dia.replace(/-/g, '') + '@pendientes', title, description, start, end: new Date(start.getTime() + 10 * 60000), allDay: false, alarms: [0], transparent: true });
+    };
+    const nombre = c => ({ desayuno: 'el desayuno', almuerzo: 'el almuerzo', merienda: 'la merienda', cena: 'la cena' }[c] || c);
+    for (let i = 0; i <= 6; i++) {
+      const dia = diaMas(hoy, i), dow = Plan.deYmd(dia).getDay(), esHoy = i === 0;
+      const d = Plan.evaluarDia(comidas, dia, null, hoy);
+      const enShabat = h => (dow === 5 && h[0] >= 18) || (dow === 6 && h[0] < 21);
+      /* antes de la merienda */
+      if (!enShabat(mer) && !(esHoy && d.porComida.merienda.length)) {
+        const faltaAlm = esHoy && !d.porComida.almuerzo.length && Plan.obligatoria('almuerzo', dia);
+        ev(dia, 'merienda', mer, faltaAlm ? 'Dieta: cargá el almuerzo · merienda de plan' : 'Dieta: merienda de plan',
+          'Proteína y vegetales, o un pan turco con algo del plan. Alejate de lo que no va: «no, gracias».\n\n' + Plan.frase(dia));
+      }
+      /* a la noche, si falta algo */
+      if (!enShabat(noc) && dow !== 6 && !(esHoy && d.completo)) {
+        const faltan = esHoy ? d.faltan : [];
+        ev(dia, 'noche', noc, faltan.length ? 'Dieta: cargá ' + faltan.map(nombre).join(' y ') : 'Dieta: cerrá el día',
+          (racha ? 'Llevás ' + racha + (racha === 1 ? ' día' : ' días') + ' seguidos con estrella. Cargá lo que falta y sumá otra.' : 'Cargá lo de hoy: cada día con estrella te acerca a la sesión con Ari.') + '\n\n' + Plan.frase(dia));
+      }
+      /* viernes antes de Shabat */
+      if (dow === 5) {
+        const fijos = Plan.evaluarSemana(comidas, Plan.lunesDe(dia), hoy).reservas.filter(r => r.fecha >= dia).map(r => r.nombre);
+        ev(dia, 'viernes', [17, 0], fijos.length ? 'Dieta: Shabat, tus libres' : 'Dieta: Shabat firme',
+          (fijos.length ? 'Tus permitidos: ' + fijos.join(' y ') + '. Disfrutalos sin culpa. El resto de Shabat, dentro del plan: o usás el permitido o no lo usás, sin medias tintas.' : 'El plan sigue en Shabat. Anticipate a la mesa larga: proteína y vegetales primero.') + '\n\nShabat shalom.');
+      }
+      /* sábado cuando termina Shabat */
+      if (dow === 6 && !(esHoy && d.porComida.almuerzo.length && d.porComida.cena.length)) {
+        ev(dia, 'sabado', [21, 15], 'Dieta: cargá lo de Shabat', 'Shavua tov. Cargá el almuerzo y la cena de hoy (y lo de anoche, si falta) para no perder la racha.');
+      }
+    }
+  } finally { Plan.usar(null); }
   return out;
 }
 
@@ -157,9 +224,11 @@ module.exports = async function (req, res) {
   };
   if (req.method === 'HEAD') { calendario(); return res.status(200).end(); }
   try {
-    const [pendientes, ajustes] = await Promise.all([listar('pendientes'), listar('ajustes')]);
+    const [pendientes, ajustes, comidas] = await Promise.all([listar('pendientes'), listar('ajustes'), listar('comidas').catch(() => [])]);
     const aj = ajustesDe(ajustes);
-    const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).concat(resumenes(pendientes, aj, hoyEn(aj.tz))).sort((a, b) => a.start - b.start);
+    let dieta = [];
+    try { dieta = avisosDieta(comidas, ajustes, hoyEn(aj.tz), aj.tz, Date.now()); } catch (e) { dieta = []; /* si algo falla, los pendientes llegan igual */ }
+    const events = pendientes.map(r => eventoDe(r, aj)).filter(Boolean).concat(resumenes(pendientes, aj, hoyEn(aj.tz)), dieta).sort((a, b) => a.start - b.start);
     const quien = 't' in q ? '' : cliente(req.headers && req.headers['user-agent']);
     if (quien) await anotarVisita(ajustes, quien);
     calendario();
@@ -175,4 +244,5 @@ module.exports = async function (req, res) {
 
 module.exports.eventoDe = eventoDe;
 module.exports.resumenes = resumenes;
+module.exports.avisosDieta = avisosDieta;
 module.exports.aUtc = aUtc;
