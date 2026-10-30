@@ -224,6 +224,8 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
   una comida cargada la cambia (texto o tipo) o la borra. Para otro día: Historial → ese día.
 - **Historial**: por semana, cada día con su estrella y el resumen de lo que comió; tocar un día lo
   abre para corregirlo.
+- **Camino a la sesión** (abajo en Hoy): días que faltan para la sesión con Ari, barra del mes,
+  días con estrella sobre los días cerrados, la racha y un mensaje según la constancia.
 - **Peso**: Ari pidió no pesarse durante el mes, así que Hoy solo muestra el objetivo para la
   próxima sesión (78 kg, en la fecha de la sesión: la anotada en Ajustes → Objetivo y fechas, o un
   mes desde el inicio) y la meta final (entre 70 y 74 kg, bajando grasa y manteniendo músculo).
@@ -240,8 +242,9 @@ cuántos «con carbo» y «libres» quedan en la semana, y da una **estrella** p
 **Las reglas** están en `pendientes/dieta/plan.js` (las comparten la app y el servidor):
 desayuno de huevos (2 y 2 claras, o 4 enteros: las claras son solo por el colesterol), salvo los
 sábados: en Shabat Ale reza a la mañana y no desayuna, y eso cuenta como cumplido; almuerzo proteína y vegetales, 1 «con carbo» y 1 libre
-por semana; merienda pan turco (o nada); cena proteína y vegetales, 1 «con carbo» y 2 libres por
-semana; sin postres, frutas ni extras. Ale come **kosher**: las ideas de la app no llevan cerdo ni
+por semana; merienda proteína y vegetales o pan turco (o nada); cena proteína y vegetales, 1 «con carbo» y 2 libres por
+semana; sin postres, frutas ni extras. **Regla general de Ari**: proteína y vegetales es siempre
+plan, aunque ahí el plan permita pan o hidrato (la IA nunca sugiere agregarlo). Ale come **kosher**: las ideas de la app no llevan cerdo ni
 mariscos ni mezclan carne con lácteos, y la IA tiene la misma regla (lo que no es kosher cuenta
 como fuera del plan). La semana va de lunes a domingo; un «libre» o «con carbo»
 de más (ya usado el cupo) queda **excedido** y no suma. El día gana la estrella cuando desayuno,

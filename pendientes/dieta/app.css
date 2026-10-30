@@ -214,6 +214,19 @@ main{padding-top:14px}
 .del{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-3)}
 .del:hover{background:var(--danger-soft);color:var(--danger)}
 
+/* ---------- Camino a la sesión ---------- */
+.camino{padding:18px}
+.camino__top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.camino__n{font-size:3rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.camino__u{margin-left:6px;font-size:1.125rem;font-weight:600;color:var(--ink-3)}
+.camino__obj{text-align:right;font-size:.9375rem;color:var(--ink-2);line-height:1.45}
+.camino__obj b{color:var(--ink)}
+.camino__s{margin-top:14px;font-size:1.0625rem}
+.camino__r{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:1.0625rem}
+.camino__r .ico{flex:none;margin-top:2px;color:var(--star);fill:currentColor}
+.camino__m{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--ok-soft);color:var(--ink);line-height:1.45;font-weight:550}
+.camino__p{margin-top:10px;font-size:.875rem;color:var(--ink-3)}
+
 /* ---------- Historial ---------- */
 .hday{display:grid;grid-template-columns:2.4rem minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:66px;padding:10px 14px 10px 16px;border-top:1px solid var(--line);text-align:left}
 .card>.hday:first-child{border-top:0}
