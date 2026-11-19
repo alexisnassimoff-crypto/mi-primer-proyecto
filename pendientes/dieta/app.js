@@ -94,14 +94,26 @@ const limite = () => (/^\d{4}-\d{2}-\d{2}$/.test(state.ajustes.sesion || '') ? s
 /* Etapas: cada sesión con Ari arranca una etapa nueva (las estrellas vuelven a cero) */
 const etapa = () => Number(state.ajustes.etapa) || 1;
 const etapas = () => (Array.isArray(state.ajustes.etapas) ? state.ajustes.etapas : []);
-const objComp = () => ({ musculo: Number(state.ajustes.objMusculo) || 0, grasa: Number(state.ajustes.objGrasa) || 0 });
+/* Lo que mide Ari además del peso. baja: si bajar es bueno. tol: cambio que cuenta como «se mantuvo».
+   obj: la clave del objetivo en los ajustes. at: el campo en la tabla Peso de Airtable. */
+const MEDIDAS = [
+  { k: 'musculo', nombre: 'Músculo', corto: 'músculo', u: ' kg', baja: false, tol: 0.5, min: 10, max: 100, obj: 'objMusculo', ej: '34,5', at: 'fldcCPUKBMlMYTILe' },
+  { k: 'grasa', nombre: 'Grasa', corto: 'grasa', u: '%', baja: true, tol: 0, min: 3, max: 60, obj: 'objGrasa', ej: '21,2', at: 'fldzlm54S6MNTuXlV' },
+  { k: 'cresta', nombre: 'Crestas', corto: 'crestas', u: ' mm', baja: true, tol: 0, min: 2, max: 90, obj: 'objCresta', ej: '25', at: 'fldKl9jgpWLJiBW67' },
+  { k: 'triceps', nombre: 'Tríceps', corto: 'tríceps', u: ' mm', baja: true, tol: 2, min: 2, max: 90, obj: 'objTriceps', ej: '15', at: 'fldUIsevm7DnSbGqo' }
+];
+const objComp = () => MEDIDAS.reduce((o, m) => { o[m.k] = Number(state.ajustes[m.obj]) || 0; return o; }, {});
+const medidasTexto = (p, sep) => MEDIDAS.filter(m => p[m.k]).map(m => m.corto + ' ' + fmt1(p[m.k]) + m.u).join(sep || ', ');
+const objTexto = () => MEDIDAS.filter(m => objComp()[m.k]).map(m => m.corto + ' ' + fmt1(objComp()[m.k]) + m.u).join(', ');
+/* «mié 16/12 14:30» */
+const sesionTexto = () => DIAS[Plan.deYmd(limite()).getDay()].slice(0, 3) + ' ' + fechaCorta(limite()) + (state.ajustes.sesionHora ? ' ' + state.ajustes.sesionHora : '');
 const primera = () => state.comidas.reduce((m, c) => (c.fecha < m ? c.fecha : m), inicio());
 const fmt1 = n => Number(n).toLocaleString('es-AR', { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 1, maximumFractionDigits: 1 });
 /* dónde está Ale, en una línea para la IA */
 function objetivosTexto() {
   const ps = pesosOrd(), ult = ps[ps.length - 1], c = objComp(), L = [];
-  L.push('Etapa ' + etapa() + ' (desde el ' + fechaCorta(inicio()) + '). Próxima sesión con Ari: ' + fechaCorta(limite()) + ', objetivo ' + objetivo() + ' kg' + (c.musculo || c.grasa ? ' (' + [c.musculo && 'músculo ' + fmt1(c.musculo) + ' kg', c.grasa && 'grasa ' + fmt1(c.grasa) + '%'].filter(Boolean).join(', ') + ')' : '') + '. Meta final: ' + metaTexto() + '. En el medio no se pesa.');
-  if (ult) L.push('Último peso: ' + fmtKg(ult.kg) + ' kg el ' + fechaCorta(ult.fecha) + (ult.musculo ? ', músculo ' + fmt1(ult.musculo) + ' kg' : '') + (ult.grasa ? ', grasa ' + fmt1(ult.grasa) + '%' : '') + (ps.length > 1 ? '; arrancó en ' + fmtKg(ps[0].kg) + ' kg el ' + fechaCorta(ps[0].fecha) : '') + '.');
+  L.push('Etapa ' + etapa() + ' (desde el ' + fechaCorta(inicio()) + '). Próxima sesión con Ari: ' + sesionTexto() + ', objetivo ' + objetivo() + ' kg' + (objTexto() ? ' (' + objTexto() + ')' : '') + '. Meta final: ' + metaTexto() + '. En el medio no se pesa.');
+  if (ult) L.push('Última medición: ' + fmtKg(ult.kg) + ' kg el ' + fechaCorta(ult.fecha) + (medidasTexto(ult) ? ', ' + medidasTexto(ult) : '') + (ps.length > 1 ? '; arrancó en ' + fmtKg(ps[0].kg) + ' kg el ' + fechaCorta(ps[0].fecha) + (medidasTexto(ps[0]) ? ' (' + medidasTexto(ps[0]) + ')' : '') : '') + '. Crestas = pliegue de la cresta ilíaca (los flotadores); tríceps = pliegue del tríceps, en milímetros.');
   etapas().forEach(e => L.push('Etapa ' + e.n + ': del ' + fechaCorta(e.inicio) + ' al ' + fechaCorta(e.fin) + ', objetivo ' + e.objetivo + ' kg.'));
   return L.join(' ');
 }
@@ -273,9 +285,9 @@ const analisisEtapa = et => Plan.analizar(state.comidas, et.desde, hoy(), et.fin
 /* peso, músculo y grasa al arrancar y al cerrar el período */
 function compTexto(desde, hasta) {
   const ps = pesosOrd(), a = ps.filter(p => p.fecha <= desde).pop() || ps.find(p => p.fecha >= desde), b = ps.filter(p => p.fecha <= hasta).pop();
-  if (!a || !b || a === b) return b ? 'Peso: ' + fmtKg(b.kg) + ' kg' + (b.musculo ? ', músculo ' + fmt1(b.musculo) + ' kg' : '') + (b.grasa ? ', grasa ' + fmt1(b.grasa) + '%' : '') + ' (' + fechaCorta(b.fecha) + ').' : '';
+  if (!a || !b || a === b) return b ? 'Peso: ' + fmtKg(b.kg) + ' kg' + (medidasTexto(b) ? ', ' + medidasTexto(b) : '') + ' (' + fechaCorta(b.fecha) + ').' : '';
   const d = (x, y) => (y - x > 0 ? '+' : '') + fmt1(y - x);
-  return 'Peso: ' + fmtKg(a.kg) + ' → ' + fmtKg(b.kg) + ' kg (' + d(a.kg, b.kg) + ')' + (a.musculo && b.musculo ? ' · músculo ' + fmt1(a.musculo) + ' → ' + fmt1(b.musculo) + ' kg (' + d(a.musculo, b.musculo) + ')' : '') + (a.grasa && b.grasa ? ' · grasa ' + fmt1(a.grasa) + ' → ' + fmt1(b.grasa) + '% (' + d(a.grasa, b.grasa) + ')' : '') + '.';
+  return 'Peso: ' + fmtKg(a.kg) + ' → ' + fmtKg(b.kg) + ' kg (' + d(a.kg, b.kg) + ')' + MEDIDAS.filter(m => a[m.k] && b[m.k]).map(m => ' · ' + m.corto + ' ' + fmt1(a[m.k]) + ' → ' + fmt1(b[m.k]) + m.u + ' (' + d(a[m.k], b[m.k]) + ')').join('') + '.';
 }
 const IAINF_KEY = 'dieta.iaInforme';
 /* lo último que escribió la IA (se guarda en el teléfono para no pedirlo de nuevo cada vez) */
@@ -387,9 +399,9 @@ function caminoHtml(h) {
   else if (pct >= 70) msg = 'Vas bien. Cada día con estrella que sumes de acá a la sesión se ve en la balanza.';
   else msg = 'Todavía estás a tiempo: lo que cuenta son los días que quedan. Hoy, estrella.';
   const rTxt = r >= 2 ? '<p class="camino__r">' + icon('star') + '<span><b>' + r + ' días seguidos.</b> ' + (r >= 7 ? 'Eso ya es un hábito. Cuidalo como un tesoro.' : 'No cortes la racha hoy.') + '</span></p>' : '';
-  return '<section class="section"><div class="section__h"><span>' + (etapa() > 1 ? 'Etapa ' + etapa() + ' · camino a la sesión' : 'Camino a la sesión') + '</span><span class="section__sub">Ari · ' + fechaCorta(ses) + '</span></div>' +
+  return '<section class="section"><div class="section__h"><span>' + (etapa() > 1 ? 'Etapa ' + etapa() + ' · camino a la sesión' : 'Camino a la sesión') + '</span><span class="section__sub">Ari · ' + esc(cap(sesionTexto())) + '</span></div>' +
     '<div class="card camino"><div class="camino__top"><div><span class="camino__n">' + Math.max(0, faltan) + '</span><span class="camino__u">' + (faltan === 1 ? 'día' : 'días') + '</span></div>' +
-    '<div class="camino__obj">Objetivo <b>' + objetivo() + ' kg</b><br>' + (objComp().musculo || objComp().grasa ? [objComp().musculo && 'Músculo <b>' + fmt1(objComp().musculo) + '</b>', objComp().grasa && 'grasa <b>' + fmt1(objComp().grasa) + '%</b>'].filter(Boolean).join(' · ') + '<br>' : '') + 'Meta final <b>' + (meta()[0] === meta()[1] ? meta()[0] : meta()[0] + ' a ' + meta()[1]) + ' kg</b></div></div>' +
+    '<div class="camino__obj">Objetivo <b>' + objetivo() + ' kg</b><br>' + MEDIDAS.filter(m => objComp()[m.k]).map(m => cap(m.corto) + ' <b>' + fmt1(objComp()[m.k]) + m.u + '</b>').join('<br>') + (objTexto() ? '<br>' : '') + 'Meta final <b>' + (meta()[0] === meta()[1] ? meta()[0] : meta()[0] + ' a ' + meta()[1]) + ' kg</b></div></div>' +
     '<div class="bar"><div class="bar__f" style="width:' + Math.round(hechos / total * 100) + '%"></div></div>' +
     '<div class="bar__l"><span>' + fechaCorta(ini) + '</span><span>' + hechos + ' de ' + total + ' días</span><span>' + fechaCorta(ses) + '</span></div>' +
     (cerrados ? '<p class="camino__s"><b>' + est + ' de ' + cerrados + '</b> días con estrella (' + pct + '%).</p>' : '') + rTxt +
@@ -456,15 +468,18 @@ function chartHtml(ps) {
 }
 /* músculo y grasa: lo que Ari mira (bajar grasa sin perder músculo) */
 function compHtml(ps) {
-  const con = ps.filter(p => p.musculo || p.grasa); if (!con.length) return '';
-  const ult = con[con.length - 1], pri = con[0], c = objComp(), dif = (a, b) => (b - a > 0 ? '+' : '') + fmt1(b - a);
-  const cel = (k, v, a, u, obj, mejorBaja) => '<div class="comp__c"><span class="comp__k">' + k + '</span><span class="comp__v">' + fmt1(v) + '<small>' + u + '</small></span>' +
-    (con.length > 1 && a ? (!mejorBaja && Math.abs(v - a) <= 0.5 ? '<span class="comp__d is-ok">se mantuvo (' + dif(a, v) + ')</span>' :
-      '<span class="comp__d ' + ((v - a < 0) === mejorBaja || v === a ? 'is-ok' : 'is-bad') + '">' + dif(a, v) + ' desde el ' + fechaCorta(pri.fecha) + '</span>') : '') + (obj ? '<span class="comp__o">objetivo ' + fmt1(obj) + u + '</span>' : '') + '</div>';
-  return '<div class="comp">' + (ult.musculo ? cel('Músculo', ult.musculo, pri.musculo, ' kg', c.musculo, false) : '') + (ult.grasa ? cel('Grasa', ult.grasa, pri.grasa, '%', c.grasa, true) : '') + '</div>';
+  const c = objComp(), dif = (a, b) => (b - a > 0 ? '+' : '') + fmt1(b - a);
+  const celdas = MEDIDAS.map(m => {
+    const con = ps.filter(p => p[m.k]); if (!con.length) return '';
+    const ult = con[con.length - 1], pri = con[0], v = ult[m.k], a = pri[m.k], obj = c[m.k];
+    const cambio = con.length < 2 ? '' : Math.abs(v - a) <= m.tol ? '<span class="comp__d is-ok">se mantuvo (' + dif(a, v) + ')</span>' :
+      '<span class="comp__d ' + ((v - a < 0) === m.baja ? 'is-ok' : 'is-bad') + '">' + dif(a, v) + ' desde el ' + fechaCorta(pri.fecha) + '</span>';
+    return '<div class="comp__c"><span class="comp__k">' + m.nombre + '</span><span class="comp__v">' + fmt1(v) + '<small>' + m.u + '</small></span>' + cambio + (obj ? '<span class="comp__o">objetivo ' + fmt1(obj) + m.u + '</span>' : '') + '</div>';
+  }).filter(Boolean);
+  return celdas.length ? '<div class="comp">' + celdas.join('') + '</div>' : '';
 }
 function renderPeso() {
-  setHeader('Peso', 'Etapa ' + etapa() + ': ' + objetivo() + ' kg para la sesión del ' + fechaCorta(limite()) + ' · meta final ' + metaTexto(), 'Inicio');
+  setHeader('Peso', 'Etapa ' + etapa() + ': ' + objetivo() + ' kg para la sesión del ' + sesionTexto() + ' · meta final ' + metaTexto(), 'Inicio');
   const ps = pesosOrd(), obj = objetivo();
   let html = '';
   if (!ps.length) {
@@ -483,7 +498,7 @@ function renderPeso() {
     html += '<section class="section"><div class="section__h"><span>Pesadas</span></div><div class="card"><ul class="list">';
     ps.slice().reverse().forEach((p, i, arr) => {
       const prev = arr[i + 1], dif = prev ? Math.round((p.kg - prev.kg) * 10) / 10 : 0;
-      html += '<li class="pay"><span class="pay__d">' + esc(fechaCorta(p.fecha)) + '</span><span class="pay__t">' + fmtKg(p.kg) + ' kg' + (p.musculo || p.grasa ? '<small class="pay__s">' + [p.musculo && 'músculo ' + fmt1(p.musculo), p.grasa && 'grasa ' + fmt1(p.grasa) + '%'].filter(Boolean).join(' · ') + '</small>' : '') + '</span><span class="pay__a ' + (dif < 0 ? 'is-down' : dif > 0 ? 'is-up' : '') + '">' + (prev ? (dif > 0 ? '+' : '') + fmtKg(dif) : '') + '</span><button type="button" class="del" data-borrar-peso="' + p.id + '" aria-label="Borrar esta pesada">' + icon('trash') + '</button></li>';
+      html += '<li class="pay"><span class="pay__d">' + esc(fechaCorta(p.fecha)) + '</span><span class="pay__t">' + fmtKg(p.kg) + ' kg' + (medidasTexto(p) ? '<small class="pay__s">' + esc(medidasTexto(p, ' · ')) + '</small>' : '') + '</span><span class="pay__a ' + (dif < 0 ? 'is-down' : dif > 0 ? 'is-up' : '') + '">' + (prev ? (dif > 0 ? '+' : '') + fmtKg(dif) : '') + '</span><button type="button" class="del" data-borrar-peso="' + p.id + '" aria-label="Borrar esta pesada">' + icon('trash') + '</button></li>';
     });
     html += '</ul></div></section>';
   }
@@ -622,9 +637,8 @@ function openPeso() {
   $('#pesoErr').textContent = '';
   $('#pesoBody').innerHTML = '<div class="q"><div class="field field--big"><label class="field__l" for="p_kg">Kilos</label><input id="p_kg" type="text" inputmode="decimal" placeholder="' + (ult ? fmtKg(ult.kg) : '84,0') + '" enterkeyhint="done" autocomplete="off"></div>' +
     '<div class="field" style="margin-top:14px"><label class="field__l" for="p_fecha">Fecha</label><input id="p_fecha" type="date" value="' + hoy() + '" max="' + hoy() + '"></div>' +
-    '<p class="note" style="margin-top:14px">Si te hiciste el InBody, cargá también (son opcionales):</p>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px"><label class="field"><span class="field__l">Músculo (kg)</span><input id="p_mus" type="text" inputmode="decimal" placeholder="' + (ult && ult.musculo ? fmt1(ult.musculo) : '34,5') + '" autocomplete="off"></label>' +
-    '<label class="field"><span class="field__l">Grasa (%)</span><input id="p_gra" type="text" inputmode="decimal" placeholder="' + (ult && ult.grasa ? fmt1(ult.grasa) : '21,2') + '" autocomplete="off"></label></div>' +
+    '<p class="note" style="margin-top:14px">Si te midió Ari (InBody y pliegues), cargá también. Son opcionales:</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">' + MEDIDAS.map(m => '<label class="field"><span class="field__l">' + m.nombre + ' (' + m.u.trim() + ')</span><input id="p_' + m.k + '" type="text" inputmode="decimal" placeholder="' + (ult && ult[m.k] ? fmt1(ult[m.k]) : m.ej) + '" autocomplete="off"></label>').join('') + '</div>' +
     (ult ? '<p class="note" style="margin-top:14px">Última pesada: <b>' + fmtKg(ult.kg) + ' kg</b> el ' + fechaCorta(ult.fecha) + '.</p>' : '') + '</div>';
   openSheet($('#pesoSheet'));
   setTimeout(() => { const i = $('#p_kg'); if (i) i.focus(); }, 350);
@@ -635,11 +649,14 @@ function guardarPeso() {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha > hoy()) { $('#pesoErr').textContent = 'Revisá la fecha.'; return; }
   const ps = pesosOrd(), ant = ps.filter(p => p.fecha < fecha).pop(), now = Date.now();
   const dec = id => { const v = Math.round(parseFloat(String(($('#' + id) || {}).value || '').replace(',', '.')) * 10) / 10; return v > 0 ? v : null; };
-  const musculo = dec('p_mus'), grasa = dec('p_gra');
-  if (musculo && !(musculo >= 10 && musculo <= 100)) { $('#pesoErr').textContent = 'Revisá el músculo: va en kilos, por ejemplo 34,5.'; return; }
-  if (grasa && !(grasa >= 3 && grasa <= 60)) { $('#pesoErr').textContent = 'Revisá la grasa: va en porcentaje, por ejemplo 21,2.'; return; }
+  const med = {};
+  for (const m of MEDIDAS) {
+    const v = dec('p_' + m.k); if (!v) continue;
+    if (!(v >= m.min && v <= m.max)) { $('#pesoErr').textContent = 'Revisá ' + m.corto + ': va en ' + (m.u === '%' ? 'porcentaje' : m.u.trim() === 'kg' ? 'kilos' : 'milímetros') + ', por ejemplo ' + m.ej + '.'; return; }
+    med[m.k] = v;
+  }
   let p = state.pesos.find(x => x.fecha === fecha);
-  if (p) Object.assign(p, { kg, updatedAt: now }, musculo ? { musculo } : {}, grasa ? { grasa } : {}); else { p = { id: uid(), fecha, kg, musculo, grasa, createdAt: now, updatedAt: now }; state.pesos.push(p); }
+  if (p) Object.assign(p, { kg, updatedAt: now }, med); else { p = Object.assign({ id: uid(), fecha, kg, createdAt: now, updatedAt: now }, med); state.pesos.push(p); }
   persist(); closeSheet($('#pesoSheet')); render(); queueSync();
   const obj = objetivo(), falta = Math.round((kg - obj) * 10) / 10;
   if (falta <= 0) toast('⭐ ' + fmtKg(kg) + ' kg. ¡Llegaste al objetivo!', { star: true, ms: 5000 });
@@ -879,11 +896,11 @@ function renderSettings() {
     '<details class="set" id="set-sync"' + (ab('set-sync') ? ' open' : '') + '><summary>Respaldo e IA ' + icon('chevR') + '</summary><div class="set__body" id="syncBox">' + syncBoxHtml() + '</div></details>' +
     '<details class="set" id="set-obj"' + (ab('set-obj') ? ' open' : '') + '><summary>Objetivo y fechas ' + icon('chevR') + '</summary><div class="set__body">' +
     '<label class="field"><span class="field__l">Objetivo para la sesión (kg)</span><input id="s_obj" type="text" inputmode="decimal" value="' + String(objetivo()).replace('.', ',') + '" autocomplete="off"></label>' +
-    '<label class="field"><span class="field__l">Sesión con Ari</span><input id="s_sesion" type="date" value="' + limite() + '" min="' + hoy() + '"></label>' +
+    '<div style="display:grid;grid-template-columns:3fr 2fr;gap:10px"><label class="field"><span class="field__l">Sesión con Ari</span><input id="s_sesion" type="date" value="' + limite() + '" min="' + hoy() + '"></label>' +
+    '<label class="field"><span class="field__l">Hora</span><input id="s_sesion_h" type="time" value="' + esc(state.ajustes.sesionHora || '') + '"></label></div>' +
     '<p class="set__note">' + (state.ajustes.sesion ? 'Cuando la fijes, cambiala acá.' : 'Por ahora, un mes desde que empezaste. Cuando fijes el día con Ari, ponelo acá.') + '</p>' +
     '<div class="field"><span class="field__l">Meta final (kg)</span><div style="display:flex;gap:10px;align-items:center"><input id="s_meta1" type="text" inputmode="decimal" value="' + meta()[0] + '" autocomplete="off" aria-label="Desde" style="flex:1"><span>a</span><input id="s_meta2" type="text" inputmode="decimal" value="' + meta()[1] + '" autocomplete="off" aria-label="Hasta" style="flex:1"></div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="field"><span class="field__l">Músculo objetivo (kg)</span><input id="s_omus" type="text" inputmode="decimal" value="' + (objComp().musculo ? fmt1(objComp().musculo) : '') + '" autocomplete="off"></label>' +
-    '<label class="field"><span class="field__l">Grasa objetivo (%)</span><input id="s_ogra" type="text" inputmode="decimal" value="' + (objComp().grasa ? fmt1(objComp().grasa) : '') + '" autocomplete="off"></label></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + MEDIDAS.map(m => '<label class="field"><span class="field__l">' + m.nombre + ' objetivo (' + m.u.trim() + ')</span><input id="s_o_' + m.k + '" type="text" inputmode="decimal" value="' + (objComp()[m.k] ? fmt1(objComp()[m.k]) : '') + '" autocomplete="off"></label>').join('') + '</div>' +
     '<label class="field"><span class="field__l">La etapa ' + etapa() + ' empezó el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
     '<p class="set__note">Desde ese día se cuentan las estrellas y la racha.</p>' +
     '<button type="button" class="btn btn--secondary btn--block" data-nueva-etapa>' + icon('refresh') + 'Empezar la etapa ' + (etapa() + 1) + ' (después de la sesión)</button>' +
@@ -956,7 +973,7 @@ function wipe() {
 /* ---------- Respaldo en Airtable ---------- */
 const AT = {
   C: { que: 'flddTZbEV9Td45abs', fecha: 'fldN05RuxFWnmqbRc', comida: 'fld0pmDejT8PLBBsj', tipo: 'fldkXAvUuAeOdnbAk', hora: 'fldxnIUPrkH27sRfP', notas: 'fldpF2lGNvZE9p17p', deleted: 'fldppPmHxiO1xQXVf', id: 'fld5odv4a76csI2xZ', createdAt: 'fldsuws5mjzlZr8jQ', updatedAt: 'fldUwG4k2PY7XgD3j' },
-  W: { fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', musculo: 'fldcCPUKBMlMYTILe', grasa: 'fldzlm54S6MNTuXlV', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5', createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq' },
+  W: { fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', musculo: 'fldcCPUKBMlMYTILe', grasa: 'fldzlm54S6MNTuXlV', cresta: 'fldKl9jgpWLJiBW67', triceps: 'fldUIsevm7DnSbGqo', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5', createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq' },
   A: { key: 'fldstgTm03EQOalcw', value: 'fldxCu4LteLCoAW1W', updatedAt: 'fldDu7pTNb9iNeThq' }
 };
 const invertir = o => { const r = {}; Object.keys(o).forEach(k => { r[o[k]] = k; }); return r; };
@@ -965,7 +982,7 @@ const sync = { on: !!lsGet(CLAVE_KEY), busy: false, again: null, last: Number(ls
 const iso = ms => (ms ? new Date(ms).toISOString() : null);
 const dirty = x => !x._sy || (x.updatedAt || 0) > x._sy;
 const cHash = f => [AT.C.que, AT.C.fecha, AT.C.comida, AT.C.tipo, AT.C.hora].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
-const wHash = f => [AT.W.fecha, AT.W.kg, AT.W.musculo, AT.W.grasa, AT.W.notas].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
+const wHash = f => [AT.W.fecha, AT.W.kg, AT.W.musculo, AT.W.grasa, AT.W.cresta, AT.W.triceps, AT.W.notas].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
 function comidaFields(c) {
   const C = AT.C, f = {}, t = Plan.tipo(c.comida, c.tipo);
   f[C.que] = c.que || (t ? t.nombre : ''); f[C.fecha] = c.fecha; f[C.comida] = Plan.COMIDA_AT[c.comida] || 'Extra'; f[C.tipo] = Plan.TIPO_AT[c.tipo] || 'Me salí'; f[C.hora] = c.hora || '';
@@ -992,7 +1009,7 @@ function comidaFromRecord(r, base) {
 }
 function pesoFields(p) {
   const W = AT.W, f = {};
-  f[W.fecha] = p.fecha; f[W.kg] = Number(p.kg); f[W.musculo] = p.musculo > 0 ? Number(p.musculo) : null; f[W.grasa] = p.grasa > 0 ? Number(p.grasa) : null; f[W.notas] = p.notas || ''; f[W.deleted] = false; f[W.id] = p.id; f[W.createdAt] = iso(p.createdAt || Date.now()); f[W.updatedAt] = iso(p.updatedAt || Date.now());
+  f[W.fecha] = p.fecha; f[W.kg] = Number(p.kg); MEDIDAS.forEach(m => { f[W[m.k]] = p[m.k] > 0 ? Number(p[m.k]) : null; }); f[W.notas] = p.notas || ''; f[W.deleted] = false; f[W.id] = p.id; f[W.createdAt] = iso(p.createdAt || Date.now()); f[W.updatedAt] = iso(p.updatedAt || Date.now());
   return f;
 }
 function pesoFromRecord(r, base) {
@@ -1000,7 +1017,7 @@ function pesoFromRecord(r, base) {
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(f[W.fecha] || '')) ? f[W.fecha] : null, kg = Number(f[W.kg]);
   if (!fecha || !(kg >= 30 && kg <= 300)) return null;
   const num = v => (Number(v) > 0 ? Math.round(Number(v) * 10) / 10 : null);
-  return Object.assign({}, base || {}, { id: f[W.id] || (base && base.id) || uid(), fecha, kg: Math.round(kg * 10) / 10, musculo: num(f[W.musculo]), grasa: num(f[W.grasa]), notas: String(f[W.notas] || '').slice(0, 300),
+  return Object.assign({}, base || {}, { id: f[W.id] || (base && base.id) || uid(), fecha, kg: Math.round(kg * 10) / 10, musculo: num(f[W.musculo]), grasa: num(f[W.grasa]), cresta: num(f[W.cresta]), triceps: num(f[W.triceps]), notas: String(f[W.notas] || '').slice(0, 300),
     createdAt: Date.parse(f[W.createdAt]) || Date.parse(r.creado) || (base && base.createdAt) || Date.now(), updatedAt: Date.parse(f[W.updatedAt]) || (base && base.updatedAt) || 0, _rid: r.rid });
 }
 /* mezcla genérica: lo de allá entra si acá no hay cambios sin subir; lo borrado allá se borra acá */
@@ -1056,8 +1073,8 @@ function mergeAjustes(rows) {
   if (typeof v.nombre === 'string') state.ajustes.nombre = v.nombre;
   if (typeof v.etapa === 'number' && v.etapa >= 1) state.ajustes.etapa = v.etapa;
   if (Array.isArray(v.etapas)) state.ajustes.etapas = v.etapas.filter(e => e && e.n >= 1 && /^\d{4}-\d{2}-\d{2}$/.test(e.inicio || '') && /^\d{4}-\d{2}-\d{2}$/.test(e.fin || '')).map(e => ({ n: e.n, inicio: e.inicio, fin: e.fin, sesion: /^\d{4}-\d{2}-\d{2}$/.test(e.sesion || '') ? e.sesion : e.fin, objetivo: Number(e.objetivo) || 0 }));
-  if (typeof v.objMusculo === 'number') state.ajustes.objMusculo = v.objMusculo;
-  if (typeof v.objGrasa === 'number') state.ajustes.objGrasa = v.objGrasa;
+  MEDIDAS.forEach(m => { if (typeof v[m.obj] === 'number') state.ajustes[m.obj] = v[m.obj]; });
+  if (typeof v.sesionHora === 'string') state.ajustes.sesionHora = /^\d{2}:\d{2}$/.test(v.sesionHora) ? v.sesionHora : '';
   if (Array.isArray(v.reglas)) { state.ajustes.reglas = v.reglas.map(Plan.limpiarRegla).filter(Boolean); aplicarReglas(); }
   if (v.avisos && typeof v.avisos === 'object') state.ajustes.avisos = { on: v.avisos.on !== false, merienda: /^\d{2}:\d{2}$/.test(v.avisos.merienda || '') ? v.avisos.merienda : AVISOS_DEF.merienda, noche: /^\d{2}:\d{2}$/.test(v.avisos.noche || '') ? v.avisos.noche : AVISOS_DEF.noche };
   state.ajustesAt = state.ajustesSy = at;
@@ -1093,7 +1110,7 @@ async function pushDirty(keepalive) {
   const ajustes = [];
   const ajustesAt = state.ajustesAt || 0;
   if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), sesion: state.ajustes.sesion || '', metaMin: meta()[0], metaMax: meta()[1], nombre: state.ajustes.nombre || 'Ale', tz: localTz(),
-    etapa: etapa(), etapas: etapas(), objMusculo: objComp().musculo, objGrasa: objComp().grasa,
+    etapa: etapa(), etapas: etapas(), sesionHora: state.ajustes.sesionHora || '', objMusculo: objComp().musculo, objGrasa: objComp().grasa, objCresta: objComp().cresta, objTriceps: objComp().triceps,
     reglas: reglas().map(r => ({ id: r.id, texto: r.texto, resumen: r.resumen || '', cambios: r.cambios || [], base: !!r.base, at: r.at || 0 })), avisos: avisos() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
   const CHUNK = 150;
   const n = Math.max(1, Math.ceil(Math.max(filasC.length, filasW.length) / CHUNK));
@@ -1289,10 +1306,12 @@ function init() {
       state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings();
       if (e.target.id === 's_avisos') toast(state.ajustes.avisos.on ? 'Avisos prendidos. Llegan en un rato, cuando el Calendario se actualice.' : 'Avisos apagados.');
     }
-    if (e.target.id === 's_omus' || e.target.id === 's_ogra') {
+    if (/^s_o_/.test(e.target.id)) {
       const n = v => { const x = Math.round(parseFloat(String(v).replace(',', '.')) * 10) / 10; return x > 0 ? x : 0; };
-      state.ajustes.objMusculo = n($('#s_omus').value); state.ajustes.objGrasa = n($('#s_ogra').value); state.ajustesAt = Date.now(); persist(); queueSync(); render();
+      MEDIDAS.forEach(m => { const i = $('#s_o_' + m.k); if (i) state.ajustes[m.obj] = n(i.value); });
+      state.ajustesAt = Date.now(); persist(); queueSync(); render();
     }
+    if (e.target.id === 's_sesion_h') { const v = e.target.value; state.ajustes.sesionHora = /^\d{2}:\d{2}$/.test(v) ? v : ''; state.ajustesAt = Date.now(); persist(); queueSync(); render(); }
     if (e.target.id === 's_inicio') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= hoy()) { state.ajustes.inicio = v; state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render(); } }
   });
   $('#settingsSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 's_clave') { e.preventDefault(); connectSync(); } });

@@ -32,7 +32,7 @@ const CAMPOS = {
     deleted: 'fldppPmHxiO1xQXVf', id: 'fld5odv4a76csI2xZ', createdAt: 'fldsuws5mjzlZr8jQ', updatedAt: 'fldUwG4k2PY7XgD3j'
   },
   pesos: {
-    fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', musculo: 'fldcCPUKBMlMYTILe', grasa: 'fldzlm54S6MNTuXlV', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5',
+    fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', musculo: 'fldcCPUKBMlMYTILe', grasa: 'fldzlm54S6MNTuXlV', cresta: 'fldKl9jgpWLJiBW67', triceps: 'fldUIsevm7DnSbGqo', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5',
     createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq'
   }
 };
