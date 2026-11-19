@@ -256,8 +256,10 @@ aviso desaparece cuando el Calendario se actualiza. Horarios y on/off en Ajustes
 N» guarda la que termina (inicio, fin, sesión, objetivo) en `etapas` y pone las estrellas y la racha
 en cero desde ese día (`Plan.racha` no cruza el inicio de la etapa). El informe tiene un selector de
 etapa; los patrones miran todo el historial. La tabla *Peso* tiene además **Músculo (kg)** y
-**Grasa (%)** del InBody; la pantalla Peso muestra el cambio y los objetivos de la sesión
-(`objMusculo`, `objGrasa` en la fila «dieta»).
+**Grasa (%)** del InBody y los pliegues que mide Ari, **Crestas (mm)** (cresta ilíaca, los
+flotadores) y **Tríceps (mm)**: la lista `MEDIDAS` de `app.js` define cada una (unidad, si bajar es
+bueno, cuánto cambio cuenta como «se mantuvo»). La pantalla Peso muestra el cambio y los objetivos
+de la sesión (`objMusculo`, `objGrasa`, `objCresta`, `objTriceps` y `sesionHora` en la fila «dieta»).
 
 **Tus patrones** (arriba en Historial): `Plan.analizar` mira los días cerrados desde el inicio y
 devuelve los números (estrellas, rachas, cupos por semana, tropiezos, lo que más se repite) y los
