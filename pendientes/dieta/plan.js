@@ -245,13 +245,15 @@
   }
 
   /* Días seguidos con estrella, contando desde ayer hacia atrás (y hoy si ya la ganó) */
-  function racha(comidas, hoy) {
+  function racha(comidas, hoy, desde) {
     let n = 0, f = hoy;
+    if (desde && hoy < desde) return 0;
     const deHoy = evaluarDia(comidas, hoy, null, hoy);
     if (deHoy.estrella) { n++; }
     else if (deHoy.fallas.length) return 0;  /* hoy ya se cortó */
     f = sumarDias(hoy, -1);
     for (let i = 0; i < 400; i++) {
+      if (desde && f < desde) break; /* la etapa arrancó acá: lo de antes no cuenta */
       const d = evaluarDia(comidas, f, null, hoy);
       if (!d.estrella) break;
       n++; f = sumarDias(f, -1);
@@ -273,14 +275,15 @@
   const NOMBRE_COMIDA = { desayuno: 'el desayuno', almuerzo: 'el almuerzo', merienda: 'la merienda', cena: 'la cena', extra: 'los extras' };
   const plural = d => (DIAS[d] === 'sábado' || DIAS[d] === 'domingo' ? DIAS[d] + 's' : DIAS[d]);
   const normal = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
-  function analizar(comidas, desde, hoy) {
-    const hasta = evaluarDia(comidas, hoy, null, hoy).estrella ? hoy : sumarDias(hoy, -1);
+  function analizar(comidas, desde, hoy, fin) {
+    let hasta = evaluarDia(comidas, hoy, null, hoy).estrella ? hoy : sumarDias(hoy, -1);
+    if (fin && fin < hasta) hasta = fin;
     const dias = [], semanas = {};
     for (let f = desde; f <= hasta; f = sumarDias(f, 1)) {
       const d = evaluarDia(comidas, f, null, hoy);
       dias.push(Object.assign({ dow: deYmd(f).getDay() }, d));
     }
-    const out = { desde, hasta, dias, total: dias.length, conEstrella: 0, sinCargar: 0, sinCerrar: 0, extras: 0, rachaMax: 0, racha: racha(comidas, hoy),
+    const out = { desde, hasta, dias, total: dias.length, conEstrella: 0, sinCargar: 0, sinCerrar: 0, extras: 0, rachaMax: 0, racha: fin && fin < hoy ? 0 : racha(comidas, hoy, desde),
       porDow: [0, 1, 2, 3, 4, 5, 6].map(dow => ({ dow, dias: 0, estrellas: 0 })), fallasPorComida: {}, fallas: [], libresDelFinde: 0, semanas: [], repetidas: {} };
     let seguidos = 0;
     dias.forEach(d => {
@@ -372,7 +375,10 @@
     'Si jugás al fútbol, no podés ir a trabar la pelota con el pie flojo.',
     'El sobrepeso con la edad lesiona y desgasta el cuerpo.',
     'Felicitate cuando cumplís. Un día bien comido es una estrella.',
-    'Bajar grasa, mantener músculo. Primero 78; la meta, entre 70 y 74.'
+    'Bajar grasa, mantener músculo. Paso a paso hasta la meta.',
+    'Así como el alimento es droga, estar enganchado también: mantenete motivado.',
+    'Aunque te digan que estás flaco: no te relajes, no aflojes.',
+    'Mismo proceso, misma constancia. Lo que funcionó, se sostiene.'
   ];
   function frase(fecha) {
     const n = diasEntre('2026-01-05', fecha);
@@ -381,7 +387,7 @@
 
   /* El plan en texto, para la IA y para la pantalla «El plan» */
   const PLAN_TEXTO = [
-    'Objetivo para la próxima sesión con Ari (en un mes): 78 kg. Meta final: quedar entre 70 y 74 kg, bajando grasa y manteniendo la masa muscular.',
+    'Objetivo: bajar grasa manteniendo la masa muscular. El peso para la próxima sesión y la meta final están en los datos de Ale.',
     'Desayuno: 2 huevos enteros y 2 claras, los 7 días de la semana.',
     'Almuerzo: 5 veces por semana mitad proteína y mitad vegetales; 1 vez por semana carbohidrato, proteína y vegetales (un tercio cada uno); 1 vez por semana libre (el permitido).',
     'Merienda: 1 pan turco con lo que quieras: hasta 4 fetas de pastrón, o 2 fetas de queso con tomate, o palta, o huevo. Poquito no hay problema.',

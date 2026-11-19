@@ -91,6 +91,20 @@ const objetivo = () => Number(state.ajustes.objetivo) || Plan.OBJETIVO;
 const inicio = () => (/^\d{4}-\d{2}-\d{2}$/.test(state.ajustes.inicio || '') ? state.ajustes.inicio : hoy());
 /* la fecha de la sesión con Ari: la que anotaste, o un mes desde el inicio */
 const limite = () => (/^\d{4}-\d{2}-\d{2}$/.test(state.ajustes.sesion || '') ? state.ajustes.sesion : Plan.sumarDias(inicio(), Plan.PLAZO_DIAS));
+/* Etapas: cada sesión con Ari arranca una etapa nueva (las estrellas vuelven a cero) */
+const etapa = () => Number(state.ajustes.etapa) || 1;
+const etapas = () => (Array.isArray(state.ajustes.etapas) ? state.ajustes.etapas : []);
+const objComp = () => ({ musculo: Number(state.ajustes.objMusculo) || 0, grasa: Number(state.ajustes.objGrasa) || 0 });
+const primera = () => state.comidas.reduce((m, c) => (c.fecha < m ? c.fecha : m), inicio());
+const fmt1 = n => Number(n).toLocaleString('es-AR', { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 1, maximumFractionDigits: 1 });
+/* dónde está Ale, en una línea para la IA */
+function objetivosTexto() {
+  const ps = pesosOrd(), ult = ps[ps.length - 1], c = objComp(), L = [];
+  L.push('Etapa ' + etapa() + ' (desde el ' + fechaCorta(inicio()) + '). Próxima sesión con Ari: ' + fechaCorta(limite()) + ', objetivo ' + objetivo() + ' kg' + (c.musculo || c.grasa ? ' (' + [c.musculo && 'músculo ' + fmt1(c.musculo) + ' kg', c.grasa && 'grasa ' + fmt1(c.grasa) + '%'].filter(Boolean).join(', ') + ')' : '') + '. Meta final: ' + metaTexto() + '. En el medio no se pesa.');
+  if (ult) L.push('Último peso: ' + fmtKg(ult.kg) + ' kg el ' + fechaCorta(ult.fecha) + (ult.musculo ? ', músculo ' + fmt1(ult.musculo) + ' kg' : '') + (ult.grasa ? ', grasa ' + fmt1(ult.grasa) + '%' : '') + (ps.length > 1 ? '; arrancó en ' + fmtKg(ps[0].kg) + ' kg el ' + fechaCorta(ps[0].fecha) : '') + '.');
+  etapas().forEach(e => L.push('Etapa ' + e.n + ': del ' + fechaCorta(e.inicio) + ' al ' + fechaCorta(e.fin) + ', objetivo ' + e.objetivo + ' kg.'));
+  return L.join(' ');
+}
 const meta = () => { const a = Number(state.ajustes.metaMin), b = Number(state.ajustes.metaMax); return a > 0 && b >= a ? [a, b] : Plan.META; };
 const metaTexto = () => { const m = meta(); return m[0] === m[1] ? m[0] + ' kg' : 'entre ' + m[0] + ' y ' + m[1] + ' kg'; };
 
@@ -222,9 +236,9 @@ function weekHtml(fecha) {
   let estrellas = 0, out = '<div class="week">';
   for (let i = 0; i < 7; i++) {
     const f = Plan.sumarDias(lunes, i), d = Plan.deYmd(f), futuro = f > h;
-    const ev = futuro ? null : dia(f);
-    if (ev && ev.estrella) estrellas++;
-    const cls = (f === h ? ' is-today' : '') + (futuro ? ' is-future' : ev.estrella ? ' is-star' : ev.fallas.length ? ' is-bad' : ev.cargadas ? ' is-part' : '');
+    const ev = futuro ? null : dia(f), previa = f < inicio(); /* de la etapa anterior: se ve, no cuenta */
+    if (ev && ev.estrella && !previa) estrellas++;
+    const cls = (f === h ? ' is-today' : '') + (previa ? ' is-prev' : '') + (futuro ? ' is-future' : ev.estrella ? ' is-star' : ev.fallas.length ? ' is-bad' : ev.cargadas ? ' is-part' : '');
     out += '<button type="button" class="wd' + cls + '" data-dia="' + f + '"' + (futuro ? ' disabled' : '') + ' aria-label="' + esc(cap(fechaLarga(f))) + '"><span class="wd__l">' + 'LMMJVSD'.charAt(i) + '</span><span class="wd__n">' + d.getDate() + '</span><span class="wd__s">' + icon(!futuro && ev.fallas.length && !ev.estrella ? 'x' : 'star') + '</span></button>';
   }
   out += '</div><div class="week__foot"><span><b>' + estrellas + '</b> ' + (estrellas === 1 ? 'estrella' : 'estrellas') + ' esta semana</span><span>' + fechaCorta(lunes) + ' al ' + fechaCorta(Plan.sumarDias(lunes, 6)) + '</span></div>';
@@ -248,7 +262,21 @@ function cuposHtml(fecha) {
   return h + '</div>';
 }
 /* ---------- Tus patrones e informe para Ari ---------- */
-const analisis = () => Plan.analizar(state.comidas, inicio() <= hoy() ? inicio() : hoy(), hoy());
+/* los patrones miran todo el historial (más datos, mejores pistas); el informe, una etapa */
+const analisis = () => Plan.analizar(state.comidas, primera() <= hoy() ? primera() : hoy(), hoy());
+function etapaInfo(n) {
+  const e = etapas().find(x => x.n === n);
+  if (e) return { n, desde: e.inicio, fin: e.fin, sesion: e.sesion, objetivo: e.objetivo, actual: false };
+  return { n: etapa(), desde: inicio() <= hoy() ? inicio() : hoy(), fin: null, sesion: limite(), objetivo: objetivo(), actual: true };
+}
+const analisisEtapa = et => Plan.analizar(state.comidas, et.desde, hoy(), et.fin);
+/* peso, músculo y grasa al arrancar y al cerrar el período */
+function compTexto(desde, hasta) {
+  const ps = pesosOrd(), a = ps.filter(p => p.fecha <= desde).pop() || ps.find(p => p.fecha >= desde), b = ps.filter(p => p.fecha <= hasta).pop();
+  if (!a || !b || a === b) return b ? 'Peso: ' + fmtKg(b.kg) + ' kg' + (b.musculo ? ', músculo ' + fmt1(b.musculo) + ' kg' : '') + (b.grasa ? ', grasa ' + fmt1(b.grasa) + '%' : '') + ' (' + fechaCorta(b.fecha) + ').' : '';
+  const d = (x, y) => (y - x > 0 ? '+' : '') + fmt1(y - x);
+  return 'Peso: ' + fmtKg(a.kg) + ' → ' + fmtKg(b.kg) + ' kg (' + d(a.kg, b.kg) + ')' + (a.musculo && b.musculo ? ' · músculo ' + fmt1(a.musculo) + ' → ' + fmt1(b.musculo) + ' kg (' + d(a.musculo, b.musculo) + ')' : '') + (a.grasa && b.grasa ? ' · grasa ' + fmt1(a.grasa) + ' → ' + fmt1(b.grasa) + '% (' + d(a.grasa, b.grasa) + ')' : '') + '.';
+}
 const IAINF_KEY = 'dieta.iaInforme';
 /* lo último que escribió la IA (se guarda en el teléfono para no pedirlo de nuevo cada vez) */
 function iaInforme() { try { const v = JSON.parse(lsGet(IAINF_KEY) || 'null'); return v && v.fecha ? v : null; } catch (e) { return null; } }
@@ -261,14 +289,16 @@ function patronesHtml(a, conInforme) {
   if (inf && inf.para_ale && inf.para_ale.length) h += '<div class="ai" style="margin:0 16px;padding-bottom:14px"><div class="ai__k">' + icon('sparkles') + 'Lo que ve la IA · ' + esc(fechaCorta(inf.fecha)) + '</div><ul class="pats">' + inf.para_ale.map(t => '<li class="pat pat--ia">' + icon('bulb') + '<span>' + esc(t) + '</span></li>').join('') + '</ul></div>';
   if (iaOn() && a.total >= 3) h += '<div style="padding:0 16px 14px"><button type="button" class="btn btn--secondary btn--block" data-ia-informe' + (ui.informeBusy ? ' disabled' : '') + '>' + icon('sparkles') + (ui.informeBusy ? 'Mirando tu historial…' : inf ? 'Que la IA vuelva a mirar' : 'Que la IA mire tus patrones') + '</button></div>';
   h += '</div>';
-  if (conInforme) h += '<div class="actions" style="margin-top:12px"><button type="button" class="btn btn--primary btn--block" data-go="informe">' + icon('chart') + 'Informe para la sesión con Ari</button></div>';
+  if (conInforme) h += '<div class="actions" style="margin-top:12px"><button type="button" class="btn btn--primary btn--block" data-go="informe" data-inf-actual>' + icon('chart') + 'Informe para la sesión con Ari</button></div>';
   return h + '</section>';
 }
 /* Todo en texto: para mandarle a Ari por WhatsApp y para que la IA lo lea */
-function informeTexto(a, conIa) {
-  const L = [], inf = conIa ? iaInforme() : null;
-  L.push('Informe de alimentación de ' + (state.ajustes.nombre || 'Ale') + ' · del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta));
-  L.push('Objetivo para la sesión del ' + fechaCorta(limite()) + ': ' + objetivo() + ' kg. Meta final: ' + metaTexto() + '.');
+function informeTexto(a, conIa, et) {
+  et = et || etapaInfo(etapa());
+  const inf0 = conIa ? iaInforme() : null, inf = inf0 && (inf0.etapa || 1) === et.n ? inf0 : null, L = [];
+  L.push('Informe de alimentación de ' + (state.ajustes.nombre || 'Ale') + ' · etapa ' + et.n + ' · del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta));
+  L.push('Objetivo para la sesión del ' + fechaCorta(et.sesion) + ': ' + et.objetivo + ' kg. Meta final: ' + metaTexto() + '.');
+  const comp = compTexto(a.desde, et.sesion); if (comp) L.push(comp);
   L.push('Días con estrella (plan cumplido): ' + a.conEstrella + ' de ' + a.total + ' (' + a.pct + '%). Mejor racha: ' + a.rachaMax + ' días. Racha actual: ' + a.racha + '.');
   L.push('Extras: ' + a.extras + '. Días sin cargar del todo: ' + (a.sinCerrar + a.sinCargar) + '.');
   if (inf && inf.para_ari) L.push('', 'Resumen: ' + inf.para_ari);
@@ -287,16 +317,20 @@ function informeTexto(a, conIa) {
 }
 const motivoTexto = x => (x.estado === 'excedido' ? (x.motivo === 'reserva' ? 'usó un libre del finde' : 'cupo de la semana ya usado') : x.estado === 'nada' ? 'no comió' : x.comida === 'extra' ? 'extra' : 'fuera del plan');
 function renderInforme() {
-  const a = analisis(), inf = iaInforme();
-  setHeader('Informe para Ari', 'Del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta) + ' · sesión del ' + fechaCorta(limite()), history.state && history.state.from === 'historial' ? 'Historial' : 'Inicio');
-  let h = '<div class="actions no-print" style="margin-top:0;grid-template-columns:1fr 1fr"><button type="button" class="btn btn--primary" data-informe-mandar>' + icon('share') + 'Mandar</button><button type="button" class="btn btn--secondary" data-informe-pdf>' + icon('printer') + 'PDF</button></div>';
+  const et = etapaInfo(ui.informeEtapa || etapa()), a = analisisEtapa(et), inf0 = iaInforme(), inf = inf0 && (inf0.etapa || 1) === et.n ? inf0 : null;
+  setHeader('Informe para Ari', 'Etapa ' + et.n + ' · del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta) + ' · sesión del ' + fechaCorta(et.sesion), history.state && history.state.from === 'historial' ? 'Historial' : 'Inicio');
+  let h = '';
+  if (etapas().length) h += '<div class="seg no-print" role="radiogroup" aria-label="Etapa" style="margin:0 0 12px">' + etapas().map(e => e.n).concat([etapa()]).map(n => '<button type="button" role="radio" aria-checked="' + (n === et.n) + '" data-inf-etapa="' + n + '">Etapa ' + n + (n === etapa() ? ' (ahora)' : '') + '</button>').join('') + '</div>';
+  const comp = compTexto(a.desde, et.sesion);
+  if (comp) h += '<div class="card inf__card" style="margin-bottom:12px"><p class="inf__p">' + esc(comp) + '</p></div>';
+  h += '<div class="actions no-print" style="margin-top:0;grid-template-columns:1fr 1fr"><button type="button" class="btn btn--primary" data-informe-mandar>' + icon('share') + 'Mandar</button><button type="button" class="btn btn--secondary" data-informe-pdf>' + icon('printer') + 'PDF</button></div>';
   h += '<section class="section"><div class="stats inf__stats"><div class="stat"><div class="stat__v">' + icon('star') + a.conEstrella + '<small>/' + a.total + '</small></div><div class="stat__k">días con estrella (' + a.pct + '%)</div></div>' +
     '<div class="stat"><div class="stat__v">' + a.rachaMax + '</div><div class="stat__k">mejor racha</div></div>' +
     '<div class="stat"><div class="stat__v">' + a.extras + '</div><div class="stat__k">extras</div></div>' +
     '<div class="stat"><div class="stat__v">' + (a.sinCerrar + a.sinCargar) + '</div><div class="stat__k">días sin cargar del todo</div></div></div></section>';
   h += '<section class="section"><div class="section__h"><span>Resumen para Ari</span></div><div class="card inf__card">' +
     (inf && inf.para_ari ? '<p class="inf__p">' + esc(inf.para_ari) + '</p><p class="inf__k no-print">' + icon('sparkles') + 'Lo escribió la IA el ' + esc(fechaCorta(inf.fecha)) + '</p>' : '<p class="inf__p inf__k">' + (iaOn() ? 'Todavía no hay resumen escrito.' : 'Conectá el respaldo en Ajustes para que la IA escriba el resumen.') + '</p>') +
-    (iaOn() ? '<button type="button" class="linkbtn no-print" data-ia-informe' + (ui.informeBusy ? ' disabled' : '') + '>' + icon('sparkles') + (ui.informeBusy ? 'Escribiendo…' : inf ? 'Volver a escribirlo' : 'Escribirlo con la IA') + '</button>' : '') + '</div></section>';
+    (iaOn() && a.total ? '<button type="button" class="linkbtn no-print" data-ia-informe="etapa"' + (ui.informeBusy ? ' disabled' : '') + '>' + icon('sparkles') + (ui.informeBusy ? 'Escribiendo…' : inf ? 'Volver a escribirlo' : 'Escribirlo con la IA') + '</button>' : '') + '</div></section>';
   h += '<section class="section"><div class="section__h"><span>Por semana</span><span class="section__sub">lunes a domingo</span></div><div class="card"><table class="inf__t"><thead><tr><th>Semana</th><th>★</th><th>Carbo</th><th>Libres</th><th>Fuera</th><th>Extras</th></tr></thead><tbody>' +
     a.semanas.map(w => '<tr><td>' + fechaCorta(w.lunes) + '</td><td>' + w.estrellas + '/' + w.dias + '</td><td>' + w.carbo + '</td><td>' + w.libre + '</td><td>' + w.fuera + '</td><td>' + w.extras + '</td></tr>').join('') + '</tbody></table></div></section>';
   if (a.patrones.length) h += '<section class="section"><div class="section__h"><span>Patrones</span></div><div class="card"><ul class="pats">' + a.patrones.map(p => '<li class="pat pat--' + p.tono + '">' + icon(p.tono === 'ok' ? 'check' : 'alert') + '<span>' + esc(p.texto) + '</span></li>').join('') + '</ul></div></section>';
@@ -310,19 +344,21 @@ function renderInforme() {
     Plan.COMIDAS.map(c => d.porComida[c.id].map(x => '<p><span>' + esc(nombreDe(c.id)) + '</span>' + esc(x.que || tipoCorto(x)) + (x.tipo === 'carbo' || x.tipo === 'libre' ? ' <i>' + (x.tipo === 'carbo' ? 'con carbo' : 'libre') + '</i>' : '') + '</p>').join('')).join('') + (d.cargadas || d.extras ? '' : '<p class="inf__k">Sin cargar</p>') + '</li>').join('') + '</ul></div></section>';
   $('#main').innerHTML = h;
 }
-async function pedirInforme() {
+async function pedirInforme(deEtapa) {
   if (ui.informeBusy) return;
   ui.informeBusy = true; render();
   try {
-    const a = analisis();
-    const r = await ia({ accion: 'informe', datos: informeTexto(a, false) + '\n\nConfiguración: ' + Plan.configTexto() });
-    lsSet(IAINF_KEY, JSON.stringify({ fecha: hoy(), para_ari: r.para_ari, para_ale: r.para_ale }));
+    /* desde el informe: la etapa elegida; desde los patrones: todo el historial */
+    const et = deEtapa ? etapaInfo(ui.informeEtapa || etapa()) : { n: etapa(), desde: primera(), fin: null, sesion: limite(), objetivo: objetivo() };
+    const a = deEtapa ? analisisEtapa(et) : analisis();
+    const r = await ia({ accion: 'informe', datos: informeTexto(a, false, et) + '\n\nConfiguración: ' + Plan.configTexto() });
+    lsSet(IAINF_KEY, JSON.stringify({ fecha: hoy(), etapa: et.n, para_ari: r.para_ari, para_ale: r.para_ale }));
     toast('Listo: la IA miró tu historial.');
   } catch (e) { toast(iaMsg(e)); }
   ui.informeBusy = false; render();
 }
 async function mandarInforme() {
-  const texto = informeTexto(analisis(), true);
+  const et = etapaInfo(ui.informeEtapa || etapa()), texto = informeTexto(analisisEtapa(et), true, et);
   try { if (navigator.share) { await navigator.share({ title: 'Informe para Ari', text: texto }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(texto); toast('Copiado: pegalo en el chat con Ari.'); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(texto.slice(0, 6000)); }
 }
@@ -342,18 +378,18 @@ function caminoHtml(h) {
   const ayer = Plan.sumarDias(hasta, -1), hoyEstrella = dia(hasta).estrella;
   const cerrados = Math.max(0, Plan.diasEntre(ini, hasta)) + (hoyEstrella ? 1 : 0);
   const est = Plan.estrellas(state.comidas, ini, hoyEstrella ? hasta : ayer);
-  const pct = cerrados ? Math.round(est / cerrados * 100) : 0, r = Plan.racha(state.comidas, h);
+  const pct = cerrados ? Math.round(est / cerrados * 100) : 0, r = Plan.racha(state.comidas, h, inicio());
   const total = Math.max(1, Plan.diasEntre(ini, ses)), hechos = Math.min(total, Math.max(0, Plan.diasEntre(ini, h)));
   let msg;
   if (faltan < 0) msg = 'La sesión ya pasó: poné la próxima en Ajustes → Objetivo y fechas.';
-  else if (!cerrados) msg = 'Cada día con estrella te acerca. Arrancá hoy.';
+  else if (!cerrados) msg = etapa() > 1 ? 'Etapa ' + etapa() + ': las estrellas arrancan de cero. Mismo proceso, misma constancia: lo que funcionó, se sostiene.' : 'Cada día con estrella te acerca. Arrancá hoy.';
   else if (pct >= 90) msg = 'Así se llega. Con esta constancia vas a la sesión con lo mejor posible. No aflojes ahora: lo que queda es lo que más se nota.';
   else if (pct >= 70) msg = 'Vas bien. Cada día con estrella que sumes de acá a la sesión se ve en la balanza.';
   else msg = 'Todavía estás a tiempo: lo que cuenta son los días que quedan. Hoy, estrella.';
   const rTxt = r >= 2 ? '<p class="camino__r">' + icon('star') + '<span><b>' + r + ' días seguidos.</b> ' + (r >= 7 ? 'Eso ya es un hábito. Cuidalo como un tesoro.' : 'No cortes la racha hoy.') + '</span></p>' : '';
-  return '<section class="section"><div class="section__h"><span>Camino a la sesión</span><span class="section__sub">Ari · ' + fechaCorta(ses) + '</span></div>' +
+  return '<section class="section"><div class="section__h"><span>' + (etapa() > 1 ? 'Etapa ' + etapa() + ' · camino a la sesión' : 'Camino a la sesión') + '</span><span class="section__sub">Ari · ' + fechaCorta(ses) + '</span></div>' +
     '<div class="card camino"><div class="camino__top"><div><span class="camino__n">' + Math.max(0, faltan) + '</span><span class="camino__u">' + (faltan === 1 ? 'día' : 'días') + '</span></div>' +
-    '<div class="camino__obj">Objetivo <b>' + objetivo() + ' kg</b><br>Meta final <b>' + (meta()[0] === meta()[1] ? meta()[0] : meta()[0] + ' a ' + meta()[1]) + ' kg</b></div></div>' +
+    '<div class="camino__obj">Objetivo <b>' + objetivo() + ' kg</b><br>' + (objComp().musculo || objComp().grasa ? [objComp().musculo && 'Músculo <b>' + fmt1(objComp().musculo) + '</b>', objComp().grasa && 'grasa <b>' + fmt1(objComp().grasa) + '%</b>'].filter(Boolean).join(' · ') + '<br>' : '') + 'Meta final <b>' + (meta()[0] === meta()[1] ? meta()[0] : meta()[0] + ' a ' + meta()[1]) + ' kg</b></div></div>' +
     '<div class="bar"><div class="bar__f" style="width:' + Math.round(hechos / total * 100) + '%"></div></div>' +
     '<div class="bar__l"><span>' + fechaCorta(ini) + '</span><span>' + hechos + ' de ' + total + ' días</span><span>' + fechaCorta(ses) + '</span></div>' +
     (cerrados ? '<p class="camino__s"><b>' + est + ' de ' + cerrados + '</b> días con estrella (' + pct + '%).</p>' : '') + rTxt +
@@ -363,7 +399,7 @@ function caminoHtml(h) {
 function renderInicio() {
   const h = hoy();
   setHeader('Hoy', cap(fechaLarga(h)), null);
-  const r = Plan.racha(state.comidas, h), tot = Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h);
+  const r = Plan.racha(state.comidas, h, inicio()), tot = Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h);
   const diasPlan = Plan.diasEntre(inicio(), h) + 1;
   const vacio = !state.comidas.length && !state.pesos.length;
   let html = vacio ? '<div class="card welcome"><h2>Hola, Ale.</h2><p>Acá anotás lo que comés en cada comida y la app ve cómo cuenta en el plan. Si cumplís el plan de Ari, el día gana una estrella. Primero ' + objetivo() + ' kg para la próxima sesión; la meta, ' + metaTexto() + '.</p><button type="button" class="btn btn--secondary btn--block" data-plan>' + icon('book') + 'Ver el plan de Ari</button></div><div style="height:14px"></div>' : '';
@@ -418,26 +454,36 @@ function chartHtml(ps) {
     ps.map((p, i) => '<circle class="dot' + (i === ps.length - 1 ? ' is-last' : '') + '" cx="' + x(i).toFixed(1) + '" cy="' + y(p.kg).toFixed(1) + '" r="3.5"/>').join('') +
     '<text x="' + P.l + '" y="' + (H - 4) + '">' + fechaCorta(ps[0].fecha) + '</text><text x="' + (W - P.r) + '" y="' + (H - 4) + '" text-anchor="end">' + fechaCorta(ps[ps.length - 1].fecha) + '</text></svg>';
 }
+/* músculo y grasa: lo que Ari mira (bajar grasa sin perder músculo) */
+function compHtml(ps) {
+  const con = ps.filter(p => p.musculo || p.grasa); if (!con.length) return '';
+  const ult = con[con.length - 1], pri = con[0], c = objComp(), dif = (a, b) => (b - a > 0 ? '+' : '') + fmt1(b - a);
+  const cel = (k, v, a, u, obj, mejorBaja) => '<div class="comp__c"><span class="comp__k">' + k + '</span><span class="comp__v">' + fmt1(v) + '<small>' + u + '</small></span>' +
+    (con.length > 1 && a ? (!mejorBaja && Math.abs(v - a) <= 0.5 ? '<span class="comp__d is-ok">se mantuvo (' + dif(a, v) + ')</span>' :
+      '<span class="comp__d ' + ((v - a < 0) === mejorBaja || v === a ? 'is-ok' : 'is-bad') + '">' + dif(a, v) + ' desde el ' + fechaCorta(pri.fecha) + '</span>') : '') + (obj ? '<span class="comp__o">objetivo ' + fmt1(obj) + u + '</span>' : '') + '</div>';
+  return '<div class="comp">' + (ult.musculo ? cel('Músculo', ult.musculo, pri.musculo, ' kg', c.musculo, false) : '') + (ult.grasa ? cel('Grasa', ult.grasa, pri.grasa, '%', c.grasa, true) : '') + '</div>';
+}
 function renderPeso() {
-  setHeader('Peso', objetivo() + ' kg para la sesión del ' + fechaCorta(limite()) + ' · meta final ' + metaTexto(), 'Inicio');
+  setHeader('Peso', 'Etapa ' + etapa() + ': ' + objetivo() + ' kg para la sesión del ' + fechaCorta(limite()) + ' · meta final ' + metaTexto(), 'Inicio');
   const ps = pesosOrd(), obj = objetivo();
   let html = '';
   if (!ps.length) {
     html = '<div class="card empty">Todavía no hay pesadas. Ari pidió no pesarse en el medio: cargá el peso del día de la sesión (y el de arranque, si lo sabés). Desde ahí se mide cuánto falta para ' + obj + ' y después para la meta de ' + metaTexto() + '.</div>';
   } else {
-    const ult = ps[ps.length - 1], pri = ps[0], baj = Math.round((pri.kg - ult.kg) * 10) / 10, falta = Math.round((ult.kg - obj) * 10) / 10;
+    const ult = ps[ps.length - 1], pri = ps.filter(p => p.fecha <= inicio()).pop() || ps[0], baj = Math.round((pri.kg - ult.kg) * 10) / 10, falta = Math.round((ult.kg - obj) * 10) / 10;
     const total = pri.kg - obj, prog = total > 0 ? Math.max(0, Math.min(1, (pri.kg - ult.kg) / total)) : 1;
     const dias = Plan.diasEntre(hoy(), limite());
     html = '<div class="card peso"><div class="peso__big"><span class="peso__v">' + fmtKg(ult.kg) + '</span><span class="peso__u">kg</span></div>' +
       '<p class="peso__s">' + (falta > 0 ? 'Faltan <b>' + fmtKg(falta) + ' kg</b> para ' + obj : '<b>¡Llegaste al objetivo!</b>') + (ps.length > 1 ? (baj > 0 ? ' · bajaste ' + fmtKg(baj) + ' desde el ' + fechaCorta(pri.fecha) : baj < 0 ? ' · subiste ' + fmtKg(-baj) + ' desde el ' + fechaCorta(pri.fecha) : ' · igual que el ' + fechaCorta(pri.fecha)) : '') + (dias > 0 ? ' · quedan ' + dias + ' días' : dias === 0 ? ' · hoy vence el plazo' : '') + '</p>' +
-      '<div class="bar"><div class="bar__f" style="width:' + Math.round(prog * 100) + '%"></div></div><div class="bar__l"><span>' + fmtKg(pri.kg) + '</span><span>' + Math.round(prog * 100) + '%</span><span>' + obj + '</span></div>' + chartHtml(ps) + '</div>';
+      '<div class="bar"><div class="bar__f" style="width:' + Math.round(prog * 100) + '%"></div></div><div class="bar__l"><span>' + fmtKg(pri.kg) + '</span><span>' + Math.round(prog * 100) + '%</span><span>' + obj + '</span></div>' +
+      compHtml(ps) + chartHtml(ps) + '</div>';
   }
   html += '<div class="actions"><button type="button" class="btn btn--primary btn--block" data-pesar>' + icon('scale') + 'Pesarme</button></div>';
   if (ps.length) {
     html += '<section class="section"><div class="section__h"><span>Pesadas</span></div><div class="card"><ul class="list">';
     ps.slice().reverse().forEach((p, i, arr) => {
       const prev = arr[i + 1], dif = prev ? Math.round((p.kg - prev.kg) * 10) / 10 : 0;
-      html += '<li class="pay"><span class="pay__d">' + esc(fechaCorta(p.fecha)) + '</span><span class="pay__t">' + fmtKg(p.kg) + ' kg</span><span class="pay__a ' + (dif < 0 ? 'is-down' : dif > 0 ? 'is-up' : '') + '">' + (prev ? (dif > 0 ? '+' : '') + fmtKg(dif) : '') + '</span><button type="button" class="del" data-borrar-peso="' + p.id + '" aria-label="Borrar esta pesada">' + icon('trash') + '</button></li>';
+      html += '<li class="pay"><span class="pay__d">' + esc(fechaCorta(p.fecha)) + '</span><span class="pay__t">' + fmtKg(p.kg) + ' kg' + (p.musculo || p.grasa ? '<small class="pay__s">' + [p.musculo && 'músculo ' + fmt1(p.musculo), p.grasa && 'grasa ' + fmt1(p.grasa) + '%'].filter(Boolean).join(' · ') + '</small>' : '') + '</span><span class="pay__a ' + (dif < 0 ? 'is-down' : dif > 0 ? 'is-up' : '') + '">' + (prev ? (dif > 0 ? '+' : '') + fmtKg(dif) : '') + '</span><button type="button" class="del" data-borrar-peso="' + p.id + '" aria-label="Borrar esta pesada">' + icon('trash') + '</button></li>';
     });
     html += '</ul></div></section>';
   }
@@ -576,6 +622,9 @@ function openPeso() {
   $('#pesoErr').textContent = '';
   $('#pesoBody').innerHTML = '<div class="q"><div class="field field--big"><label class="field__l" for="p_kg">Kilos</label><input id="p_kg" type="text" inputmode="decimal" placeholder="' + (ult ? fmtKg(ult.kg) : '84,0') + '" enterkeyhint="done" autocomplete="off"></div>' +
     '<div class="field" style="margin-top:14px"><label class="field__l" for="p_fecha">Fecha</label><input id="p_fecha" type="date" value="' + hoy() + '" max="' + hoy() + '"></div>' +
+    '<p class="note" style="margin-top:14px">Si te hiciste el InBody, cargá también (son opcionales):</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px"><label class="field"><span class="field__l">Músculo (kg)</span><input id="p_mus" type="text" inputmode="decimal" placeholder="' + (ult && ult.musculo ? fmt1(ult.musculo) : '34,5') + '" autocomplete="off"></label>' +
+    '<label class="field"><span class="field__l">Grasa (%)</span><input id="p_gra" type="text" inputmode="decimal" placeholder="' + (ult && ult.grasa ? fmt1(ult.grasa) : '21,2') + '" autocomplete="off"></label></div>' +
     (ult ? '<p class="note" style="margin-top:14px">Última pesada: <b>' + fmtKg(ult.kg) + ' kg</b> el ' + fechaCorta(ult.fecha) + '.</p>' : '') + '</div>';
   openSheet($('#pesoSheet'));
   setTimeout(() => { const i = $('#p_kg'); if (i) i.focus(); }, 350);
@@ -585,8 +634,12 @@ function guardarPeso() {
   if (!(kg >= 30 && kg <= 300)) { $('#pesoErr').textContent = 'Poné los kilos, por ejemplo 84,5.'; return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha > hoy()) { $('#pesoErr').textContent = 'Revisá la fecha.'; return; }
   const ps = pesosOrd(), ant = ps.filter(p => p.fecha < fecha).pop(), now = Date.now();
+  const dec = id => { const v = Math.round(parseFloat(String(($('#' + id) || {}).value || '').replace(',', '.')) * 10) / 10; return v > 0 ? v : null; };
+  const musculo = dec('p_mus'), grasa = dec('p_gra');
+  if (musculo && !(musculo >= 10 && musculo <= 100)) { $('#pesoErr').textContent = 'Revisá el músculo: va en kilos, por ejemplo 34,5.'; return; }
+  if (grasa && !(grasa >= 3 && grasa <= 60)) { $('#pesoErr').textContent = 'Revisá la grasa: va en porcentaje, por ejemplo 21,2.'; return; }
   let p = state.pesos.find(x => x.fecha === fecha);
-  if (p) Object.assign(p, { kg, updatedAt: now }); else { p = { id: uid(), fecha, kg, createdAt: now, updatedAt: now }; state.pesos.push(p); }
+  if (p) Object.assign(p, { kg, updatedAt: now }, musculo ? { musculo } : {}, grasa ? { grasa } : {}); else { p = { id: uid(), fecha, kg, musculo, grasa, createdAt: now, updatedAt: now }; state.pesos.push(p); }
   persist(); closeSheet($('#pesoSheet')); render(); queueSync();
   const obj = objetivo(), falta = Math.round((kg - obj) * 10) / 10;
   if (falta <= 0) toast('⭐ ' + fmtKg(kg) + ' kg. ¡Llegaste al objetivo!', { star: true, ms: 5000 });
@@ -612,7 +665,7 @@ const localTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().tim
 async function ia(body) {
   let r, j = null;
   try {
-    r = await fetch('/api/dieta', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify(Object.assign({ tz: localTz(), reglas: reglas().map(r => ({ texto: r.texto, cambios: r.cambios })) }, body)) });
+    r = await fetch('/api/dieta', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Clave': encodeURIComponent(lsGet(CLAVE_KEY)) }, body: JSON.stringify(Object.assign({ tz: localTz(), reglas: reglas().map(r => ({ texto: r.texto, cambios: r.cambios })), objetivos: objetivosTexto() }, body)) });
   } catch (e) { const er = new Error('red'); er.code = 'red'; throw er; }
   try { j = await r.json(); } catch (e) { j = null; }
   if (!r.ok || !j || !j.ok) { const er = new Error('ia'); er.code = (j && j.error) || (r.status === 404 ? 'sin-api' : 'ia'); throw er; }
@@ -630,9 +683,9 @@ function ultimasTexto(dias) {
 }
 function datosTexto() {
   const h = hoy(), ps = pesosOrd(), L = [];
-  L.push('Objetivo para la próxima sesión con Ari: ' + objetivo() + ' kg el ' + fechaCorta(limite()) + ' (quedan ' + Plan.diasEntre(h, limite()) + ' días). Meta final: ' + metaTexto() + '. Inicio del plan: ' + fechaCorta(inicio()) + '. En el medio no se pesa.');
+  L.push(objetivosTexto() + ' Quedan ' + Plan.diasEntre(h, limite()) + ' días para la sesión.');
   L.push('Pesos: ' + (ps.length ? ps.map(p => fechaCorta(p.fecha) + ' ' + fmtKg(p.kg) + ' kg').join(', ') : 'todavía no se pesó') + '.');
-  L.push('Racha: ' + Plan.racha(state.comidas, h) + ' días seguidos con estrella. Estrellas desde el inicio: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
+  L.push('Racha: ' + Plan.racha(state.comidas, h, inicio()) + ' días seguidos con estrella en esta etapa. Estrellas en esta etapa: ' + Plan.estrellas(state.comidas, inicio() < h ? inicio() : h, h) + '.');
   const ev = semana(h);
   L.push('Cupos de esta semana (desde el lunes ' + fechaCorta(ev.lunes) + '): ' + ['almuerzo', 'cena'].map(cid => nombreDe(cid) + ': ' + ev.cupos[cid].map(c => c.nombre.toLowerCase() + ' ' + cupoTexto(c)).join(', ')).join('; ') + '. ' + Plan.configTexto());
   const pat = analisis().patrones;
@@ -829,8 +882,12 @@ function renderSettings() {
     '<label class="field"><span class="field__l">Sesión con Ari</span><input id="s_sesion" type="date" value="' + limite() + '" min="' + hoy() + '"></label>' +
     '<p class="set__note">' + (state.ajustes.sesion ? 'Cuando la fijes, cambiala acá.' : 'Por ahora, un mes desde que empezaste. Cuando fijes el día con Ari, ponelo acá.') + '</p>' +
     '<div class="field"><span class="field__l">Meta final (kg)</span><div style="display:flex;gap:10px;align-items:center"><input id="s_meta1" type="text" inputmode="decimal" value="' + meta()[0] + '" autocomplete="off" aria-label="Desde" style="flex:1"><span>a</span><input id="s_meta2" type="text" inputmode="decimal" value="' + meta()[1] + '" autocomplete="off" aria-label="Hasta" style="flex:1"></div></div>' +
-    '<label class="field"><span class="field__l">Empezaste el plan el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
-    '<p class="set__note">Desde ese día se cuentan las estrellas.</p></div></details>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="field"><span class="field__l">Músculo objetivo (kg)</span><input id="s_omus" type="text" inputmode="decimal" value="' + (objComp().musculo ? fmt1(objComp().musculo) : '') + '" autocomplete="off"></label>' +
+    '<label class="field"><span class="field__l">Grasa objetivo (%)</span><input id="s_ogra" type="text" inputmode="decimal" value="' + (objComp().grasa ? fmt1(objComp().grasa) : '') + '" autocomplete="off"></label></div>' +
+    '<label class="field"><span class="field__l">La etapa ' + etapa() + ' empezó el</span><input id="s_inicio" type="date" value="' + inicio() + '" max="' + hoy() + '"></label>' +
+    '<p class="set__note">Desde ese día se cuentan las estrellas y la racha.</p>' +
+    '<button type="button" class="btn btn--secondary btn--block" data-nueva-etapa>' + icon('refresh') + 'Empezar la etapa ' + (etapa() + 1) + ' (después de la sesión)</button>' +
+    '<p class="set__note">Guarda la etapa ' + etapa() + ' para el informe y pone las estrellas en cero desde hoy.</p></div></details>' +
     '<details class="set" id="set-avisos"' + (ab('set-avisos') ? ' open' : '') + '><summary><span class="set__end">Avisos en el iPhone <small>' + (avisos().on ? 'prendidos' : 'apagados') + '</small></span>' + icon('chevR') + '</summary><div class="set__body">' +
     '<label class="switch"><span>Avisarme</span><input type="checkbox" id="s_avisos"' + (avisos().on ? ' checked' : '') + '></label>' +
     '<label class="field"><span class="field__l">Antes de la merienda (y si falta el almuerzo)</span><input id="s_av_mer" type="time" value="' + esc(avisos().merienda) + '"></label>' +
@@ -845,6 +902,15 @@ function renderSettings() {
     '<button type="button" class="set set--btn" data-import>' + icon('upload') + 'Restaurar una copia</button>' +
     '<button type="button" class="set set--btn set--danger" data-wipe>' + icon('trash') + 'Borrar todo</button>' +
     '<p class="set__note" style="padding-top:14px">Para tenerla como app en el iPhone: en Safari, Compartir → «Agregar a inicio».</p>';
+}
+/* Después de cada sesión con Ari: la etapa que termina queda guardada y las estrellas vuelven a cero */
+function nuevaEtapa() {
+  const h = hoy(), n = etapa();
+  if (!confirm('¿Empezar la etapa ' + (n + 1) + ' hoy? La etapa ' + n + ' queda guardada para el informe y las estrellas arrancan de cero.')) return;
+  const lista = etapas().filter(e => e.n !== n).concat([{ n, inicio: inicio(), fin: Plan.sumarDias(h, -1), sesion: state.ajustes.sesion && state.ajustes.sesion <= h ? state.ajustes.sesion : h, objetivo: objetivo() }]);
+  Object.assign(state.ajustes, { etapas: lista, etapa: n + 1, inicio: h, sesion: Plan.sumarDias(h, 28) });
+  state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render();
+  toast('Etapa ' + (n + 1) + ' en marcha. Poné la fecha de la próxima sesión y el objetivo nuevo.', { ms: 6000 });
 }
 function renderSyncBox() { const b = $('#syncBox'); if (b && !(document.activeElement && document.activeElement.id === 's_clave')) b.innerHTML = syncBoxHtml(); }
 async function connectSync() {
@@ -890,7 +956,7 @@ function wipe() {
 /* ---------- Respaldo en Airtable ---------- */
 const AT = {
   C: { que: 'flddTZbEV9Td45abs', fecha: 'fldN05RuxFWnmqbRc', comida: 'fld0pmDejT8PLBBsj', tipo: 'fldkXAvUuAeOdnbAk', hora: 'fldxnIUPrkH27sRfP', notas: 'fldpF2lGNvZE9p17p', deleted: 'fldppPmHxiO1xQXVf', id: 'fld5odv4a76csI2xZ', createdAt: 'fldsuws5mjzlZr8jQ', updatedAt: 'fldUwG4k2PY7XgD3j' },
-  W: { fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5', createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq' },
+  W: { fecha: 'fldplC5JDCk9Ufe5d', kg: 'fldNobmS2DvCJ69Jr', musculo: 'fldcCPUKBMlMYTILe', grasa: 'fldzlm54S6MNTuXlV', notas: 'fldfG7DKjI1Q9oHkB', deleted: 'fldJ0GpJPb9jC7QOI', id: 'fldCSK0bbgVun6Kw5', createdAt: 'flduXz5taz4SGq18x', updatedAt: 'fldi6R3mP1wSOIgVq' },
   A: { key: 'fldstgTm03EQOalcw', value: 'fldxCu4LteLCoAW1W', updatedAt: 'fldDu7pTNb9iNeThq' }
 };
 const invertir = o => { const r = {}; Object.keys(o).forEach(k => { r[o[k]] = k; }); return r; };
@@ -899,7 +965,7 @@ const sync = { on: !!lsGet(CLAVE_KEY), busy: false, again: null, last: Number(ls
 const iso = ms => (ms ? new Date(ms).toISOString() : null);
 const dirty = x => !x._sy || (x.updatedAt || 0) > x._sy;
 const cHash = f => [AT.C.que, AT.C.fecha, AT.C.comida, AT.C.tipo, AT.C.hora].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
-const wHash = f => [AT.W.fecha, AT.W.kg].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
+const wHash = f => [AT.W.fecha, AT.W.kg, AT.W.musculo, AT.W.grasa, AT.W.notas].map(k => (f[k] == null ? '' : String(f[k]))).join('\u0001');
 function comidaFields(c) {
   const C = AT.C, f = {}, t = Plan.tipo(c.comida, c.tipo);
   f[C.que] = c.que || (t ? t.nombre : ''); f[C.fecha] = c.fecha; f[C.comida] = Plan.COMIDA_AT[c.comida] || 'Extra'; f[C.tipo] = Plan.TIPO_AT[c.tipo] || 'Me salí'; f[C.hora] = c.hora || '';
@@ -926,14 +992,15 @@ function comidaFromRecord(r, base) {
 }
 function pesoFields(p) {
   const W = AT.W, f = {};
-  f[W.fecha] = p.fecha; f[W.kg] = Number(p.kg); f[W.deleted] = false; f[W.id] = p.id; f[W.createdAt] = iso(p.createdAt || Date.now()); f[W.updatedAt] = iso(p.updatedAt || Date.now());
+  f[W.fecha] = p.fecha; f[W.kg] = Number(p.kg); f[W.musculo] = p.musculo > 0 ? Number(p.musculo) : null; f[W.grasa] = p.grasa > 0 ? Number(p.grasa) : null; f[W.notas] = p.notas || ''; f[W.deleted] = false; f[W.id] = p.id; f[W.createdAt] = iso(p.createdAt || Date.now()); f[W.updatedAt] = iso(p.updatedAt || Date.now());
   return f;
 }
 function pesoFromRecord(r, base) {
   const W = AT.W, f = r.fields || {};
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(f[W.fecha] || '')) ? f[W.fecha] : null, kg = Number(f[W.kg]);
   if (!fecha || !(kg >= 30 && kg <= 300)) return null;
-  return Object.assign({}, base || {}, { id: f[W.id] || (base && base.id) || uid(), fecha, kg: Math.round(kg * 10) / 10,
+  const num = v => (Number(v) > 0 ? Math.round(Number(v) * 10) / 10 : null);
+  return Object.assign({}, base || {}, { id: f[W.id] || (base && base.id) || uid(), fecha, kg: Math.round(kg * 10) / 10, musculo: num(f[W.musculo]), grasa: num(f[W.grasa]), notas: String(f[W.notas] || '').slice(0, 300),
     createdAt: Date.parse(f[W.createdAt]) || Date.parse(r.creado) || (base && base.createdAt) || Date.now(), updatedAt: Date.parse(f[W.updatedAt]) || (base && base.updatedAt) || 0, _rid: r.rid });
 }
 /* mezcla genérica: lo de allá entra si acá no hay cambios sin subir; lo borrado allá se borra acá */
@@ -987,6 +1054,10 @@ function mergeAjustes(rows) {
   if (typeof v.sesion === 'string') state.ajustes.sesion = /^\d{4}-\d{2}-\d{2}$/.test(v.sesion) ? v.sesion : '';
   if (typeof v.metaMin === 'number' && typeof v.metaMax === 'number' && v.metaMin > 0 && v.metaMax >= v.metaMin) { state.ajustes.metaMin = v.metaMin; state.ajustes.metaMax = v.metaMax; }
   if (typeof v.nombre === 'string') state.ajustes.nombre = v.nombre;
+  if (typeof v.etapa === 'number' && v.etapa >= 1) state.ajustes.etapa = v.etapa;
+  if (Array.isArray(v.etapas)) state.ajustes.etapas = v.etapas.filter(e => e && e.n >= 1 && /^\d{4}-\d{2}-\d{2}$/.test(e.inicio || '') && /^\d{4}-\d{2}-\d{2}$/.test(e.fin || '')).map(e => ({ n: e.n, inicio: e.inicio, fin: e.fin, sesion: /^\d{4}-\d{2}-\d{2}$/.test(e.sesion || '') ? e.sesion : e.fin, objetivo: Number(e.objetivo) || 0 }));
+  if (typeof v.objMusculo === 'number') state.ajustes.objMusculo = v.objMusculo;
+  if (typeof v.objGrasa === 'number') state.ajustes.objGrasa = v.objGrasa;
   if (Array.isArray(v.reglas)) { state.ajustes.reglas = v.reglas.map(Plan.limpiarRegla).filter(Boolean); aplicarReglas(); }
   if (v.avisos && typeof v.avisos === 'object') state.ajustes.avisos = { on: v.avisos.on !== false, merienda: /^\d{2}:\d{2}$/.test(v.avisos.merienda || '') ? v.avisos.merienda : AVISOS_DEF.merienda, noche: /^\d{2}:\d{2}$/.test(v.avisos.noche || '') ? v.avisos.noche : AVISOS_DEF.noche };
   state.ajustesAt = state.ajustesSy = at;
@@ -1022,6 +1093,7 @@ async function pushDirty(keepalive) {
   const ajustes = [];
   const ajustesAt = state.ajustesAt || 0;
   if (ajustesDirty) { const f = {}; f[A.key] = 'dieta'; f[A.value] = JSON.stringify({ objetivo: objetivo(), inicio: inicio(), sesion: state.ajustes.sesion || '', metaMin: meta()[0], metaMax: meta()[1], nombre: state.ajustes.nombre || 'Ale', tz: localTz(),
+    etapa: etapa(), etapas: etapas(), objMusculo: objComp().musculo, objGrasa: objComp().grasa,
     reglas: reglas().map(r => ({ id: r.id, texto: r.texto, resumen: r.resumen || '', cambios: r.cambios || [], base: !!r.base, at: r.at || 0 })), avisos: avisos() }); f[A.updatedAt] = iso(ajustesAt); ajustes.push({ rid: state._ajustesRid, fields: f }); }
   const CHUNK = 150;
   const n = Math.max(1, Math.ceil(Math.max(filasC.length, filasW.length) / CHUNK));
@@ -1107,8 +1179,9 @@ function init() {
     if (b.dataset.cargar) openForm({ fecha: ui.view === 'dia' && ui.dia ? ui.dia : hoy(), comida: b.dataset.cargar });
     else if (b.dataset.editar) { const c = byId(b.dataset.editar); if (c) openForm(c); }
     else if (b.dataset.dia) go('dia', b.dataset.dia);
-    else if (b.dataset.go) go(b.dataset.go);
-    else if (b.hasAttribute('data-ia-informe')) pedirInforme();
+    else if (b.dataset.go) { if (b.dataset.go === 'informe') ui.informeEtapa = etapa(); go(b.dataset.go); }
+    else if (b.hasAttribute('data-ia-informe')) pedirInforme(b.dataset.iaInforme === 'etapa');
+    else if (b.dataset.infEtapa) { ui.informeEtapa = +b.dataset.infEtapa; render(); }
     else if (b.hasAttribute('data-informe-mandar')) mandarInforme();
     else if (b.hasAttribute('data-informe-pdf')) window.print();
     else if (b.hasAttribute('data-ideas')) openIdeas();
@@ -1194,9 +1267,10 @@ function init() {
     else if (b.hasAttribute('data-sync-now')) { runSync(true); renderSyncBox(); }
     else if (b.hasAttribute('data-plan')) openPlan();
     else if (b.hasAttribute('data-reglas')) openReglas();
-    else if (b.hasAttribute('data-informe')) { closeSheet($('#settingsSheet')); setTimeout(() => go('informe'), 50); }
+    else if (b.hasAttribute('data-informe')) { ui.informeEtapa = etapa(); closeSheet($('#settingsSheet')); setTimeout(() => go('informe'), 50); }
     else if (b.hasAttribute('data-go-peso')) { closeSheet($('#settingsSheet')); setTimeout(() => go('peso'), 50); }
     else if (b.dataset.theme) { lsSet(THEME_KEY, b.dataset.theme === 'auto' ? '' : b.dataset.theme); applyTheme(); renderSettings(); }
+    else if (b.hasAttribute('data-nueva-etapa')) nuevaEtapa();
     else if (b.hasAttribute('data-export')) exportar();
     else if (b.hasAttribute('data-import')) $('#importFile').click();
     else if (b.hasAttribute('data-wipe')) wipe();
@@ -1214,6 +1288,10 @@ function init() {
       state.ajustes.avisos = { on: $('#s_avisos').checked, merienda: hm($('#s_av_mer').value) || AVISOS_DEF.merienda, noche: hm($('#s_av_noc').value) || AVISOS_DEF.noche };
       state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings();
       if (e.target.id === 's_avisos') toast(state.ajustes.avisos.on ? 'Avisos prendidos. Llegan en un rato, cuando el Calendario se actualice.' : 'Avisos apagados.');
+    }
+    if (e.target.id === 's_omus' || e.target.id === 's_ogra') {
+      const n = v => { const x = Math.round(parseFloat(String(v).replace(',', '.')) * 10) / 10; return x > 0 ? x : 0; };
+      state.ajustes.objMusculo = n($('#s_omus').value); state.ajustes.objGrasa = n($('#s_ogra').value); state.ajustesAt = Date.now(); persist(); queueSync(); render();
     }
     if (e.target.id === 's_inicio') { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= hoy()) { state.ajustes.inicio = v; state.ajustesAt = Date.now(); persist(); queueSync(); renderSettings(); render(); } }
   });

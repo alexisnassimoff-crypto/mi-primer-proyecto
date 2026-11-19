@@ -39,7 +39,10 @@ estrella verde).
    cuesta, la app y el aviso de la merienda te lo recuerdan.
 12. **Informe para Ari.** En Historial (o en «Camino a la sesión»): todo lo del mes en una página.
    «Mandar» te deja elegir WhatsApp y el chat con Ari; «PDF» lo guarda o lo imprime.
-13. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
+13. **Etapas.** Después de cada sesión con Ari: Ajustes → Objetivo y fechas → «Empezar la etapa
+   siguiente». Las estrellas vuelven a cero, la etapa anterior queda guardada para el informe, y
+   ponés la fecha de la próxima sesión y el objetivo nuevo (peso, músculo y grasa).
+14. **Para la IA (ideas con lo que tengas en la heladera, «¿Esto va?» y preguntas):** Ajustes →
    Respaldo e IA → escribí **la misma clave que usás en Pendientes** → Conectar. Una sola vez. Con
    eso, además, todo queda guardado en Airtable (tablas Comidas y Peso) por si cambiás de teléfono.
 
