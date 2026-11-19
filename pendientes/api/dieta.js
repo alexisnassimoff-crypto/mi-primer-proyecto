@@ -32,7 +32,7 @@ function contexto(b) {
   Plan.usar(Plan.config(reglas));
   const cfg = Plan.configTexto();
   Plan.usar(null);
-  return { reglas, cfg };
+  return { reglas, cfg, objetivos: limpiarTexto(b.objetivos, 900) };
 }
 function sistema(hoy, b) {
   const ctx = b && b._ctx ? b._ctx : contexto({});
@@ -40,7 +40,8 @@ function sistema(hoy, b) {
     'Escribís en castellano rioplatense, tuteando con vos, corto y claro, sin markdown. Hoy es ' + hoy + '.\n\n' +
     'EL PLAN DE ARI (es la única referencia; nunca sugieras nada fuera de él):\n' + Plan.PLAN_TEXTO.map(l => '- ' + l).join('\n') + '\n\n' +
     'LO QUE LE DIJO ARI DESPUÉS (vale más que el plan de arriba si se contradicen; respetalo siempre, en ideas, evaluaciones y respuestas):\n' + ctx.reglas.map(r => '- ' + r.texto).join('\n') + '\n' +
-    'Con eso, la semana queda así: ' + ctx.cfg + '\n\n' +
+    'Con eso, la semana queda así: ' + ctx.cfg + '\n' +
+    (ctx.objetivos ? 'Dónde está Ale ahora: ' + ctx.objetivos + '\n' : '') + '\n' +
     'Tipos de comida que usa la app:\n' +
     '- plan: cumple el plan (desayuno de huevos; almuerzo o cena de proteína y vegetales; merienda de proteína y vegetales o un pan turco con algo del plan). Proteína y vegetales en cualquier comida es siempre plan.\n' +
     '- carbo: almuerzo o cena con un tercio de carbohidrato (arroz, papa, batata, fideos, pan, legumbres…). Tiene cupo semanal.\n' +

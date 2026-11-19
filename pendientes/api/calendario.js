@@ -106,10 +106,10 @@ function avisosDieta(comidasFilas, ajustesFilas, hoy, tz, ahora) {
   Plan.usar(Plan.config(reglas));
   const out = [];
   try {
-    const racha = Plan.racha(comidas, hoy);
-    /* tus patrones: el día y la comida que más te cuestan */
-    const ini = /^\d{4}-\d{2}-\d{2}$/.test(v.inicio || '') && v.inicio <= hoy ? v.inicio : (comidas.map(c => c.fecha).sort()[0] || hoy);
-    const pat = Plan.analizar(comidas, ini, hoy);
+    /* la racha cuenta desde que empezó la etapa; los patrones miran todo el historial */
+    const ini = /^\d{4}-\d{2}-\d{2}$/.test(v.inicio || '') && v.inicio <= hoy ? v.inicio : hoy;
+    const racha = Plan.racha(comidas, hoy, ini);
+    const pat = Plan.analizar(comidas, comidas.map(c => c.fecha).sort()[0] || hoy, hoy);
     const ev = (dia, tipo, h, title, description) => {
       const m = dia.split('-').map(Number), start = aUtc(m[0], m[1], m[2], h[0], h[1], tz);
       if (start.getTime() < ahora) return; /* ya pasó */

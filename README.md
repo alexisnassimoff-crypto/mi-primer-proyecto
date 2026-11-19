@@ -252,6 +252,13 @@ cargar algo (con la racha), el viernes a las 17 con los libres de Shabat y el s�
 para cargar lo de Shabat. En Shabat no suena nada. Lo de hoy mira lo cargado: si está todo, el
 aviso desaparece cuando el Calendario se actualiza. Horarios y on/off en Ajustes → Avisos.
 
+**Etapas**: cada sesión con Ari cierra una etapa. Ajustes → Objetivo y fechas → «Empezar la etapa
+N» guarda la que termina (inicio, fin, sesión, objetivo) en `etapas` y pone las estrellas y la racha
+en cero desde ese día (`Plan.racha` no cruza el inicio de la etapa). El informe tiene un selector de
+etapa; los patrones miran todo el historial. La tabla *Peso* tiene además **Músculo (kg)** y
+**Grasa (%)** del InBody; la pantalla Peso muestra el cambio y los objetivos de la sesión
+(`objMusculo`, `objGrasa` en la fila «dieta»).
+
 **Tus patrones** (arriba en Historial): `Plan.analizar` mira los días cerrados desde el inicio y
 devuelve los números (estrellas, rachas, cupos por semana, tropiezos, lo que más se repite) y los
 patrones en palabras: el día de la semana más flojo, la comida donde más afloja, libres del finde

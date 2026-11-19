@@ -160,6 +160,7 @@ main{padding-top:14px}
 .wd.is-bad .wd__s{background:var(--danger-soft);color:var(--danger)}
 .wd.is-part .wd__s{background:var(--surface-3);color:var(--ink-2)}
 .wd.is-future .wd__s{opacity:.45}
+.wd.is-prev{opacity:.4}
 .week__foot{display:flex;justify-content:space-between;gap:10px;padding:0 18px 14px;font-size:.9375rem;color:var(--ink-2);font-weight:500}
 .week__foot b{color:var(--ink);font-weight:650}
 
@@ -285,6 +286,18 @@ main{padding-top:14px}
 .camino__r .ico{flex:none;margin-top:2px;color:var(--star);fill:currentColor}
 .camino__m{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--ok-soft);color:var(--ink);line-height:1.45;font-weight:550}
 .camino__p{margin-top:10px;font-size:.875rem;color:var(--ink-3)}
+
+/* ---------- Músculo y grasa ---------- */
+.comp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.comp__c{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;background:var(--surface-2)}
+.comp__k{font-size:.8125rem;font-weight:650;color:var(--ink-3)}
+.comp__v{font-size:1.5rem;font-weight:650;font-variant-numeric:tabular-nums}
+.comp__v small{font-size:.9375rem;font-weight:600;color:var(--ink-3)}
+.comp__d{font-size:.8125rem;font-weight:650}
+.comp__d.is-ok{color:var(--ok)}
+.comp__d.is-bad{color:var(--danger)}
+.comp__o{font-size:.8125rem;color:var(--ink-2)}
+.pay__s{display:block;font-size:.8125rem;font-weight:500;color:var(--ink-3)}
 
 /* ---------- Historial ---------- */
 .hday{display:grid;grid-template-columns:2.4rem minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:66px;padding:10px 14px 10px 16px;border-top:1px solid var(--line);text-align:left}
